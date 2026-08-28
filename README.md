@@ -16,26 +16,28 @@ AMS is a **multi-tenant** platform: one deployment hosts many independent **soci
 
 ```
 .
-├── src/          # Backend source (this README)
-├── shared/        # Types shared between backend and UI
-├── ui/           # Next.js frontend — see ui/README.md
-├── drizzle/      # Generated DB migrations
-└── docs/         # Additional documentation
+├── server/       # Backend (Express + TypeScript) — this README
+│   ├── src/
+│   ├── drizzle/  # Generated DB migrations
+│   └── docs/
+├── web/          # Next.js frontend — see web/README.md
+└── shared/       # Types shared between server and web
 ```
 
-The frontend lives in [`ui/`](ui/README.md) and talks to this API over HTTP. Run them side by side
-for local development — this server defaults to `PORT=3000`; the UI's `NEXT_PUBLIC_API_URL`
-defaults to `http://localhost:5000/api/v1`, so set one of the two ports explicitly to match.
+The frontend lives in [`web/`](web/README.md) and talks to this API over HTTP. Run them side by side
+for local development — this server runs on `PORT=9090`; the web app runs on port `9095` and its
+`NEXT_PUBLIC_API_URL` defaults to `http://localhost:9090/api/v1`.
 
 ## Requirements
 
 - Node.js 20+
 - PostgreSQL 13+
-- `.env` file with required variables (see `.env.example`)
+- `.env` file with required variables (see `server/.env.example`)
 
 ## Setup
 
 ```bash
+cd server
 npm install
 cp .env.example .env
 # Fill in DATABASE_URL and other vars
@@ -52,7 +54,6 @@ npm run dev          # Start dev server
 | `npm run build`       | Compile TypeScript to `dist/`                         |
 | `npm start`           | Run the compiled build (production)                   |
 | `npm run typecheck`   | Type-check without emitting; **must pass before git** |
-| `npm run format`      | Format with Prettier (2 spaces, single quotes)        |
 | `npm run db:generate` | Generate a new migration from schema changes          |
 | `npm run db:migrate`  | Apply pending migrations to the database              |
 | `npm run db:push`     | Push schema directly to DB (dev only)                 |
@@ -61,13 +62,15 @@ npm run dev          # Start dev server
 
 **Note**: No test runner is configured. Use `npm run typecheck` for validation; create throwaway snippets with `npx tsx` as needed.
 
+Repo-wide formatting (`npm run format` / `npm run lint`) is run from the **repo root**, not `server/`.
+
 ## Environment Variables
 
 | Variable                  | Required | Default       | Description                                                                                              |
 | ------------------------- | -------- | ------------- | -------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`            | Yes      | —             | PostgreSQL connection URL                                                                                |
 | `NODE_ENV`                | No       | `development` | `development`, `test`, or `production`                                                                   |
-| `PORT`                    | No       | `3000`        | Server port                                                                                              |
+| `PORT`                    | No       | `3000`        | Server port (this repo runs it on `9090`)                                                                |
 | `CORS_ORIGIN`             | No       | `*`           | Comma-separated allowed origins or `*`                                                                   |
 | `SESSION_EXPIRES_IN_DAYS` | No       | `30`          | Session TTL in days                                                                                      |
 | `LOG_LEVEL`               | No       | auto          | `fatal` `error` `warn` `info` `debug` `trace` `silent`; defaults to `info` in production, `debug` in dev |

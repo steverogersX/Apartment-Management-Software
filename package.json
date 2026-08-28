@@ -1,56 +1,21 @@
 {
-  "name": "ams-backend",
+  "name": "apartment-management-software",
   "version": "1.0.0",
-  "description": "Express + TypeScript backend",
-  "main": "dist/src/index.js",
-  "type": "commonjs",
+  "private": true,
+  "description": "AMS monorepo — server, web, and shared workspaces",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
-    "start": "node dist/src/index.js",
-    "typecheck": "tsc --noEmit",
     "lint": "prettier --check .",
     "format": "prettier --write .",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/db/seed.ts",
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,js,json,md,yml,yaml}": "prettier --write"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.45.2",
-    "express": "^4.19.2",
-    "helmet": "^7.1.0",
-    "http-status-codes": "^2.3.0",
-    "pg": "^8.21.0",
-    "pino": "^10.3.1",
-    "pino-http": "^11.0.0",
-    "zod": "^3.23.8",
-    "zod-validation-error": "^3.5.4"
+    "*.{ts,tsx,js,json,md,yml,yaml}": "prettier --write"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/node": "^20.14.0",
-    "@types/pg": "^8.20.0",
-    "drizzle-kit": "^0.31.10",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "pino-pretty": "^13.1.3",
-    "prettier": "^3.8.4",
-    "tsc-alias": "^1.8.10",
-    "tsx": "^4.16.0",
-    "typescript": "^5.5.0"
+    "prettier": "^3.8.4"
   }
 }

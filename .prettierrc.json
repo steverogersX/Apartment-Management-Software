@@ -7,7 +7,7 @@
   "endOfLine": "lf",
   "overrides": [
     {
-      "files": "ui/**",
+      "files": "web/**",
       "options": {
         "singleQuote": false
       }

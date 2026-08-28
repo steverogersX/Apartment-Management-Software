@@ -9,21 +9,36 @@ These are **hard rules**: do not violate them without an explicit human instruct
 
 ## 1. Project
 
-AMS — Apartment Management System backend. Multi-tenant: one platform hosts many **societies**, each
-fully isolated. Express 4 + TypeScript (CommonJS, strict). Zod validation, Pino logging.
+AMS — Apartment Management System. Multi-tenant: one platform hosts many **societies**, each fully
+isolated. Backend is Express 4 + TypeScript (CommonJS, strict); Zod validation, Pino logging.
+
+Monorepo layout — three siblings at the repo root:
+
+| Folder    | What                                                                                    |
+| --------- | --------------------------------------------------------------------------------------- |
+| `server/` | Express + TypeScript API. All backend code, `drizzle/` migrations, `drizzle.config.ts`. |
+| `web/`    | Next.js frontend.                                                                       |
+| `shared/` | Types/schemas shared between `server/` and `web/` (`@shared/*`).                        |
+
+`server/` and `web/` are independent npm packages (each has its own `package.json` and lockfile) — run
+their scripts with `--prefix server` / `--prefix web` from the repo root, or `cd` into the folder first.
+Root-level tooling (Prettier, husky, commitlint, lint-staged) lives in the root `package.json`.
 
 ## 2. Commands
+
+All commands below run inside `server/` (or use `npm run <script> --prefix server` from the root).
 
 | Task         | Command             |
 | ------------ | ------------------- |
 | Dev server   | `npm run dev`       |
 | Type check   | `npm run typecheck` |
 | Build        | `npm run build`     |
-| Format       | `npm run format`    |
 | Start (prod) | `npm start`         |
 
+Formatting is repo-wide from the root: `npm run format` / `npm run lint` (Prettier).
+
 There is **no test runner** configured. Do not invent one or assume `npm test` works. If verification
-is needed, use `npm run typecheck` + a throwaway `npx tsx` snippet (not committed).
+is needed, use `npm run typecheck` (in `server/`) + a throwaway `npx tsx` snippet (not committed).
 
 ---
 
