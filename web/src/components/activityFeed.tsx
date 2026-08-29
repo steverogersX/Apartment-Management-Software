@@ -6,6 +6,7 @@ import { AlertTriangle, Check, Sparkles, Ticket, X } from "lucide-react";
 
 import { cn, getInitials, gradientForName } from "@/lib/utils";
 import { useNow } from "@/hooks/useNow";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { type Complaint, type ComplaintStatus, complaints, visitors_log } from "@/lib/mockData";
 
@@ -78,12 +79,18 @@ function ActivityIcon({ entry }: { entry: ActivityEntry }) {
   if (entry.kind === "visitor") {
     const [from, to] = gradientForName(entry.name);
     return (
-      <span
-        className="flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-        style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
-      >
-        {getInitials(entry.name)}
-      </span>
+      <Avatar className="size-8 shrink-0">
+        <AvatarImage
+          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(entry.id)}`}
+          alt={entry.name}
+        />
+        <AvatarFallback
+          className="text-[11px] font-semibold text-white"
+          style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
+        >
+          {getInitials(entry.name)}
+        </AvatarFallback>
+      </Avatar>
     );
   }
 

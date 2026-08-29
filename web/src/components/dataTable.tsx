@@ -24,14 +24,26 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
+  type RowSelectionState,
   type SortingState,
   useReactTable,
   type VisibilityState,
 } from "@tanstack/react-table";
-import { GripVertical, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  GripVertical,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { staggeredRise } from "@/lib/stagger";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
@@ -79,16 +91,20 @@ export type DataTableFilterConfig<TData> =
 function SortableHeaderCell({
   id,
   draggable,
+  width,
   children,
 }: {
   id: string;
   draggable: boolean;
+  width?: number;
   children: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     disabled: !draggable,
   });
+
+  const widthStyle = width !== undefined ? { width, minWidth: width, maxWidth: width } : undefined;
 
   return (
     <TableHead
@@ -97,9 +113,10 @@ function SortableHeaderCell({
         transform: CSS.Transform.toString(transform),
         transition,
         zIndex: isDragging ? 10 : undefined,
+        ...widthStyle,
       }}
       className={cn(
-        "h-9 bg-muted/40 px-4 text-xs first:pl-4 last:pr-4",
+        "h-10 bg-muted/40 px-4 text-sm first:pl-4 last:pr-4",
         isDragging && "opacity-70",
       )}
     >
@@ -171,22 +188,7 @@ function SortableFilterChip({
   );
 }
 
-export function DataTable<TData>({
-  columns,
-  data,
-  title,
-  toolbarActions,
-  filters = [],
-  enableColumnReorder = false,
-  enableColumnVisibility = false,
-  enableFilterCustomization = false,
-  showPageSize = false,
-  pageSize = 10,
-  itemLabel = "item",
-  emptyMessage = "No results.",
-  onRowClick,
-  initialSorting,
-}: {
+type DataTableBaseProps<TData> = {
   columns: ColumnDef<TData>[];
   data: TData[];
   title?: string;
@@ -195,17 +197,126 @@ export function DataTable<TData>({
   enableColumnReorder?: boolean;
   enableColumnVisibility?: boolean;
   enableFilterCustomization?: boolean;
+  enableRowSelection?: boolean;
   showPageSize?: boolean;
   pageSize?: number;
   itemLabel?: string;
   emptyMessage?: string;
   onRowClick?: (row: TData) => void;
   initialSorting?: SortingState;
-}) {
+  onBulkDelete?: (rows: TData[]) => void;
+};
+
+type DataTableExpandableProps<TData> =
+  | {
+      renderSubRow?: undefined;
+      getRowId?: (row: TData) => string;
+    }
+  | {
+      renderSubRow: (row: TData) => React.ReactNode;
+      getRowId: (row: TData) => string;
+    };
+
+export function DataTable<TData>({
+  columns: columnsProp,
+  data,
+  title,
+  toolbarActions,
+  filters = [],
+  enableColumnReorder = false,
+  enableColumnVisibility = false,
+  enableFilterCustomization = false,
+  enableRowSelection = false,
+  showPageSize = false,
+  pageSize = 10,
+  itemLabel = "item",
+  emptyMessage = "No results.",
+  onRowClick,
+  initialSorting,
+  onBulkDelete,
+  renderSubRow,
+  getRowId,
+}: DataTableBaseProps<TData> & DataTableExpandableProps<TData>) {
+  const isExpandable = !!renderSubRow;
+  const [expandedRowId, setExpandedRowId] = React.useState<string | null>(null);
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({});
+
+  const columns = React.useMemo<ColumnDef<TData>[]>(() => {
+    const cols: ColumnDef<TData>[] = [...columnsProp];
+
+    if (isExpandable) {
+      const expanderColumn: ColumnDef<TData> = {
+        id: "_expand",
+        enableHiding: false,
+        enableSorting: false,
+        size: 32,
+        header: () => null,
+        cell: ({ row }) => {
+          const expanded = expandedRowId === row.id;
+          return (
+            <span className="flex items-center justify-center">
+              <ChevronRight
+                className={cn(
+                  "size-3.5 shrink-0 text-muted-foreground transition-transform",
+                  expanded && "rotate-90",
+                )}
+              />
+            </span>
+          );
+        },
+      };
+      cols.unshift(expanderColumn);
+    }
+
+    if (enableRowSelection) {
+      const selectColumn: ColumnDef<TData> = {
+        id: "_select",
+        enableHiding: false,
+        enableSorting: false,
+        size: 36,
+        header: ({ table }) => (
+          <span className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={table.getIsAllPageRowsSelected()}
+              indeterminate={table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected()}
+              onCheckedChange={(v) => table.toggleAllPageRowsSelected(v)}
+              aria-label="Select all"
+            />
+          </span>
+        ),
+        cell: ({ row }) => (
+          <span className="flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <Checkbox
+              checked={row.getIsSelected()}
+              onCheckedChange={(v) => row.toggleSelected(!!v)}
+              aria-label="Select row"
+            />
+          </span>
+        ),
+      };
+      // chevron left of checkbox, so checkbox after expander — final order: [_expand, _select, ...]
+      // To keep checkbox alongside chevron, insert select after expander
+      if (isExpandable) {
+        cols.splice(1, 0, selectColumn);
+      } else {
+        cols.unshift(selectColumn);
+      }
+    }
+
+    return cols;
+  }, [columnsProp, isExpandable, enableRowSelection, expandedRowId]);
+
   const [sorting, setSorting] = React.useState<SortingState>(initialSorting ?? []);
   const [columnOrder, setColumnOrder] = React.useState<string[]>(
     columns.map((c) => c.id ?? (c as { accessorKey?: string }).accessorKey ?? ""),
   );
+  React.useEffect(() => {
+    setColumnOrder((prev) => {
+      const ids = columns.map((c) => c.id ?? (c as { accessorKey?: string }).accessorKey ?? "");
+      if (ids.length === prev.length && ids.every((id, i) => id === prev[i])) return prev;
+      return ids;
+    });
+  }, [columns]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [activeFilterIds, setActiveFilterIds] = React.useState<string[]>(filters.map((f) => f.id));
   const [filterValues, setFilterValues] = React.useState<Record<string, string>>({});
@@ -254,11 +365,14 @@ export function DataTable<TData>({
   const table = useReactTable({
     data: displayData,
     columns,
-    state: { sorting, columnVisibility, columnOrder, pagination },
+    ...(getRowId ? { getRowId } : {}),
+    state: { sorting, columnVisibility, columnOrder, pagination, rowSelection },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnOrderChange: setColumnOrder,
     onPaginationChange: setPagination,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection,
     enableSorting: !isGrouped,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -292,11 +406,32 @@ export function DataTable<TData>({
     });
   }
 
+  const selectedCount = table.getFilteredSelectedRowModel().rows.length;
+
   return (
     <div className="overflow-hidden rounded-md border border-border bg-card">
       <div className="flex flex-col gap-2.5 border-b border-border px-4 py-3">
         <div className="flex items-center justify-between gap-3">
-          {title && <h3 className="text-sm font-semibold text-foreground">{title}</h3>}
+          {enableRowSelection && selectedCount > 0 ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">{selectedCount} selected</span>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  const rows = table.getFilteredSelectedRowModel().rows.map((r) => r.original);
+                  onBulkDelete?.(rows);
+                  if (onBulkDelete) setRowSelection({});
+                }}
+              >
+                <Trash2 className="size-3.5" />
+                Delete
+              </Button>
+            </div>
+          ) : (
+            title && <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          )}
           <div className="flex items-center gap-1.5">
             {enableColumnVisibility && (
               <DropdownMenu>
@@ -378,23 +513,31 @@ export function DataTable<TData>({
                             : (filter.options.find((o) => o.value === filterValues[filter.id])
                                 ?.label ?? "All")}
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start">
+                        <DropdownMenuContent align="start" className="w-40">
                           {(filter.type === "groupBy"
                             ? filter.options
                             : [
                                 { label: `All ${filter.label.toLowerCase()}`, value: "all" },
                                 ...filter.options,
                               ]
-                          ).map((opt) => (
-                            <DropdownMenuItem
-                              key={opt.value}
-                              onClick={() =>
-                                setFilterValues((v) => ({ ...v, [filter.id]: opt.value }))
-                              }
-                            >
-                              {opt.label}
-                            </DropdownMenuItem>
-                          ))}
+                          ).map((opt) => {
+                            const current =
+                              filterValues[filter.id] ||
+                              (filter.type === "groupBy" ? "none" : "all");
+                            const isSelected = current === opt.value;
+                            return (
+                              <DropdownMenuItem
+                                key={opt.value}
+                                onClick={() =>
+                                  setFilterValues((v) => ({ ...v, [filter.id]: opt.value }))
+                                }
+                                className="justify-between"
+                              >
+                                {opt.label}
+                                {isSelected && <Check className="size-4 shrink-0" />}
+                              </DropdownMenuItem>
+                            );
+                          })}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
@@ -442,15 +585,25 @@ export function DataTable<TData>({
                 }}
               >
                 <SortableContext items={orderedColumnIds} strategy={horizontalListSortingStrategy}>
-                  {headerGroup.headers.map((header) => (
-                    <SortableHeaderCell
-                      key={header.id}
-                      id={header.column.id}
-                      draggable={enableColumnReorder}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                    </SortableHeaderCell>
-                  ))}
+                  {headerGroup.headers.map((header) => {
+                    const width =
+                      header.column.columnDef.size !== undefined ? header.getSize() : undefined;
+                    return (
+                      <SortableHeaderCell
+                        key={header.id}
+                        id={header.column.id}
+                        draggable={
+                          enableColumnReorder &&
+                          header.id !== "_select" &&
+                          header.id !== "_expand" &&
+                          header.id !== "actions"
+                        }
+                        width={width}
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                      </SortableHeaderCell>
+                    );
+                  })}
                 </SortableContext>
               </DndContext>
             </TableRow>
@@ -460,7 +613,7 @@ export function DataTable<TData>({
           {table.getRowModel().rows.length ? (
             (() => {
               let lastGroupKey: string | undefined;
-              return table.getRowModel().rows.map((row) => {
+              return table.getRowModel().rows.map((row, rowIndex) => {
                 const rows: React.ReactNode[] = [];
                 if (isGrouped && groupFilter && groupFilter.type === "groupBy") {
                   const key = groupFilter.groupBy(row.original, groupValue);
@@ -478,22 +631,60 @@ export function DataTable<TData>({
                     );
                   }
                 }
+                const isExpanded = isExpandable && expandedRowId === row.id;
+                const handleRowClick = () => {
+                  if (isExpandable) {
+                    setExpandedRowId((prev) => (prev === row.id ? null : row.id));
+                  } else if (onRowClick) {
+                    onRowClick(row.original);
+                  }
+                };
+                const rise = staggeredRise(rowIndex);
                 rows.push(
                   <TableRow
                     key={row.id}
-                    onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+                    aria-expanded={isExpandable ? isExpanded : undefined}
+                    onClick={isExpandable || onRowClick ? handleRowClick : undefined}
                     className={cn(
                       "border-border hover:bg-muted/50",
-                      onRowClick && "cursor-pointer",
+                      (isExpandable || onRowClick) && "cursor-pointer",
+                      rise.className,
                     )}
+                    style={rise.style}
                   >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-4 py-3 align-middle text-sm">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
+                    {row.getVisibleCells().map((cell) => {
+                      const width =
+                        cell.column.columnDef.size !== undefined
+                          ? cell.column.getSize()
+                          : undefined;
+                      const widthStyle =
+                        width !== undefined
+                          ? { width, minWidth: width, maxWidth: width }
+                          : undefined;
+                      return (
+                        <TableCell
+                          key={cell.id}
+                          style={widthStyle}
+                          className="px-4 py-2 align-middle text-sm"
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>,
                 );
+                if (isExpanded && renderSubRow) {
+                  rows.push(
+                    <TableRow
+                      key={`${row.id}-expanded`}
+                      className="border-border bg-transparent hover:bg-transparent"
+                    >
+                      <TableCell colSpan={row.getVisibleCells().length} className="p-0">
+                        <div>{renderSubRow(row.original)}</div>
+                      </TableCell>
+                    </TableRow>,
+                  );
+                }
                 return rows;
               });
             })()

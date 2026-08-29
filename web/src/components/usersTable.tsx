@@ -6,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus, ShieldOff, UserCog, UserPlus } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -73,6 +73,10 @@ export function UsersTable() {
           return (
             <div className="flex items-center gap-2.5">
               <Avatar size="sm">
+                <AvatarImage
+                  src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`}
+                  alt={row.original.name}
+                />
                 <AvatarFallback
                   className="text-[10px] font-semibold text-white"
                   style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

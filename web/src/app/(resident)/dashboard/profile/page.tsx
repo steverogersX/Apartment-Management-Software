@@ -15,7 +15,7 @@ import {
   Users,
 } from "lucide-react";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -115,6 +115,10 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <Avatar size="lg">
+            <AvatarImage
+              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(user?.id ?? name)}`}
+              alt={name}
+            />
             <AvatarFallback
               className="text-base font-semibold text-white"
               style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

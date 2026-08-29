@@ -1,0 +1,193 @@
+export type ResidentOccupancyType = "owner" | "tenant";
+export type ResidentStatus = "active" | "moved_out" | "pending";
+
+/**
+ * UI-only mock data for the Residents table — no backing table or API yet.
+ * Mirrors the convention in usersMockData.ts: typed records consumed directly
+ * by a client component via the shared DataTable.
+ */
+export type ResidentRecord = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  flatNumber: string;
+  tower: string;
+  flatId: string;
+  occupancyType: ResidentOccupancyType;
+  memberCount: number;
+  vehiclesCount: number;
+  status: ResidentStatus;
+  moveInDate: string;
+};
+
+export const residents: ResidentRecord[] = [
+  {
+    id: "1",
+    name: "Arvind Deshmukh",
+    email: "arvind.deshmukh@gmail.com",
+    phone: "+91 98765 43210",
+    flatNumber: "301",
+    tower: "A",
+    flatId: "flat-a301",
+    occupancyType: "owner",
+    memberCount: 4,
+    vehiclesCount: 1,
+    status: "active",
+    moveInDate: "2022-03-15T00:00:00+05:30",
+  },
+  {
+    id: "2",
+    name: "Sunita Patil",
+    email: "sunita.patil@gmail.com",
+    phone: "+91 91234 56780",
+    flatNumber: "204",
+    tower: "B",
+    flatId: "flat-b204",
+    occupancyType: "owner",
+    memberCount: 3,
+    vehiclesCount: 2,
+    status: "active",
+    moveInDate: "2021-07-10T00:00:00+05:30",
+  },
+  {
+    id: "3",
+    name: "Rohan Mehta",
+    email: "rohan.mehta@gmail.com",
+    phone: "+91 99887 76655",
+    flatNumber: "502",
+    tower: "A",
+    flatId: "flat-a502",
+    occupancyType: "tenant",
+    memberCount: 2,
+    vehiclesCount: 1,
+    status: "active",
+    moveInDate: "2024-01-20T00:00:00+05:30",
+  },
+  {
+    id: "4",
+    name: "Kavya Nair",
+    email: "kavya.nair@gmail.com",
+    phone: "+91 90000 12345",
+    flatNumber: "103",
+    tower: "C",
+    flatId: "flat-c103",
+    occupancyType: "tenant",
+    memberCount: 1,
+    vehiclesCount: 0,
+    status: "pending",
+    moveInDate: "2026-02-01T00:00:00+05:30",
+  },
+  {
+    id: "5",
+    name: "Mohammed Farhan",
+    email: "farhan.m@gmail.com",
+    phone: "+91 90909 80808",
+    flatNumber: "405",
+    tower: "B",
+    flatId: "flat-b405",
+    occupancyType: "owner",
+    memberCount: 5,
+    vehiclesCount: 2,
+    status: "active",
+    moveInDate: "2020-11-05T00:00:00+05:30",
+  },
+  {
+    id: "6",
+    name: "Neha Kulkarni",
+    email: "neha.kulkarni@gmail.com",
+    phone: "+91 93456 78901",
+    flatNumber: "208",
+    tower: "C",
+    flatId: "flat-c208",
+    occupancyType: "owner",
+    memberCount: 2,
+    vehiclesCount: 0,
+    status: "moved_out",
+    moveInDate: "2019-06-18T00:00:00+05:30",
+  },
+  {
+    id: "7",
+    name: "Vikram Singh Rathore",
+    email: "vikram.rathore@gmail.com",
+    phone: "+91 95555 43210",
+    flatNumber: "601",
+    tower: "A",
+    flatId: "flat-a601",
+    occupancyType: "owner",
+    memberCount: 3,
+    vehiclesCount: 1,
+    status: "active",
+    moveInDate: "2023-05-12T00:00:00+05:30",
+  },
+  {
+    id: "8",
+    name: "Ananya Gupta",
+    email: "ananya.gupta@gmail.com",
+    phone: "+91 97777 65432",
+    flatNumber: "110",
+    tower: "B",
+    flatId: "flat-b110",
+    occupancyType: "tenant",
+    memberCount: 2,
+    vehiclesCount: 1,
+    status: "active",
+    moveInDate: "2025-08-10T00:00:00+05:30",
+  },
+  {
+    id: "9",
+    name: "Suresh Iyer",
+    email: "suresh.iyer@gmail.com",
+    phone: "+91 96666 54321",
+    flatNumber: "307",
+    tower: "C",
+    flatId: "flat-c307",
+    occupancyType: "owner",
+    memberCount: 4,
+    vehiclesCount: 2,
+    status: "active",
+    moveInDate: "2021-12-01T00:00:00+05:30",
+  },
+  {
+    id: "10",
+    name: "Pooja Banerjee",
+    email: "pooja.banerjee@gmail.com",
+    phone: "+91 90123 45678",
+    flatNumber: "402",
+    tower: "A",
+    flatId: "flat-a402",
+    occupancyType: "tenant",
+    memberCount: 3,
+    vehiclesCount: 0,
+    status: "pending",
+    moveInDate: "2026-03-10T00:00:00+05:30",
+  },
+  {
+    id: "11",
+    name: "Harish Krishnan",
+    email: "harish.krishnan@gmail.com",
+    phone: "+91 91919 20202",
+    flatNumber: "506",
+    tower: "C",
+    flatId: "flat-c506",
+    occupancyType: "owner",
+    memberCount: 2,
+    vehiclesCount: 1,
+    status: "moved_out",
+    moveInDate: "2018-09-22T00:00:00+05:30",
+  },
+  {
+    id: "12",
+    name: "Divya Reddy",
+    email: "divya.reddy@gmail.com",
+    phone: "+91 94444 33333",
+    flatNumber: "201",
+    tower: "B",
+    flatId: "flat-b201",
+    occupancyType: "owner",
+    memberCount: 3,
+    vehiclesCount: 1,
+    status: "active",
+    moveInDate: "2022-09-30T00:00:00+05:30",
+  },
+];

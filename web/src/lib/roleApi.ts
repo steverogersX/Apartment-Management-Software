@@ -1,5 +1,11 @@
 import type { RoleResponse } from "@shared/index";
-import { apiFetch } from "@/lib/apiClient";
+import {
+  mockCreateRole,
+  mockDeleteRole,
+  mockGetRole,
+  mockListRoles,
+  mockUpdateRole,
+} from "@/lib/mockBackend";
 
 export interface RoleInput {
   name: string;
@@ -8,68 +14,46 @@ export interface RoleInput {
 }
 
 export function listRolesRequest(
-  token: string,
-  societyToken: string,
+  _token: string,
+  _societyToken: string,
   societyId: string,
 ): Promise<RoleResponse[]> {
-  return apiFetch<RoleResponse[]>(`/societies/${societyId}/getRoles`, {
-    method: "GET",
-    token,
-    societyToken,
-  });
+  return mockListRoles(societyId);
 }
 
 export function getRoleRequest(
-  token: string,
-  societyToken: string,
+  _token: string,
+  _societyToken: string,
   societyId: string,
   roleId: string,
 ): Promise<RoleResponse> {
-  return apiFetch<RoleResponse>(`/societies/${societyId}/getRole/${roleId}`, {
-    method: "GET",
-    token,
-    societyToken,
-  });
+  return mockGetRole(societyId, roleId);
 }
 
 export function createRoleRequest(
-  token: string,
-  societyToken: string,
+  _token: string,
+  _societyToken: string,
   societyId: string,
   data: RoleInput,
 ): Promise<RoleResponse> {
-  return apiFetch<RoleResponse>(`/societies/${societyId}/createRole`, {
-    method: "POST",
-    token,
-    societyToken,
-    body: data,
-  });
+  return mockCreateRole(societyId, data);
 }
 
 export function updateRoleRequest(
-  token: string,
-  societyToken: string,
+  _token: string,
+  _societyToken: string,
   societyId: string,
   roleId: string,
   data: RoleInput,
 ): Promise<RoleResponse> {
-  return apiFetch<RoleResponse>(`/societies/${societyId}/editRole/${roleId}`, {
-    method: "PUT",
-    token,
-    societyToken,
-    body: data,
-  });
+  return mockUpdateRole(societyId, roleId, data);
 }
 
 export function deleteRoleRequest(
-  token: string,
-  societyToken: string,
+  _token: string,
+  _societyToken: string,
   societyId: string,
   roleId: string,
 ): Promise<null> {
-  return apiFetch<null>(`/societies/${societyId}/deleteRole/${roleId}`, {
-    method: "DELETE",
-    token,
-    societyToken,
-  });
+  return mockDeleteRole(societyId, roleId);
 }

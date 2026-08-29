@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const firstName = (user?.displayName ?? currentFlat.ownerName).split(" ")[0];
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <Greeting
         name={firstName}
         subtitle={`Here's what's happening at Flat ${currentFlat.flatNumber}, ${currentFlat.apartmentName} today.`}
