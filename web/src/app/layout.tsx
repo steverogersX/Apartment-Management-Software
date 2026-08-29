@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Rooster — Resident Dashboard",
-  description: "Apartment management, simplified.",
+  title: "Rooster · Resident Dashboard",
+  description: "Apartment management, simplified",
 };
 
 export default function RootLayout({

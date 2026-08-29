@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home } from "lucide-react";
 
+import { cn } from "@/lib/utils";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -41,6 +42,9 @@ const DYNAMIC_SEGMENT_FALLBACKS: Record<string, string> = {
   roles: "Role",
   societies: "Society",
 };
+
+/** Group segments that have no page of their own (only child routes) — render as plain text, not a link. */
+const NON_NAVIGABLE_PATHS = new Set<string>(["/dashboard/people-hub"]);
 
 function humanize(segment: string) {
   return segment
@@ -126,33 +130,48 @@ export function Breadcrumbs() {
 
   return (
     <Breadcrumb>
-      <BreadcrumbList>
+      <BreadcrumbList className="items-center gap-0.5">
         <BreadcrumbItem>
           {crumbs.length === 0 ? (
-            <BreadcrumbPage className="flex items-center gap-1.5">
-              <Home className="size-3.5" />
-              {section.label}
+            <BreadcrumbPage className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] font-semibold leading-none tracking-tight text-foreground">
+              <Home className="size-3.5 shrink-0 translate-y-px text-muted-foreground" />
+              <span className="leading-none">{section.label}</span>
             </BreadcrumbPage>
           ) : (
             <BreadcrumbLink
               render={<Link href={section.href} />}
-              className="flex items-center gap-1.5"
+              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <Home className="size-3.5" />
-              {section.label}
+              <Home className="size-3.5 shrink-0 translate-y-px" />
+              <span className="leading-none">{section.label}</span>
             </BreadcrumbLink>
           )}
         </BreadcrumbItem>
         {crumbs.map((crumb, index) => {
           const isLast = index === crumbs.length - 1;
+          const navigable = !NON_NAVIGABLE_PATHS.has(crumb.href);
           return (
             <React.Fragment key={crumb.href}>
-              <BreadcrumbSeparator />
+              <BreadcrumbSeparator className="[&>svg]:size-3 [&>svg]:text-muted-foreground/40" />
               <BreadcrumbItem>
-                {isLast ? (
-                  <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                {isLast || !navigable ? (
+                  <BreadcrumbPage
+                    className={cn(
+                      "rounded-md px-1.5 py-1 text-[13px] leading-none tracking-tight",
+                      isLast
+                        ? "font-semibold text-foreground"
+                        : "cursor-default text-muted-foreground",
+                    )}
+                  >
+                    {crumb.label}
+                  </BreadcrumbPage>
                 ) : (
-                  <BreadcrumbLink render={<Link href={crumb.href} />}>{crumb.label}</BreadcrumbLink>
+                  <BreadcrumbLink
+                    render={<Link href={crumb.href} />}
+                    className="rounded-md px-1.5 py-1 text-[13px] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    {crumb.label}
+                  </BreadcrumbLink>
                 )}
               </BreadcrumbItem>
             </React.Fragment>

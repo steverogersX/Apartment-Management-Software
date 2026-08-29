@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useTheme } from "next-themes";
 import { Monitor, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { originOf, useThemeTransition } from "@/lib/use-theme-transition";
 
 const OPTIONS = [
   { value: "light", label: "Light", icon: Sun },
@@ -19,7 +19,7 @@ const OPTIONS = [
 ] as const;
 
 export function ModeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, changeTheme } = useThemeTransition();
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => setMounted(true), []);
@@ -33,7 +33,7 @@ export function ModeToggle() {
         {OPTIONS.map((opt) => (
           <DropdownMenuItem
             key={opt.value}
-            onClick={() => setTheme(opt.value)}
+            onClick={(e) => changeTheme(opt.value, originOf(e.currentTarget))}
             className="justify-between"
           >
             <span className="flex items-center gap-2">

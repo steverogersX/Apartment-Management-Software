@@ -2,30 +2,26 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Bell, Check, ChevronDown, Menu } from "lucide-react";
+import { Menu, ShieldCheck } from "lucide-react";
+
+import { DoodleHouse } from "@/components/icons/doodleHouse";
 
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { SidebarContent } from "@/components/sidebar";
-import { SocietyLogo } from "@/components/societyLogo";
+import { SidebarContent, adminNavItems } from "@/components/sidebar";
 import { ModeToggle } from "@/components/modeToggle";
 import { AccountMenu } from "@/components/accountMenu";
-import { getInitials } from "@/lib/utils";
+import { NotificationsMenu } from "@/components/notificationsMenu";
+import { mockActiveSocietyName, mockFlats, mockRoles } from "@/lib/accountMockData";
+import { adminNavGroups } from "@/lib/adminNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useFlats } from "@/hooks/useFlats";
 
 export function Topbar() {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const router = useRouter();
-  const { user, societies, activeSociety, roles, switchSociety, logout } = useAuth();
+  const { user, activeSociety, roles, logout, has } = useAuth();
+  const isSocietyAdmin = has("SocietySettingsUpdate");
 
   const displayName = user?.displayName ?? user?.email ?? "Account";
 
@@ -34,8 +30,37 @@ export function Topbar() {
     router.replace("/login");
   };
 
+  const isMockRolePreview = user?.email === "admin@sunriseheights.com" && roles.length <= 1;
+  const displayRoles = isMockRolePreview ? mockRoles : roles;
+  const displaySocietyName =
+    activeSociety?.societyName ?? (isMockRolePreview ? mockActiveSocietyName : null);
+  const [activeRole, setActiveRole] = React.useState<string | null>(displayRoles[0] ?? null);
+  React.useEffect(() => {
+    if (displayRoles.length && !displayRoles.includes(activeRole ?? "")) {
+      setActiveRole(displayRoles[0] ?? null);
+    }
+  }, [displayRoles, activeRole]);
+
+  const { flats, activeId: activeFlatId, activeFlat, switchFlat } = useFlats();
+  const displayFlats = isMockRolePreview ? mockFlats : flats;
+  const displayActiveFlat = isMockRolePreview
+    ? (mockFlats.find((f) => f.id === activeFlatId) ?? mockFlats[0] ?? null)
+    : activeFlat;
+
+  // Role and flat are mutually exclusive contexts — switching one clears the other,
+  // so the topbar pill shows either the society role or the flat's occupancy, never both.
+  const [activeContext, setActiveContext] = React.useState<"role" | "flat">("role");
+  const handleSwitchRole = (role: string) => {
+    setActiveRole(role);
+    setActiveContext("role");
+  };
+  const handleSwitchFlat = (id: string) => {
+    switchFlat(id);
+    setActiveContext("flat");
+  };
+
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4">
+    <header className="flex h-14 shrink-0 items-center justify-between bg-background px-4">
       <div className="flex items-center gap-2">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <Button
@@ -48,72 +73,70 @@ export function Topbar() {
           </Button>
           <SheetContent side="left" className="w-64 p-0">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
-            <SidebarContent />
+            <SidebarContent
+              navItems={isSocietyAdmin ? adminNavItems : undefined}
+              groups={isSocietyAdmin ? adminNavGroups : undefined}
+              soonItems={isSocietyAdmin ? [] : undefined}
+            />
           </SheetContent>
         </Sheet>
-
-        {activeSociety && (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button variant="ghost" size="sm" className="h-9 gap-2 pl-1.5 font-semibold" />
-              }
-            >
-              <SocietyLogo
-                name={activeSociety.societyName}
-                initials={getInitials(activeSociety.societyName)}
-                className="size-6 text-[11px]"
-              />
-              {activeSociety.societyName}
-              <ChevronDown className="size-3.5 text-muted-foreground" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-60">
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>Your societies</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {societies.map((s) => {
-                  const active = s.societyId === activeSociety.societyId;
-                  return (
-                    <DropdownMenuItem
-                      key={s.societyId}
-                      className="gap-2.5 py-1.5"
-                      onClick={() => switchSociety(s.societyId)}
-                    >
-                      <SocietyLogo
-                        name={s.societyName}
-                        initials={getInitials(s.societyName)}
-                        className="size-7 text-xs"
-                      />
-                      <span className="flex min-w-0 flex-col">
-                        <span className="truncate text-sm font-medium text-foreground">
-                          {s.societyName}
-                        </span>
-                        <span className="truncate text-[11px] text-muted-foreground">
-                          {s.roles.join(", ")}
-                        </span>
-                      </span>
-                      {active && <Check className="ml-auto size-4 shrink-0 text-foreground" />}
-                    </DropdownMenuItem>
-                  );
-                })}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
       </div>
 
       <div className="flex items-center gap-1.5">
+        {activeContext === "flat" && displayActiveFlat ? (
+          <div className="hidden sm:flex items-center overflow-hidden rounded-full border bg-card text-xs shadow-sm">
+            <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 font-medium">
+              <span className="flex size-5 items-center justify-center rounded-full bg-foreground text-background">
+                <ShieldCheck className="size-3" />
+              </span>
+              <span className="max-w-28 truncate">{displayActiveFlat.ownership}</span>
+            </span>
+            <span className="h-4 w-px shrink-0 bg-border" aria-hidden />
+            <span className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-muted-foreground">
+              <DoodleHouse className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {displayActiveFlat.label}
+                <span className="mx-1 text-muted-foreground/50">·</span>
+                {displayActiveFlat.flatNumber}
+              </span>
+              <span className="hidden truncate text-muted-foreground/70 lg:inline">
+                · {displayActiveFlat.tower}
+              </span>
+            </span>
+            <span
+              className="mr-2 hidden size-1.5 shrink-0 rounded-full bg-emerald-500 lg:block"
+              aria-hidden
+            />
+          </div>
+        ) : (
+          activeRole && (
+            <div className="hidden sm:flex items-center overflow-hidden rounded-full border bg-card text-xs shadow-sm">
+              <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 font-medium">
+                <span className="flex size-5 items-center justify-center rounded-full bg-foreground text-background">
+                  <ShieldCheck className="size-3" />
+                </span>
+                <span className="max-w-28 truncate">{activeRole}</span>
+              </span>
+            </div>
+          )
+        )}
+
         <ModeToggle />
 
-        <Button variant="ghost" size="icon-sm" className="relative">
-          <Bell className="size-4" />
-          <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-red-500" />
-        </Button>
+        <NotificationsMenu />
 
         <AccountMenu
           name={displayName}
           email={user?.email}
-          badges={roles.length ? roles : ["No role in this society"]}
+          roles={displayRoles}
+          societyName={displaySocietyName}
+          activeRole={activeRole}
+          onSwitchRole={handleSwitchRole}
+          flats={displayFlats}
+          activeFlatId={activeFlatId}
+          onSwitchFlat={handleSwitchFlat}
+          activeContext={activeContext}
+          badges={displayRoles.length ? displayRoles : ["No role in this society"]}
           profileHref="/dashboard/profile"
           onSignOut={handleSignOut}
         />
