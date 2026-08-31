@@ -97,7 +97,7 @@ export function AccountMenu({
       >
         <Avatar className="size-7">
           <AvatarImage
-            src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(email ?? name)}`}
+            src={`https://api.dicebear.com/9.x/notionists/svg?seed=Arjun&beardProbability=100`}
             alt={name}
           />
           <AvatarFallback
@@ -114,7 +114,7 @@ export function AccountMenu({
         <div className="flex items-center gap-3 p-3">
           <Avatar size="lg">
             <AvatarImage
-              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(email ?? name)}`}
+              src={`https://api.dicebear.com/9.x/notionists/svg?seed=Arjun&beardProbability=100`}
               alt={name}
             />
             <AvatarFallback

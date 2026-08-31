@@ -3,15 +3,15 @@
 import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Home, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { cn, getInitials, gradientForName } from "@/lib/utils";
-import { staggeredRise } from "@/lib/stagger";
+import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DoodleHouse } from "@/components/icons/doodleHouse";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
@@ -22,7 +22,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { flats, type FlatOccupancyStatus, type FlatRecord } from "@/lib/flatsMockData";
+import {
+  flats,
+  type FlatMaintenanceStatus,
+  type FlatOccupancyStatus,
+  type FlatRecord,
+} from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 
 const OCCUPANCY_DOT: Record<FlatOccupancyStatus, string> = {
@@ -35,6 +40,16 @@ const OCCUPANCY_LABEL: Record<FlatOccupancyStatus, string> = {
   vacant: "Vacant",
 };
 
+const MAINTENANCE_DOT: Record<FlatMaintenanceStatus, string> = {
+  paid: "bg-emerald-500",
+  due: "bg-red-500",
+};
+
+const MAINTENANCE_LABEL: Record<FlatMaintenanceStatus, string> = {
+  paid: "Paid",
+  due: "Due",
+};
+
 const residentMap = new Map(residents.map((r) => [r.id, r]));
 const residentNameMap = new Map(residents.map((r) => [r.id, r.name.toLowerCase()]));
 
@@ -42,12 +57,20 @@ const towerOptions = Array.from(new Set(flats.map((f) => f.tower))).sort();
 
 function FlatSubRow({ flat }: { flat: FlatRecord }) {
   const router = useRouter();
+  const [selected, setSelected] = React.useState<Record<string, boolean>>({});
   const currentResidents = React.useMemo(
     () =>
       flat.currentResidentIds
         .map((id) => residentMap.get(id))
         .filter((r): r is NonNullable<typeof r> => !!r),
     [flat.currentResidentIds],
+  );
+  const selectedCount = currentResidents.filter((r) => selected[r.id]).length;
+  const allSelected = currentResidents.length > 0 && selectedCount === currentResidents.length;
+  const someSelected = selectedCount > 0 && !allSelected;
+  const revealCount = useStaggeredReveal(
+    currentResidents.map((r) => r.id).join(" "),
+    currentResidents.length,
   );
 
   if (currentResidents.length === 0) {
@@ -56,21 +79,28 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
         <div className="mb-1.5 text-[11px] font-medium tracking-widest text-muted-foreground">
           RESIDENTS
         </div>
-        <div className="overflow-hidden rounded-md border border-border">
+        <div className="overflow-x-auto rounded-md border border-border">
           <Table>
             <TableHeader>
               <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+                <TableHead
+                  className="h-10 bg-muted/40 px-0"
+                  style={{ width: 36, minWidth: 36, maxWidth: 36 }}
+                />
                 <TableHead className="h-10 bg-muted/40 px-4 text-sm">Resident</TableHead>
                 <TableHead className="h-10 bg-muted/40 px-4 text-sm">Occupancy</TableHead>
                 <TableHead className="h-10 bg-muted/40 px-4 text-sm">Phone</TableHead>
                 <TableHead className="h-10 bg-muted/40 px-4 text-sm">Status</TableHead>
                 <TableHead className="h-10 bg-muted/40 px-4 text-sm">Move-in</TableHead>
-                <TableHead className="h-10 w-8 bg-muted/40 px-4" />
+                <TableHead
+                  className="h-10 bg-muted/40 px-4"
+                  style={{ width: 32, minWidth: 32, maxWidth: 32 }}
+                />
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={6} className="h-16 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={7} className="h-16 text-center text-sm text-muted-foreground">
                   No residents
                 </TableCell>
               </TableRow>
@@ -86,32 +116,68 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
       <div className="mb-1.5 text-[11px] font-medium tracking-widest text-muted-foreground">
         RESIDENTS
       </div>
-      <div className="overflow-hidden rounded-md border border-border">
+      <div className="overflow-x-auto rounded-md border border-border">
         <Table>
           <TableHeader>
             <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+              <TableHead
+                className="h-10 bg-muted/40 px-0"
+                style={{ width: 36, minWidth: 36, maxWidth: 36 }}
+              >
+                <span
+                  className="flex items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onCheckedChange={(v) =>
+                      setSelected(
+                        v ? Object.fromEntries(currentResidents.map((r) => [r.id, true])) : {},
+                      )
+                    }
+                    aria-label="Select all residents"
+                  />
+                </span>
+              </TableHead>
               <TableHead className="h-10 bg-muted/40 px-4 text-sm">Resident</TableHead>
               <TableHead className="h-10 bg-muted/40 px-4 text-sm">Occupancy</TableHead>
               <TableHead className="h-10 bg-muted/40 px-4 text-sm">Phone</TableHead>
               <TableHead className="h-10 bg-muted/40 px-4 text-sm">Status</TableHead>
               <TableHead className="h-10 bg-muted/40 px-4 text-sm">Move-in</TableHead>
-              <TableHead className="h-10 w-8 bg-muted/40 px-4" />
+              <TableHead
+                className="h-10 bg-muted/40 px-4"
+                style={{ width: 32, minWidth: 32, maxWidth: 32 }}
+              />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {currentResidents.map((r, index) => {
+            {currentResidents.slice(0, revealCount).map((r) => {
               const [from, to] = gradientForName(r.name);
-              const rise = staggeredRise(index);
               return (
                 <TableRow
                   key={r.id}
-                  className={cn("cursor-pointer border-border hover:bg-muted/50", rise.className)}
-                  style={rise.style}
+                  className="cursor-pointer border-border hover:bg-muted/50 animate-rise"
                   onClick={(e) => {
                     e.stopPropagation();
                     router.push(`/dashboard/people-hub/residents/${r.id}`);
                   }}
                 >
+                  <TableCell
+                    className="px-0 py-2"
+                    style={{ width: 36, minWidth: 36, maxWidth: 36 }}
+                  >
+                    <span
+                      className="flex items-center justify-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={!!selected[r.id]}
+                        onCheckedChange={(v) => setSelected((prev) => ({ ...prev, [r.id]: !!v }))}
+                        aria-label="Select resident"
+                      />
+                    </span>
+                  </TableCell>
                   <TableCell className="px-4 py-2">
                     <div className="flex items-center gap-2.5">
                       <Avatar size="sm">
@@ -203,7 +269,7 @@ export function FlatsTable() {
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              <DoodleHouse className="size-3.5" />
+              <Home className="size-3.5" />
             </span>
             <Link
               href={`/dashboard/people-hub/flats/${row.original.id}`}
@@ -238,21 +304,19 @@ export function FlatsTable() {
         cell: ({ row }) => <Badge variant="outline">{row.original.type}</Badge>,
       },
       {
-        id: "areaSqft",
-        accessorKey: "areaSqft",
-        meta: { label: "Area" },
-        header: ({ column }) => (
-          <DataTableColumnHeader
-            label="Area"
-            sorted={column.getIsSorted()}
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          />
-        ),
-        cell: ({ row }) => (
-          <span className="whitespace-nowrap text-muted-foreground">
-            {row.original.areaSqft.toLocaleString("en-IN")} sq ft
-          </span>
-        ),
+        id: "maintenanceStatus",
+        accessorKey: "maintenanceStatus",
+        meta: { label: "Maintenance" },
+        header: () => <DataTableColumnHeader label="Maintenance" />,
+        cell: ({ row }) => {
+          const status = row.original.maintenanceStatus;
+          return (
+            <div className="flex items-center gap-2">
+              <span className={cn("size-1.5 shrink-0 rounded-full", MAINTENANCE_DOT[status])} />
+              <span className="whitespace-nowrap text-foreground">{MAINTENANCE_LABEL[status]}</span>
+            </div>
+          );
+        },
       },
       {
         id: "occupancyStatus",
@@ -270,17 +334,24 @@ export function FlatsTable() {
         },
       },
       {
-        id: "currentResidents",
-        accessorFn: (row) => String(row.currentResidentIds.length),
-        meta: { label: "Residents" },
-        header: () => <DataTableColumnHeader label="Residents" />,
+        id: "occupancy",
+        accessorFn: (row) => {
+          if (row.currentResidentIds.length === 0) return "Vacant";
+          const hasOwner = row.currentResidentIds.some(
+            (id) => residentMap.get(id)?.occupancyType === "owner",
+          );
+          return hasOwner ? "Owner" : "Tenant";
+        },
+        meta: { label: "Occupancy" },
+        header: () => <DataTableColumnHeader label="Occupancy" />,
         cell: ({ row }) => {
-          const count = row.original.currentResidentIds.length;
-          if (count === 0) return <span className="text-muted-foreground">Vacant</span>;
+          const ids = row.original.currentResidentIds;
+          if (ids.length === 0) return <span className="text-muted-foreground">Vacant</span>;
+          const hasOwner = ids.some((id) => residentMap.get(id)?.occupancyType === "owner");
           return (
-            <span className="whitespace-nowrap text-muted-foreground">
-              {count} resident{count > 1 ? "s" : ""}
-            </span>
+            <Badge variant={hasOwner ? "secondary" : "outline"}>
+              {hasOwner ? "Owner" : "Tenant"}
+            </Badge>
           );
         },
       },

@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { staggeredRise } from "@/lib/stagger";
+import { useStaggeredReveal } from "@/lib/stagger";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -92,11 +92,13 @@ function SortableHeaderCell({
   id,
   draggable,
   width,
+  narrow,
   children,
 }: {
   id: string;
   draggable: boolean;
   width?: number;
+  narrow?: boolean;
   children: React.ReactNode;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -116,11 +118,12 @@ function SortableHeaderCell({
         ...widthStyle,
       }}
       className={cn(
-        "h-10 bg-muted/40 px-4 text-sm first:pl-4 last:pr-4",
+        "h-10 bg-muted/40 text-sm",
+        narrow ? "px-0" : "px-4 first:pl-4 last:pr-4",
         isDragging && "opacity-70",
       )}
     >
-      <div className="flex items-center gap-1">
+      <div className={cn("flex items-center gap-1", narrow && "justify-center")}>
         {draggable && (
           <button
             type="button"
@@ -379,6 +382,10 @@ export function DataTable<TData>({
     getPaginationRowModel: getPaginationRowModel(),
   });
 
+  const pageRows = table.getRowModel().rows;
+  const pageRowsKey = pageRows.map((r) => r.id).join(" ");
+  const revealCount = useStaggeredReveal(pageRowsKey, pageRows.length);
+
   const leafColumns = table.getAllLeafColumns();
   const orderedColumnIds = table.getVisibleLeafColumns().map((c) => c.id);
   const inactiveFilters = filters.filter((f) => !activeFilterIds.includes(f.id));
@@ -599,6 +606,7 @@ export function DataTable<TData>({
                           header.id !== "actions"
                         }
                         width={width}
+                        narrow={header.id === "_select" || header.id === "_expand"}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
                       </SortableHeaderCell>
@@ -613,7 +621,8 @@ export function DataTable<TData>({
           {table.getRowModel().rows.length ? (
             (() => {
               let lastGroupKey: string | undefined;
-              return table.getRowModel().rows.map((row, rowIndex) => {
+              return pageRows.map((row, rowIndex) => {
+                if (rowIndex >= revealCount) return null;
                 const rows: React.ReactNode[] = [];
                 if (isGrouped && groupFilter && groupFilter.type === "groupBy") {
                   const key = groupFilter.groupBy(row.original, groupValue);
@@ -639,18 +648,15 @@ export function DataTable<TData>({
                     onRowClick(row.original);
                   }
                 };
-                const rise = staggeredRise(rowIndex);
                 rows.push(
                   <TableRow
                     key={row.id}
                     aria-expanded={isExpandable ? isExpanded : undefined}
                     onClick={isExpandable || onRowClick ? handleRowClick : undefined}
                     className={cn(
-                      "border-border hover:bg-muted/50",
+                      "border-border hover:bg-muted/50 animate-rise",
                       (isExpandable || onRowClick) && "cursor-pointer",
-                      rise.className,
                     )}
-                    style={rise.style}
                   >
                     {row.getVisibleCells().map((cell) => {
                       const width =
@@ -661,11 +667,12 @@ export function DataTable<TData>({
                         width !== undefined
                           ? { width, minWidth: width, maxWidth: width }
                           : undefined;
+                      const isNarrow = cell.column.id === "_select" || cell.column.id === "_expand";
                       return (
                         <TableCell
                           key={cell.id}
                           style={widthStyle}
-                          className="px-4 py-2 align-middle text-sm"
+                          className={cn("py-2 align-middle text-sm", isNarrow ? "px-0" : "px-4")}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </TableCell>
