@@ -130,20 +130,20 @@ export function Breadcrumbs() {
 
   return (
     <Breadcrumb>
-      <BreadcrumbList className="items-center gap-0.5">
+      <BreadcrumbList className="items-center gap-1">
         <BreadcrumbItem>
           {crumbs.length === 0 ? (
-            <BreadcrumbPage className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] font-semibold leading-none tracking-tight text-foreground">
-              <Home className="size-3.5 shrink-0 translate-y-px text-muted-foreground" />
-              <span className="leading-none">{section.label}</span>
+            <BreadcrumbPage className="inline-flex h-7 items-center gap-1.5 rounded-md py-1.5 pl-0 pr-1.5 text-[15px] font-semibold text-foreground">
+              <Home className="size-4 shrink-0 text-muted-foreground" />
+              <span>{section.label}</span>
             </BreadcrumbPage>
           ) : (
             <BreadcrumbLink
               render={<Link href={section.href} />}
-              className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[13px] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="inline-flex h-7 items-center gap-1.5 rounded-md py-1.5 pl-0 pr-1.5 text-[15px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              <Home className="size-3.5 shrink-0 translate-y-px" />
-              <span className="leading-none">{section.label}</span>
+              <Home className="size-4 shrink-0" />
+              <span>{section.label}</span>
             </BreadcrumbLink>
           )}
         </BreadcrumbItem>
@@ -152,12 +152,12 @@ export function Breadcrumbs() {
           const navigable = !NON_NAVIGABLE_PATHS.has(crumb.href);
           return (
             <React.Fragment key={crumb.href}>
-              <BreadcrumbSeparator className="[&>svg]:size-3 [&>svg]:text-muted-foreground/40" />
+              <BreadcrumbSeparator className="flex h-7 items-center [&>svg]:size-3.5 [&>svg]:text-muted-foreground/40" />
               <BreadcrumbItem>
                 {isLast || !navigable ? (
                   <BreadcrumbPage
                     className={cn(
-                      "rounded-md px-1.5 py-1 text-[13px] leading-none tracking-tight",
+                      "inline-flex h-7 items-center rounded-md px-1.5 text-[15px]",
                       isLast
                         ? "font-semibold text-foreground"
                         : "cursor-default text-muted-foreground",
@@ -168,7 +168,7 @@ export function Breadcrumbs() {
                 ) : (
                   <BreadcrumbLink
                     render={<Link href={crumb.href} />}
-                    className="rounded-md px-1.5 py-1 text-[13px] leading-none text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    className="inline-flex h-7 items-center rounded-md px-1.5 text-[15px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
                     {crumb.label}
                   </BreadcrumbLink>

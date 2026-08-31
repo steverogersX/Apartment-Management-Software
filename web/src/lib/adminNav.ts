@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Boxes, Landmark, Megaphone, Sofa, Ticket, Users } from "lucide-react";
+import { Boxes, Landmark, Megaphone, Sofa, Ticket, Users, Wrench } from "lucide-react";
 
 export type AdminNavGroupItem = {
   label: string;
@@ -57,6 +57,11 @@ export const adminNavGroups: AdminNavGroup[] = [
     label: "Amenities",
     icon: Sofa,
     items: [{ label: "Bookings & History" }],
+  },
+  {
+    label: "Maintenance",
+    icon: Wrench,
+    items: [{ label: "History", href: "/dashboard/maintenance/history" }],
   },
   {
     label: "Asset & Inventory",

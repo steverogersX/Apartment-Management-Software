@@ -1,5 +1,6 @@
 export type FlatType = "1BHK" | "2BHK" | "3BHK" | "4BHK";
 export type FlatOccupancyStatus = "occupied" | "vacant";
+export type FlatMaintenanceStatus = "paid" | "due";
 
 /**
  * UI-only mock data for the Flats feature — no backing table or API yet.
@@ -14,6 +15,7 @@ export type FlatRecord = {
   type: FlatType;
   areaSqft: number;
   occupancyStatus: FlatOccupancyStatus;
+  maintenanceStatus: FlatMaintenanceStatus;
   currentResidentIds: string[];
 };
 
@@ -47,6 +49,7 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1450,
     occupancyStatus: "occupied",
+    maintenanceStatus: "paid",
     currentResidentIds: ["1", "3"],
   },
   {
@@ -57,6 +60,7 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1100,
     occupancyStatus: "occupied",
+    maintenanceStatus: "due",
     currentResidentIds: ["2"],
   },
   {
@@ -67,6 +71,7 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1500,
     occupancyStatus: "occupied",
+    maintenanceStatus: "paid",
     currentResidentIds: ["3"],
   },
   {
@@ -77,6 +82,7 @@ export const flats: FlatRecord[] = [
     type: "1BHK",
     areaSqft: 750,
     occupancyStatus: "occupied",
+    maintenanceStatus: "paid",
     currentResidentIds: ["4"],
   },
   {
@@ -87,6 +93,7 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1650,
     occupancyStatus: "occupied",
+    maintenanceStatus: "due",
     currentResidentIds: ["5"],
   },
   {
@@ -97,6 +104,7 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1050,
     occupancyStatus: "vacant",
+    maintenanceStatus: "due",
     currentResidentIds: [],
   },
   {
@@ -107,6 +115,7 @@ export const flats: FlatRecord[] = [
     type: "4BHK",
     areaSqft: 1900,
     occupancyStatus: "occupied",
+    maintenanceStatus: "paid",
     currentResidentIds: ["7"],
   },
   {
@@ -117,6 +126,7 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1150,
     occupancyStatus: "occupied",
+    maintenanceStatus: "due",
     currentResidentIds: ["8"],
   },
   {
@@ -127,6 +137,7 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1350,
     occupancyStatus: "occupied",
+    maintenanceStatus: "paid",
     currentResidentIds: ["9"],
   },
   {
@@ -137,6 +148,7 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1200,
     occupancyStatus: "occupied",
+    maintenanceStatus: "paid",
     currentResidentIds: ["10"],
   },
   {
@@ -147,6 +159,7 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1080,
     occupancyStatus: "vacant",
+    maintenanceStatus: "due",
     currentResidentIds: [],
   },
   {
@@ -157,6 +170,7 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1120,
     occupancyStatus: "occupied",
+    maintenanceStatus: "paid",
     currentResidentIds: ["12"],
   },
   {
@@ -167,6 +181,7 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1180,
     occupancyStatus: "vacant",
+    maintenanceStatus: "due",
     currentResidentIds: [],
   },
   {
@@ -177,6 +192,7 @@ export const flats: FlatRecord[] = [
     type: "1BHK",
     areaSqft: 780,
     occupancyStatus: "vacant",
+    maintenanceStatus: "due",
     currentResidentIds: [],
   },
   {
@@ -187,6 +203,7 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1400,
     occupancyStatus: "vacant",
+    maintenanceStatus: "paid",
     currentResidentIds: [],
   },
 ];

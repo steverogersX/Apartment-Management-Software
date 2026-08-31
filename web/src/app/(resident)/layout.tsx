@@ -32,7 +32,9 @@ export default function ResidentLayout({ children }: { children: React.ReactNode
         <BreadcrumbTitleProvider>
           <Topbar />
           <div className="flex h-8 shrink-0 items-center px-4 md:px-6">
-            <Breadcrumbs />
+            <div className="mx-auto w-full max-w-6xl">
+              <Breadcrumbs />
+            </div>
           </div>
           <main className="flex-1 overflow-y-auto p-4 pt-3 md:p-6 md:pt-4">{children}</main>
         </BreadcrumbTitleProvider>

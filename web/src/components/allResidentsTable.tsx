@@ -5,10 +5,11 @@ import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { cn, getInitials, gradientForName } from "@/lib/utils";
-import { staggeredRise } from "@/lib/stagger";
+import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DoodleHouse } from "@/components/icons/doodleHouse";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
@@ -63,9 +64,17 @@ function formatDate(iso: string) {
 }
 
 function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
+  const [selected, setSelected] = React.useState<Record<string, boolean>>({});
   const flatsForResident = React.useMemo(
     () => flats.filter((f) => f.id === resident.flatId),
     [resident.flatId],
+  );
+  const selectedCount = flatsForResident.filter((f) => selected[f.id]).length;
+  const allSelected = flatsForResident.length > 0 && selectedCount === flatsForResident.length;
+  const someSelected = selectedCount > 0 && !allSelected;
+  const revealCount = useStaggeredReveal(
+    flatsForResident.map((f) => f.id).join(" "),
+    flatsForResident.length,
   );
 
   if (flatsForResident.length === 0) {
@@ -74,10 +83,14 @@ function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
         <div className="mb-1.5 text-[11px] font-medium tracking-widest text-muted-foreground">
           FLAT
         </div>
-        <div className="overflow-hidden rounded-md border border-border">
+        <div className="overflow-x-auto rounded-md border border-border">
           <Table>
             <TableHeader>
               <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+                <TableHead
+                  className="h-8 bg-muted/40 px-0"
+                  style={{ width: 36, minWidth: 36, maxWidth: 36 }}
+                />
                 <TableHead className="h-8 bg-muted/40 px-4 text-xs">Flat</TableHead>
                 <TableHead className="h-8 bg-muted/40 px-4 text-xs">Floor</TableHead>
                 <TableHead className="h-8 bg-muted/40 px-4 text-xs">Type</TableHead>
@@ -87,7 +100,7 @@ function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
             </TableHeader>
             <TableBody>
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={5} className="h-16 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={6} className="h-16 text-center text-sm text-muted-foreground">
                   No flat
                 </TableCell>
               </TableRow>
@@ -103,10 +116,30 @@ function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
       <div className="mb-1.5 text-[11px] font-medium tracking-widest text-muted-foreground">
         FLAT
       </div>
-      <div className="overflow-hidden rounded-md border border-border">
+      <div className="overflow-x-auto rounded-md border border-border">
         <Table>
           <TableHeader>
             <TableRow className="border-border bg-muted/40 hover:bg-muted/40">
+              <TableHead
+                className="h-8 bg-muted/40 px-0"
+                style={{ width: 36, minWidth: 36, maxWidth: 36 }}
+              >
+                <span
+                  className="flex items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onCheckedChange={(v) =>
+                      setSelected(
+                        v ? Object.fromEntries(flatsForResident.map((f) => [f.id, true])) : {},
+                      )
+                    }
+                    aria-label="Select all flats"
+                  />
+                </span>
+              </TableHead>
               <TableHead className="h-8 bg-muted/40 px-4 text-xs">Flat</TableHead>
               <TableHead className="h-8 bg-muted/40 px-4 text-xs">Floor</TableHead>
               <TableHead className="h-8 bg-muted/40 px-4 text-xs">Type</TableHead>
@@ -115,14 +148,26 @@ function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {flatsForResident.map((flat: FlatRecord, index: number) => {
-              const rise = staggeredRise(index);
+            {flatsForResident.slice(0, revealCount).map((flat: FlatRecord) => {
               return (
-                <TableRow
-                  key={flat.id}
-                  className={cn("border-border hover:bg-muted/50", rise.className)}
-                  style={rise.style}
-                >
+                <TableRow key={flat.id} className="border-border hover:bg-muted/50 animate-rise">
+                  <TableCell
+                    className="px-0 py-2"
+                    style={{ width: 36, minWidth: 36, maxWidth: 36 }}
+                  >
+                    <span
+                      className="flex items-center justify-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox
+                        checked={!!selected[flat.id]}
+                        onCheckedChange={(v) =>
+                          setSelected((prev) => ({ ...prev, [flat.id]: !!v }))
+                        }
+                        aria-label="Select flat"
+                      />
+                    </span>
+                  </TableCell>
                   <TableCell className="px-4 py-2">
                     <div className="flex items-center gap-2">
                       <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
