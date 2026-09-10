@@ -18,7 +18,6 @@ export function AddBudgetHeadForm({
   const form = useForm({
     defaultValues: {
       name: "",
-      type: "Expense",
       planningMode: "annual",
       plannedAmount: 0,
       monthlyPlanned: Array(12).fill(0),

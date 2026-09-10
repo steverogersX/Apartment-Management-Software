@@ -12,24 +12,10 @@ import { vouchers } from "@/lib/vouchersMockData";
 // BudgetViewAll — planned vs actual totals with no per-head or ledger-level
 // breakdown, which is operational detail reserved for BudgetViewAll holders.
 export function BudgetOwnSummary({ heads }: { heads: BudgetHead[] }) {
-  const expenseHeads = React.useMemo(() => heads.filter((h) => h.type === "Expense"), [heads]);
-  const incomeHeads = React.useMemo(() => heads.filter((h) => h.type === "Income"), [heads]);
-
-  const expensePlanned = React.useMemo(
-    () => expenseHeads.reduce((s, h) => s + h.plannedAmount, 0),
-    [expenseHeads],
-  );
-  const expenseActual = React.useMemo(
-    () => expenseHeads.reduce((s, h) => s + computeActualAmount(h, vouchers), 0),
-    [expenseHeads],
-  );
-  const incomePlanned = React.useMemo(
-    () => incomeHeads.reduce((s, h) => s + h.plannedAmount, 0),
-    [incomeHeads],
-  );
-  const incomeActual = React.useMemo(
-    () => incomeHeads.reduce((s, h) => s + computeActualAmount(h, vouchers), 0),
-    [incomeHeads],
+  const planned = React.useMemo(() => heads.reduce((s, h) => s + h.plannedAmount, 0), [heads]);
+  const actual = React.useMemo(
+    () => heads.reduce((s, h) => s + computeActualAmount(h, vouchers), 0),
+    [heads],
   );
 
   if (heads.length === 0) {
@@ -51,18 +37,7 @@ export function BudgetOwnSummary({ heads }: { heads: BudgetHead[] }) {
           breakdowns are visible to committee members with full budget access.
         </p>
       </div>
-      <BudgetKpiRow
-        label="Expense Budget"
-        planned={expensePlanned}
-        actual={expenseActual}
-        kind="Expense"
-      />
-      <BudgetKpiRow
-        label="Income Budget"
-        planned={incomePlanned}
-        actual={incomeActual}
-        kind="Income"
-      />
+      <BudgetKpiRow label="Budget" planned={planned} actual={actual} />
     </div>
   );
 }

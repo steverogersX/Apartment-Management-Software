@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { formatCurrency } from "@/components/budget/budgetKpi";
 import { ledgerAccounts } from "@/lib/chartOfAccountsMockData";
-import { MONTHS_FY, type BudgetPlanningMode, type EditBudgetHeadInput } from "@/lib/budgetMockData";
+import { MONTHS_FY, type BudgetPlanningMode } from "@/lib/budgetMockData";
 
 export function fieldError(errors: unknown[]): string | undefined {
   if (errors.length === 0) return undefined;
@@ -39,29 +39,6 @@ export function BudgetFormFields({ form }: { form: any }) {
                 onChange={(e) => field.handleChange(e.target.value)}
                 aria-invalid={field.state.meta.errors.length > 0}
               />
-              {fieldError(field.state.meta.errors) && (
-                <p className="text-xs text-destructive">{fieldError(field.state.meta.errors)}</p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        <form.Field name="type">
-          {(field: any) => (
-            <div className="flex flex-col gap-1.5">
-              <Label>Type</Label>
-              <Select
-                value={field.state.value}
-                onValueChange={(v) => field.handleChange(v as EditBudgetHeadInput["type"])}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Income">Income</SelectItem>
-                  <SelectItem value="Expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
               {fieldError(field.state.meta.errors) && (
                 <p className="text-xs text-destructive">{fieldError(field.state.meta.errors)}</p>
               )}

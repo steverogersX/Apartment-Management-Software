@@ -73,13 +73,9 @@ export function BudgetMonthlyChart({
   const [scopeId, setScopeId] = React.useState<string>("all");
   const [viewMode, setViewMode] = React.useState<ViewMode>("monthly");
 
-  const expenseHeads = React.useMemo(() => heads.filter((h) => h.type === "Expense"), [heads]);
-
-  const effectiveScopeId = expenseHeads.some((h) => h.id === scopeId) ? scopeId : "all";
+  const effectiveScopeId = heads.some((h) => h.id === scopeId) ? scopeId : "all";
   const scopeHeads =
-    effectiveScopeId === "all"
-      ? expenseHeads
-      : expenseHeads.filter((h) => h.id === effectiveScopeId);
+    effectiveScopeId === "all" ? heads : heads.filter((h) => h.id === effectiveScopeId);
 
   const isCurrentFY = financialYear === currentFinancialYear();
   const currentMonthIdx = isCurrentFY ? currentMonthIndexInFY() : null;
@@ -111,11 +107,11 @@ export function BudgetMonthlyChart({
     }));
   }, [monthlyTotals, currentMonthIdx]);
 
-  if (expenseHeads.length === 0) {
+  if (heads.length === 0) {
     return (
       <Card>
         <CardContent className="flex h-32 items-center justify-center text-sm text-muted-foreground">
-          No expense heads for this financial year.
+          No budget heads for this financial year.
         </CardContent>
       </Card>
     );
@@ -132,7 +128,7 @@ export function BudgetMonthlyChart({
             Monthly Spending
           </CardTitle>
           <p className="mt-1 text-xs text-muted-foreground">
-            Expense heads only, planned vs actual by month ({financialYear}).
+            Planned vs actual by month ({financialYear}).
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -141,14 +137,14 @@ export function BudgetMonthlyChart({
               <SelectValue>
                 {(value: string) =>
                   value === "all"
-                    ? "All expense heads"
-                    : (expenseHeads.find((h) => h.id === value)?.name ?? "All expense heads")
+                    ? "All heads"
+                    : (heads.find((h) => h.id === value)?.name ?? "All heads")
                 }
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All expense heads</SelectItem>
-              {expenseHeads.map((h) => (
+              <SelectItem value="all">All heads</SelectItem>
+              {heads.map((h) => (
                 <SelectItem key={h.id} value={h.id}>
                   {h.name}
                 </SelectItem>

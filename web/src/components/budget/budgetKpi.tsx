@@ -1,26 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { BudgetHeadType } from "@/lib/budgetMockData";
 
 export function formatCurrency(amount: number) {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-// Which side of zero is "good" is opposite for the two budget types: spending
-// more than planned (positive variance) is bad for an Expense head, but
-// collecting more than planned (positive variance) is good for an Income head.
-export function VarianceStat({
-  planned,
-  actual,
-  kind,
-}: {
-  planned: number;
-  actual: number;
-  kind: BudgetHeadType;
-}) {
+export function VarianceStat({ planned, actual }: { planned: number; actual: number }) {
   const variance = actual - planned;
   const variancePct = planned ? (variance / planned) * 100 : 0;
-  const isBad = kind === "Income" ? variance < 0 : variance > 0;
-  const isGood = kind === "Income" ? variance > 0 : variance < 0;
+  const isBad = variance > 0;
+  const isGood = variance < 0;
   const colorClass = isBad
     ? "text-red-600 dark:text-red-400"
     : isGood
@@ -30,9 +18,7 @@ export function VarianceStat({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <p className="text-xs text-muted-foreground">
-          {kind === "Income" ? "Surplus / shortfall" : "Variance"}
-        </p>
+        <p className="text-xs text-muted-foreground">Variance</p>
         <CardTitle className={`text-2xl tabular-nums ${colorClass}`}>
           {variance > 0 ? "+" : ""}
           {formatCurrency(variance)}
@@ -42,7 +28,6 @@ export function VarianceStat({
         <p className={`text-xs tabular-nums ${colorClass || "text-muted-foreground"}`}>
           {variancePct > 0 ? "+" : ""}
           {variancePct.toFixed(1)}%
-          {kind === "Income" ? (variance < 0 ? " under target" : " above target") : ""}
         </p>
       </CardContent>
     </Card>
@@ -53,12 +38,10 @@ export function BudgetKpiRow({
   label,
   planned,
   actual,
-  kind,
 }: {
   label: string;
   planned: number;
   actual: number;
-  kind: BudgetHeadType;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -76,7 +59,7 @@ export function BudgetKpiRow({
             <CardTitle className="text-2xl tabular-nums">{formatCurrency(actual)}</CardTitle>
           </CardHeader>
         </Card>
-        <VarianceStat planned={planned} actual={actual} kind={kind} />
+        <VarianceStat planned={planned} actual={actual} />
       </div>
     </div>
   );

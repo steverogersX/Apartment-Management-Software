@@ -27,7 +27,6 @@ import {
   budgetHeads,
   computeActualAmount,
   type BudgetHead,
-  type BudgetHeadType,
   type EditBudgetHeadInput,
 } from "@/lib/budgetMockData";
 import { vouchers } from "@/lib/vouchersMockData";
@@ -82,7 +81,6 @@ export function BudgetHeadsTable({
     const newHead: BudgetHead = {
       id: crypto.randomUUID(),
       name: values.name,
-      type: values.type,
       planningMode: values.planningMode,
       plannedAmount: values.plannedAmount,
       monthlyPlanned: values.planningMode === "monthly" ? values.monthlyPlanned : null,
@@ -102,7 +100,6 @@ export function BudgetHeadsTable({
       budgetHeads[idx] = {
         ...budgetHeads[idx],
         name: values.name,
-        type: values.type,
         planningMode: values.planningMode,
         plannedAmount: values.plannedAmount,
         monthlyPlanned: values.planningMode === "monthly" ? values.monthlyPlanned : null,
@@ -130,7 +127,6 @@ export function BudgetHeadsTable({
       budgetHeads.push({
         id: crypto.randomUUID(),
         name: h.name,
-        type: h.type,
         planningMode: h.planningMode,
         plannedAmount: h.plannedAmount,
         monthlyPlanned: h.monthlyPlanned ? [...h.monthlyPlanned] : null,
@@ -156,17 +152,6 @@ export function BudgetHeadsTable({
         ),
         cell: ({ row }) => (
           <span className="text-sm font-medium text-foreground">{row.original.name}</span>
-        ),
-      },
-      {
-        id: "type",
-        accessorKey: "type",
-        meta: { label: "Type" },
-        header: () => <DataTableColumnHeader label="Type" />,
-        cell: ({ row }) => (
-          <Badge variant={row.original.type === "Income" ? "secondary" : "outline"}>
-            {row.original.type}
-          </Badge>
         ),
       },
       {
@@ -235,9 +220,8 @@ export function BudgetHeadsTable({
         cell: ({ row }) => {
           const actual = computeActualAmount(row.original, vouchers);
           const diff = actual - row.original.plannedAmount;
-          const isIncome = row.original.type === "Income";
-          const isBad = isIncome ? diff < 0 : diff > 0;
-          const isGood = isIncome ? diff > 0 : diff < 0;
+          const isBad = diff > 0;
+          const isGood = diff < 0;
           return (
             <span
               className={`whitespace-nowrap text-sm font-medium tabular-nums ${isBad ? "text-red-600 dark:text-red-400" : isGood ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
@@ -291,13 +275,6 @@ export function BudgetHeadsTable({
         type: "search",
         placeholder: "Search head",
         predicate: (row, query) => row.name.toLowerCase().includes(query.toLowerCase()),
-      },
-      {
-        id: "type",
-        label: "Type",
-        type: "select",
-        options: (["Income", "Expense"] as BudgetHeadType[]).map((t) => ({ label: t, value: t })),
-        predicate: (row, value) => row.type === value,
       },
     ],
     [],

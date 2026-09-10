@@ -2,8 +2,6 @@ import { z } from "zod";
 
 import type { Voucher } from "./vouchersMockData";
 
-export type BudgetHeadType = "Income" | "Expense";
-
 export const MONTHS_FY = [
   "Apr",
   "May",
@@ -29,7 +27,6 @@ export type BudgetPlanningMode = "annual" | "monthly";
 export type BudgetHead = {
   id: string;
   name: string;
-  type: BudgetHeadType;
   planningMode: BudgetPlanningMode;
   plannedAmount: number;
   monthlyPlanned: number[] | null;
@@ -39,7 +36,6 @@ export type BudgetHead = {
 
 export const editBudgetHeadSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
-  type: z.enum(["Income", "Expense"]),
   planningMode: z.enum(["annual", "monthly"]),
   plannedAmount: z.coerce.number().min(0, "Planned amount must be >= 0"),
   monthlyPlanned: z.array(z.coerce.number().min(0, "Must be >= 0")).length(12),
@@ -105,21 +101,16 @@ export function financialYearRange(fy: string): { start: Date; end: Date } {
   return { start: new Date(startYear, 3, 1), end: new Date(startYear + 1, 3, 1) };
 }
 
-function actualLedgerSide(head: Pick<BudgetHead, "type">): "debitAccountId" | "creditAccountId" {
-  return head.type === "Income" ? "creditAccountId" : "debitAccountId";
-}
-
 // A budget head's "actual" is never stored — it's the sum of posted vouchers
 // against its linked ledger for the head's financial year, so it can never drift
 // out of sync with what Vouchers/Chart of Accounts records as having happened.
 export function computeActualAmount(
-  head: Pick<BudgetHead, "type" | "ledgerAccountId" | "financialYear">,
+  head: Pick<BudgetHead, "ledgerAccountId" | "financialYear">,
   vouchers: Voucher[],
 ): number {
   const { start, end } = financialYearRange(head.financialYear);
-  const side = actualLedgerSide(head);
   return vouchers
-    .filter((v) => v.status === "Posted" && v[side] === head.ledgerAccountId)
+    .filter((v) => v.status === "Posted" && v.debitAccountId === head.ledgerAccountId)
     .filter((v) => {
       const d = new Date(v.date);
       return d >= start && d < end;
@@ -130,14 +121,13 @@ export function computeActualAmount(
 // Same as computeActualAmount but bucketed by month (Apr = 0 ... Mar = 11) using
 // each voucher's real posting date, for the Monthly Spending view.
 export function computeActualMonthlyBreakdown(
-  head: Pick<BudgetHead, "type" | "ledgerAccountId" | "financialYear">,
+  head: Pick<BudgetHead, "ledgerAccountId" | "financialYear">,
   vouchers: Voucher[],
 ): number[] {
   const { start, end } = financialYearRange(head.financialYear);
-  const side = actualLedgerSide(head);
   const buckets = Array(12).fill(0) as number[];
   vouchers
-    .filter((v) => v.status === "Posted" && v[side] === head.ledgerAccountId)
+    .filter((v) => v.status === "Posted" && v.debitAccountId === head.ledgerAccountId)
     .forEach((v) => {
       const d = new Date(v.date);
       if (d < start || d >= end) return;
@@ -149,7 +139,6 @@ export function computeActualMonthlyBreakdown(
 type AnnualHeadSeed = {
   id: string;
   name: string;
-  type: BudgetHeadType;
   plannedAmount: number;
   financialYear: string;
   ledgerAccountId: string;
@@ -175,7 +164,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-1",
     name: "Housekeeping",
-    type: "Expense",
     plannedAmount: 480000,
     financialYear: "2025-26",
     ledgerAccountId: "la-housekeeping",
@@ -183,7 +171,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-2",
     name: "Security Services",
-    type: "Expense",
     plannedAmount: 600000,
     financialYear: "2025-26",
     ledgerAccountId: "la-security",
@@ -191,7 +178,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-3",
     name: "Electricity - Common Area",
-    type: "Expense",
     plannedAmount: 360000,
     financialYear: "2025-26",
     ledgerAccountId: "la-electricity",
@@ -199,7 +185,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-4",
     name: "Water Charges",
-    type: "Expense",
     plannedAmount: 240000,
     financialYear: "2025-26",
     ledgerAccountId: "la-water",
@@ -207,7 +192,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-5",
     name: "Lift AMC",
-    type: "Expense",
     plannedAmount: 180000,
     financialYear: "2025-26",
     ledgerAccountId: "la-lift-amc",
@@ -215,7 +199,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-6",
     name: "Landscaping",
-    type: "Expense",
     plannedAmount: 120000,
     financialYear: "2025-26",
     ledgerAccountId: "la-landscaping",
@@ -223,7 +206,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-7",
     name: "Insurance",
-    type: "Expense",
     plannedAmount: 150000,
     financialYear: "2025-26",
     ledgerAccountId: "la-insurance",
@@ -231,7 +213,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-8",
     name: "Repairs & Maintenance",
-    type: "Expense",
     plannedAmount: 300000,
     financialYear: "2025-26",
     ledgerAccountId: "la-repairs",
@@ -239,7 +220,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-9",
     name: "Diesel Generator Fuel",
-    type: "Expense",
     plannedAmount: 90000,
     financialYear: "2025-26",
     ledgerAccountId: "la-diesel",
@@ -247,39 +227,13 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-10",
     name: "Office Admin",
-    type: "Expense",
     plannedAmount: 100000,
     financialYear: "2025-26",
     ledgerAccountId: "la-office",
   }),
   annualHead({
-    id: "bh-11",
-    name: "Sinking Fund Contribution",
-    type: "Income",
-    plannedAmount: 200000,
-    financialYear: "2025-26",
-    ledgerAccountId: "la-sinking",
-  }),
-  annualHead({
-    id: "bh-12",
-    name: "Interest/Other Income",
-    type: "Income",
-    plannedAmount: 50000,
-    financialYear: "2025-26",
-    ledgerAccountId: "la-other-income",
-  }),
-  annualHead({
-    id: "bh-25",
-    name: "Maintenance Collections",
-    type: "Income",
-    plannedAmount: 650000,
-    financialYear: "2025-26",
-    ledgerAccountId: "la-maint-inc",
-  }),
-  annualHead({
     id: "bh-13",
     name: "Housekeeping",
-    type: "Expense",
     plannedAmount: 450000,
     financialYear: "2024-25",
     ledgerAccountId: "la-housekeeping",
@@ -287,7 +241,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-14",
     name: "Security Services",
-    type: "Expense",
     plannedAmount: 580000,
     financialYear: "2024-25",
     ledgerAccountId: "la-security",
@@ -295,7 +248,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-15",
     name: "Electricity - Common Area",
-    type: "Expense",
     plannedAmount: 340000,
     financialYear: "2024-25",
     ledgerAccountId: "la-electricity",
@@ -303,7 +255,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-16",
     name: "Water Charges",
-    type: "Expense",
     plannedAmount: 220000,
     financialYear: "2024-25",
     ledgerAccountId: "la-water",
@@ -311,7 +262,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-17",
     name: "Lift AMC",
-    type: "Expense",
     plannedAmount: 170000,
     financialYear: "2024-25",
     ledgerAccountId: "la-lift-amc",
@@ -319,7 +269,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-18",
     name: "Landscaping",
-    type: "Expense",
     plannedAmount: 110000,
     financialYear: "2024-25",
     ledgerAccountId: "la-landscaping",
@@ -327,7 +276,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-19",
     name: "Insurance",
-    type: "Expense",
     plannedAmount: 140000,
     financialYear: "2024-25",
     ledgerAccountId: "la-insurance",
@@ -335,7 +283,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-20",
     name: "Repairs & Maintenance",
-    type: "Expense",
     plannedAmount: 280000,
     financialYear: "2024-25",
     ledgerAccountId: "la-repairs",
@@ -343,7 +290,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-21",
     name: "Diesel Generator Fuel",
-    type: "Expense",
     plannedAmount: 85000,
     financialYear: "2024-25",
     ledgerAccountId: "la-diesel",
@@ -351,39 +297,13 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-22",
     name: "Office Admin",
-    type: "Expense",
     plannedAmount: 95000,
     financialYear: "2024-25",
     ledgerAccountId: "la-office",
   }),
   annualHead({
-    id: "bh-23",
-    name: "Sinking Fund Contribution",
-    type: "Income",
-    plannedAmount: 180000,
-    financialYear: "2024-25",
-    ledgerAccountId: "la-sinking",
-  }),
-  annualHead({
-    id: "bh-24",
-    name: "Interest/Other Income",
-    type: "Income",
-    plannedAmount: 40000,
-    financialYear: "2024-25",
-    ledgerAccountId: "la-other-income",
-  }),
-  annualHead({
-    id: "bh-26",
-    name: "Maintenance Collections",
-    type: "Income",
-    plannedAmount: 600000,
-    financialYear: "2024-25",
-    ledgerAccountId: "la-maint-inc",
-  }),
-  annualHead({
     id: "bh-27",
     name: "Housekeeping",
-    type: "Expense",
     plannedAmount: 520000,
     financialYear: "2026-27",
     ledgerAccountId: "la-housekeeping",
@@ -391,7 +311,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-28",
     name: "Security Services",
-    type: "Expense",
     plannedAmount: 620000,
     financialYear: "2026-27",
     ledgerAccountId: "la-security",
@@ -403,7 +322,6 @@ export const budgetHeads: BudgetHead[] = [
     {
       id: "bh-29",
       name: "Electricity - Common Area",
-      type: "Expense",
       financialYear: "2026-27",
       ledgerAccountId: "la-electricity",
     },
@@ -412,7 +330,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-30",
     name: "Water Charges",
-    type: "Expense",
     plannedAmount: 250000,
     financialYear: "2026-27",
     ledgerAccountId: "la-water",
@@ -420,7 +337,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-31",
     name: "Lift AMC",
-    type: "Expense",
     plannedAmount: 185000,
     financialYear: "2026-27",
     ledgerAccountId: "la-lift-amc",
@@ -428,7 +344,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-32",
     name: "Landscaping",
-    type: "Expense",
     plannedAmount: 125000,
     financialYear: "2026-27",
     ledgerAccountId: "la-landscaping",
@@ -436,7 +351,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-33",
     name: "Insurance",
-    type: "Expense",
     plannedAmount: 155000,
     financialYear: "2026-27",
     ledgerAccountId: "la-insurance",
@@ -444,7 +358,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-34",
     name: "Repairs & Maintenance",
-    type: "Expense",
     plannedAmount: 310000,
     financialYear: "2026-27",
     ledgerAccountId: "la-repairs",
@@ -452,7 +365,6 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-35",
     name: "Diesel Generator Fuel",
-    type: "Expense",
     plannedAmount: 95000,
     financialYear: "2026-27",
     ledgerAccountId: "la-diesel",
@@ -460,34 +372,9 @@ export const budgetHeads: BudgetHead[] = [
   annualHead({
     id: "bh-36",
     name: "Office Admin",
-    type: "Expense",
     plannedAmount: 105000,
     financialYear: "2026-27",
     ledgerAccountId: "la-office",
-  }),
-  annualHead({
-    id: "bh-37",
-    name: "Sinking Fund Contribution",
-    type: "Income",
-    plannedAmount: 210000,
-    financialYear: "2026-27",
-    ledgerAccountId: "la-sinking",
-  }),
-  annualHead({
-    id: "bh-38",
-    name: "Interest/Other Income",
-    type: "Income",
-    plannedAmount: 55000,
-    financialYear: "2026-27",
-    ledgerAccountId: "la-other-income",
-  }),
-  annualHead({
-    id: "bh-39",
-    name: "Maintenance Collections",
-    type: "Income",
-    plannedAmount: 700000,
-    financialYear: "2026-27",
-    ledgerAccountId: "la-maint-inc",
   }),
 ];
 

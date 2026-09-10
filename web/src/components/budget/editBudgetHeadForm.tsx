@@ -22,7 +22,6 @@ export function EditBudgetHeadForm({
   const form = useForm({
     defaultValues: {
       name: head.name,
-      type: head.type,
       planningMode: head.planningMode,
       plannedAmount: head.plannedAmount,
       monthlyPlanned: head.monthlyPlanned ?? Array(12).fill(0),
