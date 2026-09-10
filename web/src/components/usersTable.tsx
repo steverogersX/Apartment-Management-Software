@@ -52,7 +52,7 @@ export function UsersTable() {
     setData((rows) => rows.map((r) => (r.id === id ? { ...r, status } : r)));
   }
 
-  function updateRole(id: string, role: string) {
+  function updateRole(id: string, role: UserRecord["role"]) {
     setData((rows) => rows.map((r) => (r.id === id ? { ...r, role } : r)));
   }
 
@@ -72,20 +72,30 @@ export function UsersTable() {
           const [from, to] = gradientForName(row.original.name);
           return (
             <div className="flex items-center gap-2.5">
-              <Avatar size="sm">
+              <Avatar size="default">
                 <AvatarImage
                   src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`}
                   alt={row.original.name}
                 />
                 <AvatarFallback
-                  className="text-[10px] font-semibold text-white"
+                  className="text-xs font-semibold text-white"
                   style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
                 >
                   {getInitials(row.original.name)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex min-w-0 flex-col">
-                <span className="truncate font-medium text-foreground">{row.original.name}</span>
+                {row.original.residentId ? (
+                  <Link
+                    href={`/dashboard/people-hub/residents/${row.original.residentId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="truncate font-medium text-foreground underline-offset-2 hover:underline"
+                  >
+                    {row.original.name}
+                  </Link>
+                ) : (
+                  <span className="truncate font-medium text-foreground">{row.original.name}</span>
+                )}
                 <span className="truncate text-xs text-muted-foreground">{row.original.email}</span>
               </div>
             </div>

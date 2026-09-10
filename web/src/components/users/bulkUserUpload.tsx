@@ -57,7 +57,9 @@ function buildPreviewRows(headers: string[], rows: Record<string, string>[]): Pr
     const occupancyType = row[occupancyKey] ?? "";
     const vehicleNumber = row[vehicleKey] ?? "";
     const role =
-      roleOptions.find((r) => r.toLowerCase() === roleInput.toLowerCase()) ?? roleOptions[0];
+      roleOptions.find((r) => r.toLowerCase() === roleInput.toLowerCase()) ??
+      roleOptions.find((r) => r === "Resident Owner") ??
+      roleOptions[0];
 
     let error: string | null = null;
     if (!name.trim()) error = "Missing name";
@@ -71,8 +73,8 @@ function buildPreviewRows(headers: string[], rows: Record<string, string>[]): Pr
 function downloadTemplate() {
   const csv = [
     TEMPLATE_HEADERS.join(","),
-    "Priya Sharma,priya@society.com,+91 98765 43210,Resident,304,Tenant,TS09 AB 1234",
-    "Anil Reddy,anil@society.com,+91 98765 11122,Committee Member,101,Owner,",
+    "Arvind Deshmukh,arvind.deshmukh@gmail.com,+91 98765 43210,Resident Owner,301,Owner,TS09 AB 1234",
+    "Vikram Singh Rathore,vikram.rathore@gmail.com,+91 95555 43210,Society Admin,601,Owner,",
   ].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);

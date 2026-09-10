@@ -45,6 +45,11 @@ const ALL_PERMISSION_KEYS = [
   "ResidentsUpdate",
   "NoticesPost",
   "NoticesDelete",
+  "ForumPost",
+  "PollsCreate",
+  "MeetingsSchedule",
+  "DocumentsUpload",
+  "ElectionsManage",
   "AmenitiesView",
   "AmenitiesBook",
   "AmenitiesManage",
@@ -60,7 +65,55 @@ const ALL_PERMISSION_KEYS = [
   "RolesDelete",
   "SocietySettingsView",
   "SocietySettingsUpdate",
+  "AssetsView",
+  "AssetsManage",
+  "InventoryView",
+  "InventoryManage",
+  "InvoicingViewAll",
+  "InvoicingViewOwn",
+  "InvoicingManage",
+  "BillingSettingsView",
+  "BillingSettingsManage",
+  "DuesReceiptsViewAll",
+  "DuesReceiptsViewOwn",
+  "DuesReceiptsManage",
+  "PurchasingView",
+  "PurchasingApprove",
+  "PurchasingManage",
+  "VouchersView",
+  "VouchersManage",
+  "BankAccountsView",
+  "BankAccountsManage",
+  "ChartOfAccountsView",
+  "ChartOfAccountsManage",
+  "BudgetViewAll",
+  "BudgetViewOwn",
+  "BudgetManage",
+  "StatutoryRegistersView",
+  "StatutoryRegistersManage",
+  "ActivityLogView",
+  "EventsViewAll",
+  "EventsViewOwn",
+  "EventsManage",
 ] as const satisfies readonly PermissionKey[];
+
+/**
+ * Own-flat resident permissions — Society Admin is an administrative role, not itself a resident,
+ * so it must not implicitly pick these up just by being "everything else". Keeps the personal
+ * "My Flat"/"Vehicles & Parking" nav from leaking into the admin console for this role.
+ */
+const RESIDENT_ONLY_PERMISSIONS: PermissionKey[] = [
+  "InvoicingViewOwn",
+  "DuesReceiptsViewOwn",
+  "BudgetViewOwn",
+  "EventsViewOwn",
+  "AmenitiesBook",
+  "ComplaintsRaise",
+];
+
+const SOCIETY_ADMIN_PERMISSIONS: PermissionKey[] = ALL_PERMISSION_KEYS.filter(
+  (key) => !RESIDENT_ONLY_PERMISSIONS.includes(key),
+);
 
 const SECURITY_GUARD_PERMISSIONS: PermissionKey[] = [
   "VisitorApprove",
@@ -71,6 +124,7 @@ const SECURITY_GUARD_PERMISSIONS: PermissionKey[] = [
   "StaffCheckin",
   "StaffCheckout",
   "StaffViewAttendance",
+  "AssetsView",
 ];
 
 const RESIDENT_PERMISSIONS: PermissionKey[] = [
@@ -78,6 +132,96 @@ const RESIDENT_PERMISSIONS: PermissionKey[] = [
   "ComplaintsRaise",
   "AmenitiesView",
   "AmenitiesBook",
+  "InvoicingViewOwn",
+  "DuesReceiptsViewOwn",
+  "BudgetViewOwn",
+  "EventsViewOwn",
+  "ForumPost",
+];
+
+const TREASURER_PERMISSIONS: PermissionKey[] = [
+  "BillingView",
+  "BillingGenerate",
+  "BillingApprove",
+  "BillingWaive",
+  "BillingExport",
+  "AssetsView",
+  "AssetsManage",
+  "InventoryView",
+  "InventoryManage",
+  "InvoicingViewAll",
+  "InvoicingManage",
+  "BillingSettingsView",
+  "BillingSettingsManage",
+  "DuesReceiptsViewAll",
+  "DuesReceiptsManage",
+  "PurchasingView",
+  "PurchasingManage",
+  "VouchersView",
+  "VouchersManage",
+  "BankAccountsView",
+  "BankAccountsManage",
+  "ChartOfAccountsView",
+  "ChartOfAccountsManage",
+  "BudgetViewAll",
+  "BudgetManage",
+  "EventsViewAll",
+  "EventsManage",
+];
+
+const SECRETARY_PERMISSIONS: PermissionKey[] = [
+  "NoticesPost",
+  "ForumPost",
+  "PollsCreate",
+  "MeetingsSchedule",
+  "DocumentsUpload",
+  // Elections stay with Secretary alone, not Committee: committee members are typically
+  // themselves candidates, so letting them administer the election they're standing in
+  // is a conflict of interest. Secretary is the neutral returning-officer role here.
+  "ElectionsManage",
+  "NoticesDelete",
+  "ComplaintsAssign",
+  "ComplaintsResolve",
+  "ComplaintsEscalate",
+  "ComplaintsViewAll",
+  "ResidentsView",
+  "ResidentsUpdate",
+  // Purchasing approval intentionally lives with Committee, not here — see its comment below.
+  "PurchasingView",
+  "StatutoryRegistersView",
+  "StatutoryRegistersManage",
+  "ActivityLogView",
+  "BudgetViewAll",
+  "EventsViewAll",
+];
+
+const COMMITTEE_PERMISSIONS: PermissionKey[] = [
+  "ComplaintsViewAll",
+  "ComplaintsAssign",
+  "NoticesPost",
+  "ForumPost",
+  "PollsCreate",
+  "MeetingsSchedule",
+  "DocumentsUpload",
+  "AmenitiesManage",
+  "ResidentsView",
+  "AssetsView",
+  "InventoryView",
+  "InvoicingViewAll",
+  "DuesReceiptsViewAll",
+  "PurchasingView",
+  // Approval sits with Committee (an independent body) rather than Treasurer, who already
+  // holds PurchasingManage — the preparer and the approver must be different roles, or
+  // approval is worthless self-sign-off. Also not Secretary: approving spend isn't their
+  // remit, that was a stray grant.
+  "PurchasingApprove",
+  "VouchersView",
+  "BankAccountsView",
+  "ChartOfAccountsView",
+  "BudgetViewAll",
+  "EventsViewAll",
+  "StatutoryRegistersView",
+  "ActivityLogView",
 ];
 
 type MockUser = {
@@ -115,8 +259,14 @@ function uid(): string {
   return crypto.randomUUID();
 }
 
-const SOCIETY_GREEN_VALLEY = uid();
-const SOCIETY_SUNRISE_HEIGHTS = uid();
+// Fixed, not uid() — these are seeded demo entities referenced by id from persisted client-side
+// state (localStorage) across page reloads. Since this whole module re-evaluates from scratch on
+// every reload (there's no real server to keep continuity), a random id here would mint a new,
+// non-matching identity for "the same" society on every reload while its stable `token` field
+// stayed constant — which silently broke any code that matched fresh data back to cached data by
+// id instead of by token.
+const SOCIETY_GREEN_VALLEY = "11111111-1111-4111-8111-111111111111";
+const SOCIETY_SUNRISE_HEIGHTS = "22222222-2222-4222-8222-222222222222";
 
 const societies: MockSociety[] = [
   {
@@ -137,6 +287,9 @@ const societies: MockSociety[] = [
 
 const roleIds = {
   gvAdmin: uid(),
+  gvTreasurer: uid(),
+  gvSecretary: uid(),
+  gvCommittee: uid(),
   gvGuard: uid(),
   gvResident: uid(),
   shAdmin: uid(),
@@ -151,7 +304,37 @@ const roles: MockRole[] = [
     name: "Society Admin",
     description: null,
     isSystem: true,
-    permissions: [...ALL_PERMISSION_KEYS],
+    permissions: [...SOCIETY_ADMIN_PERMISSIONS],
+    createdAt: new Date("2025-01-01T10:00:00+05:30"),
+    updatedAt: new Date("2025-01-01T10:00:00+05:30"),
+  },
+  {
+    id: roleIds.gvTreasurer,
+    societyId: SOCIETY_GREEN_VALLEY,
+    name: "Treasurer",
+    description: null,
+    isSystem: true,
+    permissions: TREASURER_PERMISSIONS,
+    createdAt: new Date("2025-01-01T10:00:00+05:30"),
+    updatedAt: new Date("2025-01-01T10:00:00+05:30"),
+  },
+  {
+    id: roleIds.gvSecretary,
+    societyId: SOCIETY_GREEN_VALLEY,
+    name: "Secretary",
+    description: null,
+    isSystem: true,
+    permissions: SECRETARY_PERMISSIONS,
+    createdAt: new Date("2025-01-01T10:00:00+05:30"),
+    updatedAt: new Date("2025-01-01T10:00:00+05:30"),
+  },
+  {
+    id: roleIds.gvCommittee,
+    societyId: SOCIETY_GREEN_VALLEY,
+    name: "Committee Member",
+    description: null,
+    isSystem: true,
+    permissions: COMMITTEE_PERMISSIONS,
     createdAt: new Date("2025-01-01T10:00:00+05:30"),
     updatedAt: new Date("2025-01-01T10:00:00+05:30"),
   },
@@ -168,7 +351,7 @@ const roles: MockRole[] = [
   {
     id: roleIds.gvResident,
     societyId: SOCIETY_GREEN_VALLEY,
-    name: "Resident",
+    name: "Resident Owner",
     description: null,
     isSystem: true,
     permissions: RESIDENT_PERMISSIONS,
@@ -181,7 +364,7 @@ const roles: MockRole[] = [
     name: "Society Admin",
     description: null,
     isSystem: true,
-    permissions: [...ALL_PERMISSION_KEYS],
+    permissions: [...SOCIETY_ADMIN_PERMISSIONS],
     createdAt: new Date("2025-02-01T10:00:00+05:30"),
     updatedAt: new Date("2025-02-01T10:00:00+05:30"),
   },
@@ -198,7 +381,7 @@ const roles: MockRole[] = [
   {
     id: roleIds.shResident,
     societyId: SOCIETY_SUNRISE_HEIGHTS,
-    name: "Resident",
+    name: "Resident Owner",
     description: null,
     isSystem: true,
     permissions: RESIDENT_PERMISSIONS,
@@ -207,6 +390,15 @@ const roles: MockRole[] = [
   },
 ];
 
+// Demo logins — one per role (Green Valley). ids/emails match usersMockData.ts
+// UserRecords so AuthUser.id resolves to a resident/flat via useCurrentFlat().
+//   Society Admin ..... vikram.rathore@gmail.com / Admin@123
+//   Treasurer ......... suresh.iyer@gmail.com / Treasurer@123
+//   Secretary ......... sunita.patil@gmail.com / Secretary@123
+//   Committee Member .. arvind.deshmukh@gmail.com / Committee@123
+//   Security Guard .... guard@greenvalley.com / Guard@123
+//   Resident (tenant) . rohan.mehta@gmail.com / Resident@123
+//   Resident (owner) .. farhan.m@gmail.com / Resident@123
 const users: MockUser[] = [
   {
     id: "user-super-admin",
@@ -216,24 +408,52 @@ const users: MockUser[] = [
     isSuperAdmin: true,
   },
   {
-    id: "user-gv-admin",
-    email: "admin@greenvalley.com",
+    id: "user-1",
+    email: "vikram.rathore@gmail.com",
     password: "Admin@123",
-    displayName: "Ravi Kumar",
+    displayName: "Vikram Singh Rathore",
     isSuperAdmin: false,
   },
   {
-    id: "user-gv-guard",
+    id: "user-3",
+    email: "suresh.iyer@gmail.com",
+    password: "Treasurer@123",
+    displayName: "Suresh Iyer",
+    isSuperAdmin: false,
+  },
+  {
+    id: "user-2",
+    email: "sunita.patil@gmail.com",
+    password: "Secretary@123",
+    displayName: "Sunita Patil",
+    isSuperAdmin: false,
+  },
+  {
+    id: "user-5",
+    email: "arvind.deshmukh@gmail.com",
+    password: "Committee@123",
+    displayName: "Arvind Deshmukh",
+    isSuperAdmin: false,
+  },
+  {
+    id: "user-4",
     email: "guard@greenvalley.com",
     password: "Guard@123",
-    displayName: "Suresh Singh",
+    displayName: "Suresh Babu",
     isSuperAdmin: false,
   },
   {
-    id: "user-gv-resident",
-    email: "resident@greenvalley.com",
+    id: "user-6",
+    email: "rohan.mehta@gmail.com",
     password: "Resident@123",
-    displayName: "Priya Sharma",
+    displayName: "Rohan Mehta",
+    isSuperAdmin: false,
+  },
+  {
+    id: "user-7",
+    email: "farhan.m@gmail.com",
+    password: "Resident@123",
+    displayName: "Mohammed Farhan",
     isSuperAdmin: false,
   },
   {
@@ -260,9 +480,13 @@ const users: MockUser[] = [
 ];
 
 const userRoles: MockUserRole[] = [
-  { userId: "user-gv-admin", roleId: roleIds.gvAdmin, societyId: SOCIETY_GREEN_VALLEY },
-  { userId: "user-gv-guard", roleId: roleIds.gvGuard, societyId: SOCIETY_GREEN_VALLEY },
-  { userId: "user-gv-resident", roleId: roleIds.gvResident, societyId: SOCIETY_GREEN_VALLEY },
+  { userId: "user-1", roleId: roleIds.gvAdmin, societyId: SOCIETY_GREEN_VALLEY },
+  { userId: "user-3", roleId: roleIds.gvTreasurer, societyId: SOCIETY_GREEN_VALLEY },
+  { userId: "user-2", roleId: roleIds.gvSecretary, societyId: SOCIETY_GREEN_VALLEY },
+  { userId: "user-5", roleId: roleIds.gvCommittee, societyId: SOCIETY_GREEN_VALLEY },
+  { userId: "user-4", roleId: roleIds.gvGuard, societyId: SOCIETY_GREEN_VALLEY },
+  { userId: "user-6", roleId: roleIds.gvResident, societyId: SOCIETY_GREEN_VALLEY },
+  { userId: "user-7", roleId: roleIds.gvResident, societyId: SOCIETY_GREEN_VALLEY },
   { userId: "user-sh-admin", roleId: roleIds.shAdmin, societyId: SOCIETY_SUNRISE_HEIGHTS },
   { userId: "user-sh-guard", roleId: roleIds.shGuard, societyId: SOCIETY_SUNRISE_HEIGHTS },
   { userId: "user-sh-resident", roleId: roleIds.shResident, societyId: SOCIETY_SUNRISE_HEIGHTS },
