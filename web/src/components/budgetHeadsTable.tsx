@@ -83,7 +83,9 @@ export function BudgetHeadsTable({
       id: crypto.randomUUID(),
       name: values.name,
       type: values.type,
+      planningMode: values.planningMode,
       plannedAmount: values.plannedAmount,
+      monthlyPlanned: values.planningMode === "monthly" ? values.monthlyPlanned : null,
       financialYear: values.financialYear,
       ledgerAccountId: values.ledgerAccountId,
     };
@@ -101,7 +103,9 @@ export function BudgetHeadsTable({
         ...budgetHeads[idx],
         name: values.name,
         type: values.type,
+        planningMode: values.planningMode,
         plannedAmount: values.plannedAmount,
+        monthlyPlanned: values.planningMode === "monthly" ? values.monthlyPlanned : null,
         financialYear: values.financialYear,
         ledgerAccountId: values.ledgerAccountId,
       };
@@ -127,7 +131,9 @@ export function BudgetHeadsTable({
         id: crypto.randomUUID(),
         name: h.name,
         type: h.type,
+        planningMode: h.planningMode,
         plannedAmount: h.plannedAmount,
+        monthlyPlanned: h.monthlyPlanned ? [...h.monthlyPlanned] : null,
         financialYear,
         ledgerAccountId: h.ledgerAccountId,
       });
@@ -186,9 +192,16 @@ export function BudgetHeadsTable({
           />
         ),
         cell: ({ row }) => (
-          <span className="whitespace-nowrap text-sm text-muted-foreground">
-            {formatCurrency(row.original.plannedAmount)}
-          </span>
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
+            <span className="text-sm text-muted-foreground">
+              {formatCurrency(row.original.plannedAmount)}
+            </span>
+            {row.original.planningMode === "monthly" && (
+              <Badge variant="outline" className="text-[10px]">
+                Monthly
+              </Badge>
+            )}
+          </div>
         ),
       },
       {
@@ -222,11 +235,12 @@ export function BudgetHeadsTable({
         cell: ({ row }) => {
           const actual = computeActualAmount(row.original, vouchers);
           const diff = actual - row.original.plannedAmount;
-          const isOver = diff > 0;
-          const isUnder = diff < 0;
+          const isIncome = row.original.type === "Income";
+          const isBad = isIncome ? diff < 0 : diff > 0;
+          const isGood = isIncome ? diff > 0 : diff < 0;
           return (
             <span
-              className={`whitespace-nowrap text-sm font-medium tabular-nums ${isOver ? "text-red-600 dark:text-red-400" : isUnder ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
+              className={`whitespace-nowrap text-sm font-medium tabular-nums ${isBad ? "text-red-600 dark:text-red-400" : isGood ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
             >
               {varianceLabel(row.original.plannedAmount, actual)}
             </span>

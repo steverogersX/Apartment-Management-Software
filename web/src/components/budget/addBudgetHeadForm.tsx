@@ -19,7 +19,9 @@ export function AddBudgetHeadForm({
     defaultValues: {
       name: "",
       type: "Expense",
+      planningMode: "annual",
       plannedAmount: 0,
+      monthlyPlanned: Array(12).fill(0),
       ledgerAccountId: "",
       financialYear,
     } as EditBudgetHeadInput,

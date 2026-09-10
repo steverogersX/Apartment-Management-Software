@@ -42,8 +42,8 @@ import {
   computeActualMonthlyBreakdown,
   currentFinancialYear,
   currentMonthIndexInFY,
+  getPlannedMonthlyBreakdown,
   MONTHS_FY,
-  plannedMonthlyBreakdown,
   type BudgetHead,
 } from "@/lib/budgetMockData";
 import { vouchers } from "@/lib/vouchersMockData";
@@ -85,7 +85,7 @@ export function BudgetMonthlyChart({
   const currentMonthIdx = isCurrentFY ? currentMonthIndexInFY() : null;
 
   const monthlyTotals = React.useMemo(() => {
-    const plannedByHead = scopeHeads.map((h) => plannedMonthlyBreakdown(h.name, h.plannedAmount));
+    const plannedByHead = scopeHeads.map((h) => getPlannedMonthlyBreakdown(h));
     const actualByHead = scopeHeads.map((h) => computeActualMonthlyBreakdown(h, vouchers));
     return MONTHS_FY.map((month, i) => ({
       month,

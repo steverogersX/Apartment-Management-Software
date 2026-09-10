@@ -14,8 +14,8 @@ import {
   Lock,
 } from "lucide-react";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -93,6 +93,10 @@ function EventTimeline({ entries }: { entries: TimelineEntry[] }) {
                 </span>
               ) : (
                 <Avatar className="size-6 shrink-0">
+                  <AvatarImage
+                    src={avatarUrlForName(entry.data.residentName)}
+                    alt={entry.data.residentName}
+                  />
                   <AvatarFallback
                     className="text-[9px] font-semibold text-white"
                     style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

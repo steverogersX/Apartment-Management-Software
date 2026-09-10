@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Bike, Car, Home, Plus, SquareParking, UserRound } from "lucide-react";
+import { Bike, Car, Home, IdCard, Plus, SquareParking, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,7 +94,7 @@ const columns: ColumnDef<HubVehicleRow>[] = [
     id: "registrationNumber",
     accessorKey: "registrationNumber",
     meta: { label: "Registration" },
-    header: () => <DataTableColumnHeader icon={Badge} label="Registration" />,
+    header: () => <DataTableColumnHeader icon={IdCard} label="Registration" />,
     cell: ({ row }) => (
       <span className="font-mono text-xs font-medium tabular-nums text-foreground">
         {row.original.registrationNumber}

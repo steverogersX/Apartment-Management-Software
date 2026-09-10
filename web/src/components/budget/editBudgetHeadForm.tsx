@@ -23,7 +23,9 @@ export function EditBudgetHeadForm({
     defaultValues: {
       name: head.name,
       type: head.type,
+      planningMode: head.planningMode,
       plannedAmount: head.plannedAmount,
+      monthlyPlanned: head.monthlyPlanned ?? Array(12).fill(0),
       ledgerAccountId: head.ledgerAccountId,
       financialYear: head.financialYear,
     } as EditBudgetHeadInput,

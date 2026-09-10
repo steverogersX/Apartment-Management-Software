@@ -16,13 +16,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BudgetHeadsTable } from "@/components/budgetHeadsTable";
 import { BudgetMonthlyChart } from "@/components/budgetMonthlyChart";
 import { BudgetSummaryChart } from "@/components/budgetSummaryChart";
+import { BudgetOwnSummary } from "@/components/budget/budgetOwnSummary";
 import { useAuth } from "@/hooks/useAuth";
-import { budgetHeads, FINANCIAL_YEARS } from "@/lib/budgetMockData";
+import { budgetHeads, currentFinancialYear, FINANCIAL_YEARS } from "@/lib/budgetMockData";
 
 export default function BudgetPage() {
   const { has } = useAuth();
   const canViewAll = has("BudgetViewAll");
-  const [financialYear, setFinancialYear] = React.useState<string>(FINANCIAL_YEARS[0]);
+  const [financialYear, setFinancialYear] = React.useState<string>(() => {
+    const current = currentFinancialYear();
+    return budgetHeads.some((h) => h.financialYear === current) ? current : FINANCIAL_YEARS[0];
+  });
   const [version, setVersion] = React.useState(0);
 
   // `version` is unused in the body but bumping it forces this to recompute after
@@ -77,33 +81,31 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview" className="gap-1.5">
-            <LayoutGrid className="size-3.5" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="monthly" className="gap-1.5">
-            <CalendarClock className="size-3.5" />
-            Monthly Spending
-          </TabsTrigger>
-          {canViewAll && (
+      {canViewAll ? (
+        <Tabs defaultValue="overview">
+          <TabsList>
+            <TabsTrigger value="overview" className="gap-1.5">
+              <LayoutGrid className="size-3.5" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="monthly" className="gap-1.5">
+              <CalendarClock className="size-3.5" />
+              Monthly Spending
+            </TabsTrigger>
             <TabsTrigger value="heads" className="gap-1.5">
               <ListTree className="size-3.5" />
               Budget Heads
             </TabsTrigger>
-          )}
-        </TabsList>
+          </TabsList>
 
-        <TabsContent value="overview" className="animate-rise mt-4">
-          <BudgetSummaryChart heads={heads} />
-        </TabsContent>
+          <TabsContent value="overview" className="animate-rise mt-4">
+            <BudgetSummaryChart heads={heads} />
+          </TabsContent>
 
-        <TabsContent value="monthly" className="animate-rise mt-4">
-          <BudgetMonthlyChart heads={heads} financialYear={financialYear} />
-        </TabsContent>
+          <TabsContent value="monthly" className="animate-rise mt-4">
+            <BudgetMonthlyChart heads={heads} financialYear={financialYear} />
+          </TabsContent>
 
-        {canViewAll && (
           <TabsContent value="heads" className="animate-rise mt-4">
             <BudgetHeadsTable
               financialYear={financialYear}
@@ -111,8 +113,10 @@ export default function BudgetPage() {
               onMutate={() => setVersion((v) => v + 1)}
             />
           </TabsContent>
-        )}
-      </Tabs>
+        </Tabs>
+      ) : (
+        <BudgetOwnSummary heads={heads} />
+      )}
     </div>
   );
 }

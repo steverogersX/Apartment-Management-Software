@@ -3,76 +3,15 @@
 import * as React from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { BudgetKpiRow } from "@/components/budget/budgetKpi";
 import { computeActualAmount, type BudgetHead } from "@/lib/budgetMockData";
 import { vouchers } from "@/lib/vouchersMockData";
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
-
-function VarianceStat({ planned, actual }: { planned: number; actual: number }) {
-  const variance = actual - planned;
-  const variancePct = planned ? (variance / planned) * 100 : 0;
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <p className="text-xs text-muted-foreground">Variance</p>
-        <CardTitle
-          className={`text-2xl tabular-nums ${variance > 0 ? "text-red-600 dark:text-red-400" : variance < 0 ? "text-emerald-600 dark:text-emerald-400" : ""}`}
-        >
-          {variance > 0 ? "+" : ""}
-          {formatCurrency(variance)}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <p
-          className={`text-xs tabular-nums ${variance > 0 ? "text-red-600 dark:text-red-400" : variance < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
-        >
-          {variancePct > 0 ? "+" : ""}
-          {variancePct.toFixed(1)}%
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function BudgetKpiRow({
-  label,
-  planned,
-  actual,
-}: {
-  label: string;
-  planned: number;
-  actual: number;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold text-foreground">{label}</h3>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <p className="text-xs text-muted-foreground">Planned</p>
-            <CardTitle className="text-2xl tabular-nums">{formatCurrency(planned)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <p className="text-xs text-muted-foreground">Actual</p>
-            <CardTitle className="text-2xl tabular-nums">{formatCurrency(actual)}</CardTitle>
-          </CardHeader>
-        </Card>
-        <VarianceStat planned={planned} actual={actual} />
-      </div>
-    </div>
-  );
-}
 
 export function BudgetSummaryChart({ heads }: { heads: BudgetHead[] }) {
   const expenseHeads = React.useMemo(() => heads.filter((h) => h.type === "Expense"), [heads]);
@@ -112,8 +51,18 @@ export function BudgetSummaryChart({ heads }: { heads: BudgetHead[] }) {
 
   return (
     <div className="flex flex-col gap-5">
-      <BudgetKpiRow label="Expense Budget" planned={expensePlanned} actual={expenseActual} />
-      <BudgetKpiRow label="Income Budget" planned={incomePlanned} actual={incomeActual} />
+      <BudgetKpiRow
+        label="Expense Budget"
+        planned={expensePlanned}
+        actual={expenseActual}
+        kind="Expense"
+      />
+      <BudgetKpiRow
+        label="Income Budget"
+        planned={incomePlanned}
+        actual={incomeActual}
+        kind="Income"
+      />
 
       <div className="flex h-full flex-col overflow-hidden rounded-md border border-border bg-card">
         <div className="flex items-start justify-between gap-3 border-b border-border px-4 py-3">

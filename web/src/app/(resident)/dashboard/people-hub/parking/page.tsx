@@ -18,8 +18,8 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -704,6 +704,10 @@ function ParkingPageInner() {
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center gap-3">
                         <Avatar className="size-9 shrink-0">
+                          <AvatarImage
+                            src={avatarUrlForName(selectedSlot.assignment.residentName)}
+                            alt={selectedSlot.assignment.residentName}
+                          />
                           <AvatarFallback
                             className="text-xs font-semibold text-white"
                             style={{
