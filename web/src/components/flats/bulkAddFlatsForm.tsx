@@ -114,6 +114,7 @@ export function BulkAddFlatsForm() {
           occupancyStatus: "vacant",
           maintenanceStatus: "due",
           currentResidentIds: [],
+          owner: null,
         });
       }
     }

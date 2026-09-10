@@ -158,6 +158,7 @@ export function CreateFlatForm() {
       occupancyStatus: pendingResidents.length > 0 ? "occupied" : "vacant",
       maintenanceStatus: "due",
       currentResidentIds: [],
+      owner: null,
     });
     const flat = flats[flats.length - 1];
 

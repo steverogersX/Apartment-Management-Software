@@ -7,6 +7,7 @@ const STORAGE_KEY = "ams.activeFlatId";
 
 export function useFlats() {
   const [activeId, setActiveId] = React.useState<string>(mockActiveFlatId);
+  const [isSwitchingFlat, setIsSwitchingFlat] = React.useState(false);
 
   React.useEffect(() => {
     const stored = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
@@ -23,15 +24,22 @@ export function useFlats() {
     return () => window.removeEventListener("storage", handler);
   }, []);
 
-  const switchFlat = React.useCallback((id: string) => {
-    if (!mockFlats.some((f) => f.id === id)) return;
-    setActiveId(id);
-    window.localStorage.setItem(STORAGE_KEY, id);
-    window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: id }));
-  }, []);
+  const switchFlat = React.useCallback(
+    (id: string) => {
+      if (!mockFlats.some((f) => f.id === id) || id === activeId) return;
+      setIsSwitchingFlat(true);
+      window.setTimeout(() => {
+        setActiveId(id);
+        window.localStorage.setItem(STORAGE_KEY, id);
+        window.dispatchEvent(new StorageEvent("storage", { key: STORAGE_KEY, newValue: id }));
+        setIsSwitchingFlat(false);
+      }, 500);
+    },
+    [activeId],
+  );
 
   const activeFlat: MockFlat | null =
     mockFlats.find((f) => f.id === activeId) ?? mockFlats[0] ?? null;
 
-  return { flats: mockFlats, activeFlat, activeId, switchFlat };
+  return { flats: mockFlats, activeFlat, activeId, switchFlat, isSwitchingFlat };
 }
