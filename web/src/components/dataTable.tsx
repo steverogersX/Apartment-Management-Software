@@ -127,9 +127,10 @@ function SortableHeaderCell({
         {draggable && (
           <button
             type="button"
+            aria-label="Reorder column"
             {...attributes}
             {...listeners}
-            className="-ml-1 cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing"
+            className="-ml-1 cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <GripVertical className="size-3.5" />
           </button>
@@ -172,9 +173,10 @@ function SortableFilterChip({
       {draggable && (
         <button
           type="button"
+          aria-label="Reorder filter"
           {...attributes}
           {...listeners}
-          className="cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing"
+          className="cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <GripVertical className="size-3.5" />
         </button>
@@ -182,6 +184,7 @@ function SortableFilterChip({
       {children}
       <button
         type="button"
+        aria-label="Remove filter"
         onClick={onRemove}
         className="text-muted-foreground/50 transition-colors hover:text-foreground"
       >
@@ -205,6 +208,7 @@ type DataTableBaseProps<TData> = {
   pageSize?: number;
   itemLabel?: string;
   emptyMessage?: string;
+  emptyAction?: React.ReactNode;
   onRowClick?: (row: TData) => void;
   initialSorting?: SortingState;
   onBulkDelete?: (rows: TData[]) => void;
@@ -235,6 +239,7 @@ export function DataTable<TData>({
   pageSize = 10,
   itemLabel = "item",
   emptyMessage = "No results.",
+  emptyAction,
   onRowClick,
   initialSorting,
   onBulkDelete,
@@ -430,20 +435,23 @@ export function DataTable<TData>({
         <div className="flex items-center justify-between gap-3">
           {enableRowSelection && selectedCount > 0 ? (
             <div className="flex items-center gap-2">
+              {title && <h3 className="text-sm font-semibold text-muted-foreground">{title} ·</h3>}
               <span className="text-sm font-medium text-foreground">{selectedCount} selected</span>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => {
-                  const rows = table.getFilteredSelectedRowModel().rows.map((r) => r.original);
-                  onBulkDelete?.(rows);
-                  if (onBulkDelete) setRowSelection({});
-                }}
-              >
-                <Trash2 className="size-3.5" />
-                Delete
-              </Button>
+              {onBulkDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    const rows = table.getFilteredSelectedRowModel().rows.map((r) => r.original);
+                    onBulkDelete(rows);
+                    setRowSelection({});
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete
+                </Button>
+              )}
             </div>
           ) : (
             title && <h3 className="text-sm font-semibold text-foreground">{title}</h3>
@@ -681,6 +689,7 @@ export function DataTable<TData>({
                   }
                 }
                 const isExpanded = isExpandable && expandedRowId === row.id;
+                const isInteractiveRow = isExpandable || !!onRowClick;
                 const handleRowClick = () => {
                   if (isExpandable) {
                     setExpandedRowId((prev) => (prev === row.id ? null : row.id));
@@ -692,10 +701,23 @@ export function DataTable<TData>({
                   <TableRow
                     key={row.id}
                     aria-expanded={isExpandable ? isExpanded : undefined}
-                    onClick={isExpandable || onRowClick ? handleRowClick : undefined}
+                    tabIndex={isInteractiveRow ? 0 : undefined}
+                    onClick={isInteractiveRow ? handleRowClick : undefined}
+                    onKeyDown={
+                      isInteractiveRow
+                        ? (e) => {
+                            if (e.target !== e.currentTarget) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleRowClick();
+                            }
+                          }
+                        : undefined
+                    }
                     className={cn(
                       "border-border hover:bg-muted/50 animate-rise",
-                      (isExpandable || onRowClick) && "cursor-pointer",
+                      isInteractiveRow &&
+                        "cursor-pointer focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
                     )}
                   >
                     {row.getVisibleCells().map((cell) => {
@@ -741,7 +763,10 @@ export function DataTable<TData>({
                 colSpan={table.getVisibleLeafColumns().length}
                 className="h-24 text-center text-sm text-muted-foreground"
               >
-                {emptyMessage}
+                <div className="flex flex-col items-center justify-center gap-2.5">
+                  <span>{emptyMessage}</span>
+                  {emptyAction}
+                </div>
               </TableCell>
             </TableRow>
           )}

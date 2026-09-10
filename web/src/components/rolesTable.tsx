@@ -9,6 +9,14 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -16,8 +24,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
+import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
-import { roles as initialRoles, type RoleRecord } from "@/lib/rolesMockData";
+import { roles, type RoleRecord } from "@/lib/rolesMockData";
 
 function formatDate(iso: string | Date) {
   return new Date(iso).toLocaleDateString("en-IN", {
@@ -30,10 +39,19 @@ function formatDate(iso: string | Date) {
 export function RolesTable() {
   const { has } = useAuth();
   const router = useRouter();
-  const [data, setData] = React.useState<RoleRecord[]>(initialRoles);
+  const { toast } = useToast();
+  const [version, setVersion] = React.useState(0);
+  const [deleteTarget, setDeleteTarget] = React.useState<RoleRecord | null>(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` forces a re-read after roles is mutated in place
+  const data = React.useMemo(() => [...roles], [version]);
 
-  function removeRole(id: string) {
-    setData((rows) => rows.filter((r) => r.id !== id));
+  function handleDelete() {
+    if (!deleteTarget) return;
+    const idx = roles.findIndex((r) => r.id === deleteTarget.id);
+    if (idx !== -1) roles.splice(idx, 1);
+    setVersion((v) => v + 1);
+    toast({ title: `"${deleteTarget.name}" deleted`, variant: "success" });
+    setDeleteTarget(null);
   }
 
   const columns = React.useMemo<ColumnDef<RoleRecord>[]>(
@@ -130,7 +148,7 @@ export function RolesTable() {
                     <DropdownMenuItem
                       variant="destructive"
                       className="gap-2"
-                      onClick={() => removeRole(role.id)}
+                      onClick={() => setDeleteTarget(role)}
                     >
                       <Trash2 className="size-4" />
                       Delete role
@@ -180,25 +198,51 @@ export function RolesTable() {
   );
 
   return (
-    <DataTable
-      data={data}
-      columns={columns}
-      title="All roles"
-      filters={filters}
-      enableColumnReorder
-      enableColumnVisibility
-      enableFilterCustomization
-      showPageSize
-      pageSize={8}
-      itemLabel="role"
-      emptyMessage="No roles match these filters."
-      onRowClick={(role) => router.push(`/dashboard/roles/${role.id}`)}
-      toolbarActions={
-        <Button size="sm" className="gap-1.5" render={<Link href="/dashboard/roles/new" />}>
-          <Plus className="size-3.5" />
-          Create role
-        </Button>
-      }
-    />
+    <>
+      <DataTable
+        data={data}
+        columns={columns}
+        title="All roles"
+        filters={filters}
+        enableColumnReorder
+        enableColumnVisibility
+        enableFilterCustomization
+        showPageSize
+        pageSize={8}
+        itemLabel="role"
+        emptyMessage="No roles match these filters."
+        onRowClick={(role) => router.push(`/dashboard/roles/${role.id}`)}
+        toolbarActions={
+          <Button size="sm" className="gap-1.5" render={<Link href="/dashboard/roles/new" />}>
+            <Plus className="size-3.5" />
+            Create role
+          </Button>
+        }
+      />
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete role</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">{deleteTarget?.name}</span>?{" "}
+              {deleteTarget && deleteTarget.memberCount > 0
+                ? `${deleteTarget.memberCount} member${deleteTarget.memberCount === 1 ? "" : "s"} will lose this role immediately. `
+                : ""}
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -55,7 +55,7 @@ export const adminNavGroups: AdminNavGroup[] = [
         permission: Permission.ResidentsView,
       },
       {
-        label: "Visitors",
+        label: "Visitor Log",
         href: "/dashboard/people-hub/visitors",
         permissions: [
           Permission.VisitorApprove,
@@ -88,18 +88,16 @@ export const adminNavGroups: AdminNavGroup[] = [
         href: "/dashboard/discussion-forum",
         permission: Permission.ForumPost,
       },
-      {
-        label: "Opinion Polls",
-        href: "/dashboard/opinion-polls",
-        permission: Permission.PollsCreate,
-      },
-      { label: "Meetings", href: "/dashboard/meetings", permission: Permission.MeetingsSchedule },
-      { label: "Documents", href: "/dashboard/documents", permission: Permission.DocumentsUpload },
-      {
-        label: "Election Polls",
-        href: "/dashboard/election-polls",
-        permission: Permission.ElectionsManage,
-      },
+      // Any resident can view and vote in opinion polls — the page itself only gates the
+      // "New Poll" button on PollsCreate, so the nav entry stays ungated like Notice Board.
+      { label: "Opinion Polls", href: "/dashboard/opinion-polls" },
+      // Meetings/Documents are readable by every resident — each page only gates its own
+      // "Schedule"/"Upload" button on MeetingsSchedule/DocumentsUpload, so the nav stays ungated.
+      { label: "Meetings", href: "/dashboard/meetings" },
+      { label: "Documents", href: "/dashboard/documents" },
+      // Any resident can view elections and vote — the page itself only gates the
+      // "New Election" button on ElectionsManage, so the nav entry stays ungated.
+      { label: "Election Polls", href: "/dashboard/election-polls" },
     ],
   },
   {

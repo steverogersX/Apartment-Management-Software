@@ -95,6 +95,13 @@ export function AccountMenu({
   const hasFlats = (flats?.length ?? 0) > 0;
   const activeFlat = flats?.find((f) => f.id === activeFlatId) ?? flats?.[0] ?? null;
 
+  // When `yourRoles` is narrower than the full switchable list, the extra roles aren't actually
+  // assigned to this account — they're a demo "preview any role" tool, not a real permission
+  // change, so the section must say so instead of reading like a normal role switcher.
+  const ownedRoles = yourRoles ?? [];
+  const isPreviewTool = ownedRoles.length > 0 && effectiveRoles.length > ownedRoles.length;
+  const isPreviewing = isPreviewTool && !!activeRole && !ownedRoles.includes(activeRole);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -168,13 +175,15 @@ export function AccountMenu({
             <DropdownMenuGroup className="p-1.5">
               <DropdownMenuLabel className="flex items-center gap-1.5 px-1.5 py-1">
                 <ShieldCheck className="size-3.5 text-muted-foreground" />
-                Switch role
+                {isPreviewTool ? "Preview as (demo)" : "Switch role"}
                 <Badge variant="outline" className="ml-auto text-[10px] font-normal">
                   {effectiveRoles.length}
                 </Badge>
               </DropdownMenuLabel>
               <p className="px-1.5 pb-1 text-[11px] leading-snug text-muted-foreground">
-                Permissions update immediately.
+                {isPreviewTool
+                  ? "Demo tool, not a real permission grant — temporarily view the app as any role in this society. Your actual access is unchanged."
+                  : "Permissions update immediately."}
               </p>
               <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto pr-0.5">
                 {effectiveRoles.map((role) => {
@@ -195,8 +204,16 @@ export function AccountMenu({
                         )}
                       </span>
                       <span className="flex min-w-0 flex-1 flex-col text-left">
-                        <span className="truncate text-sm font-medium text-foreground">
+                        <span className="flex items-center gap-1.5 truncate text-sm font-medium text-foreground">
                           {meta?.label ?? role}
+                          {isPreviewTool && !ownedRoles.includes(role) && (
+                            <Badge
+                              variant="outline"
+                              className="text-[9px] font-normal text-amber-600 dark:text-amber-400 border-amber-600/40 dark:border-amber-400/40"
+                            >
+                              Demo
+                            </Badge>
+                          )}
                         </span>
                         <span className="truncate text-[11px] text-muted-foreground">
                           {meta?.description ?? "Custom role"}
@@ -205,7 +222,7 @@ export function AccountMenu({
                       {!isActive &&
                         (hasMultipleRoles ? (
                           <span className="ml-auto shrink-0 rounded border border-border px-1 py-0.5 text-[10px] text-muted-foreground">
-                            Switch
+                            {isPreviewTool ? "Preview" : "Switch"}
                           </span>
                         ) : (
                           <span

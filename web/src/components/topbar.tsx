@@ -18,6 +18,7 @@ import { adminNavGroups } from "@/lib/adminNav";
 import { roles as previewableRoles } from "@/lib/rolesMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { useFlats } from "@/hooks/useFlats";
+import { cn } from "@/lib/utils";
 
 const PREVIEWABLE_ROLE_NAMES = previewableRoles.map((r) => r.name);
 
@@ -46,6 +47,10 @@ export function Topbar() {
   const realRole = roles[0] ?? null;
   // What the UI is actually gated on right now: the preview override when one is active, else the real role.
   const activeRole = previewRole ?? realRole;
+  // Previewing means the active role isn't actually assigned to this account — distinguish
+  // that from simply having one real role, so the UI never looks like a real permission grant.
+  const isPreviewingRole =
+    !!previewRole && previewRole !== realRole && !roles.includes(previewRole);
   const displaySocietyName =
     activeSociety?.societyName ?? (isMockRolePreview ? mockActiveSocietyName : null);
 
@@ -93,12 +98,31 @@ export function Topbar() {
           </div>
         ) : (
           activeRole && (
-            <div className="hidden items-center overflow-hidden rounded-full border bg-card text-xs shadow-sm sm:flex">
-              <span className="flex items-center gap-1.5 bg-muted/50 px-3 py-1.5 font-medium">
-                <span className="flex size-5 items-center justify-center rounded-full bg-foreground text-background">
+            <div
+              className={cn(
+                "hidden items-center overflow-hidden rounded-full border text-xs shadow-sm sm:flex",
+                isPreviewingRole
+                  ? "border-amber-500/50 bg-amber-50 dark:bg-amber-950/40"
+                  : "bg-card",
+              )}
+            >
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 font-medium",
+                  isPreviewingRole ? "text-amber-800 dark:text-amber-300" : "bg-muted/50",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-5 items-center justify-center rounded-full",
+                    isPreviewingRole ? "bg-amber-500 text-white" : "bg-foreground text-background",
+                  )}
+                >
                   <ShieldCheck className="size-3" />
                 </span>
-                <span className="max-w-28 truncate">{activeRole}</span>
+                <span className="max-w-32 truncate">
+                  {isPreviewingRole ? `Previewing: ${activeRole} (demo)` : activeRole}
+                </span>
               </span>
               {displayActiveFlat && (
                 <>

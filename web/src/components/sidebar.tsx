@@ -86,7 +86,7 @@ const defaultNavItems: NavItem[] = [
     permissions: RESIDENT_SELF_SERVICE,
   },
   {
-    label: "Visitors",
+    label: "My Visitors",
     href: "/dashboard/visitors",
     icon: UserCheck,
     permissions: RESIDENT_SELF_SERVICE,
