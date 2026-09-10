@@ -31,11 +31,16 @@ import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { VisitorPass } from "@/components/visitorPass";
 import { Visitor, VisitorStatus, visitors_log } from "@/lib/mockData";
 
-const STATUS_META: Record<
+export const STATUS_META: Record<
   VisitorStatus,
   { label: string; color: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   expected: { label: "Expected", color: "text-blue-600 dark:text-blue-400", icon: Clock },
+  pending_approval: {
+    label: "Pending approval",
+    color: "text-amber-600 dark:text-amber-400",
+    icon: Clock,
+  },
   entered: { label: "Inside", color: "text-amber-600 dark:text-amber-400", icon: DoorOpen },
   completed: {
     label: "Completed",
@@ -46,7 +51,7 @@ const STATUS_META: Record<
   expired: { label: "Expired", color: "text-muted-foreground", icon: CircleSlash },
 };
 
-function formatDate(date: string) {
+export function formatDate(date: string) {
   return new Date(date).toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
@@ -54,7 +59,7 @@ function formatDate(date: string) {
   });
 }
 
-function formatTime(time: string) {
+export function formatTime(time: string) {
   const [h, m] = time.split(":").map(Number);
   const period = h >= 12 ? "PM" : "AM";
   const hour = h % 12 || 12;
@@ -166,9 +171,16 @@ export function VisitorsTable() {
         id: "status",
         label: "Status",
         type: "select",
-        options: (["expected", "entered", "completed", "denied", "expired"] as VisitorStatus[]).map(
-          (s) => ({ label: STATUS_META[s].label, value: s }),
-        ),
+        options: (
+          [
+            "expected",
+            "pending_approval",
+            "entered",
+            "completed",
+            "denied",
+            "expired",
+          ] as VisitorStatus[]
+        ).map((s) => ({ label: STATUS_META[s].label, value: s })),
         predicate: (row, value) => row.status === value,
       },
     ],

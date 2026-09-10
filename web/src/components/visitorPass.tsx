@@ -10,6 +10,7 @@ import { currentFlat, society, type VisitorStatus } from "@/lib/mockData";
 
 const STATUS_DOT: Record<VisitorStatus, string> = {
   expected: "bg-blue-400",
+  pending_approval: "bg-amber-400",
   entered: "bg-amber-400",
   completed: "bg-emerald-400",
   denied: "bg-red-400",
@@ -18,6 +19,7 @@ const STATUS_DOT: Record<VisitorStatus, string> = {
 
 const STATUS_LABEL: Record<VisitorStatus, string> = {
   expected: "Expected",
+  pending_approval: "Pending approval",
   entered: "Inside",
   completed: "Completed",
   denied: "Denied",
