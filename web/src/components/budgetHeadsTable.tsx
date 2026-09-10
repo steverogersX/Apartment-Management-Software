@@ -2,27 +2,37 @@
 
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Copy, Plus } from "lucide-react";
+import { Copy, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { accountName } from "@/lib/chartOfAccountsMockData";
 import {
   budgetHeads,
-  generateMonthlyBreakdown,
+  computeActualAmount,
   type BudgetHead,
   type BudgetHeadType,
   type EditBudgetHeadInput,
 } from "@/lib/budgetMockData";
+import { vouchers } from "@/lib/vouchersMockData";
 import { AddBudgetHeadForm } from "./budget/addBudgetHeadForm";
+import { EditBudgetHeadForm } from "./budget/editBudgetHeadForm";
 import { useAuth } from "@/hooks/useAuth";
 
 function formatCurrency(amount: number) {
@@ -47,9 +57,12 @@ export function BudgetHeadsTable({
   const canManage = has("BudgetManage");
   const [version, setVersion] = React.useState(0);
   const [addOpen, setAddOpen] = React.useState(false);
+  const [editing, setEditing] = React.useState<BudgetHead | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<BudgetHead | null>(null);
 
   const rows = React.useMemo(
     () => budgetHeads.filter((h) => h.financialYear === financialYear),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [financialYear, version],
   );
 
@@ -71,14 +84,40 @@ export function BudgetHeadsTable({
       name: values.name,
       type: values.type,
       plannedAmount: values.plannedAmount,
-      actualAmount: values.actualAmount,
       financialYear: values.financialYear,
-      monthly: generateMonthlyBreakdown(values.name, values.plannedAmount, values.actualAmount),
+      ledgerAccountId: values.ledgerAccountId,
     };
     budgetHeads.push(newHead);
     setVersion((v) => v + 1);
     onMutate?.();
     setAddOpen(false);
+  }
+
+  function handleEditSave(values: EditBudgetHeadInput) {
+    if (!editing) return;
+    const idx = budgetHeads.findIndex((h) => h.id === editing.id);
+    if (idx !== -1) {
+      budgetHeads[idx] = {
+        ...budgetHeads[idx],
+        name: values.name,
+        type: values.type,
+        plannedAmount: values.plannedAmount,
+        financialYear: values.financialYear,
+        ledgerAccountId: values.ledgerAccountId,
+      };
+    }
+    setVersion((v) => v + 1);
+    onMutate?.();
+    setEditing(null);
+  }
+
+  function handleDelete() {
+    if (!deleteTarget) return;
+    const idx = budgetHeads.findIndex((h) => h.id === deleteTarget.id);
+    if (idx !== -1) budgetHeads.splice(idx, 1);
+    setVersion((v) => v + 1);
+    onMutate?.();
+    setDeleteTarget(null);
   }
 
   function handleClone() {
@@ -89,9 +128,8 @@ export function BudgetHeadsTable({
         name: h.name,
         type: h.type,
         plannedAmount: h.plannedAmount,
-        actualAmount: 0,
         financialYear,
-        monthly: generateMonthlyBreakdown(h.name, h.plannedAmount, 0),
+        ledgerAccountId: h.ledgerAccountId,
       });
     });
     setVersion((v) => v + 1);
@@ -126,6 +164,17 @@ export function BudgetHeadsTable({
         ),
       },
       {
+        id: "ledgerAccountId",
+        accessorFn: (row) => accountName(row.ledgerAccountId),
+        meta: { label: "Ledger" },
+        header: () => <DataTableColumnHeader label="Ledger" />,
+        cell: ({ row }) => (
+          <span className="whitespace-nowrap text-sm text-muted-foreground">
+            {accountName(row.original.ledgerAccountId)}
+          </span>
+        ),
+      },
+      {
         id: "plannedAmount",
         accessorKey: "plannedAmount",
         meta: { label: "Planned" },
@@ -144,7 +193,7 @@ export function BudgetHeadsTable({
       },
       {
         id: "actualAmount",
-        accessorKey: "actualAmount",
+        accessorFn: (row) => computeActualAmount(row, vouchers),
         meta: { label: "Actual" },
         header: ({ column }) => (
           <DataTableColumnHeader
@@ -155,13 +204,13 @@ export function BudgetHeadsTable({
         ),
         cell: ({ row }) => (
           <span className="whitespace-nowrap text-sm font-medium text-foreground">
-            {formatCurrency(row.original.actualAmount)}
+            {formatCurrency(computeActualAmount(row.original, vouchers))}
           </span>
         ),
       },
       {
         id: "variance",
-        accessorFn: (row) => row.actualAmount - row.plannedAmount,
+        accessorFn: (row) => computeActualAmount(row, vouchers) - row.plannedAmount,
         meta: { label: "Variance" },
         header: ({ column }) => (
           <DataTableColumnHeader
@@ -171,21 +220,53 @@ export function BudgetHeadsTable({
           />
         ),
         cell: ({ row }) => {
-          const diff = row.original.actualAmount - row.original.plannedAmount;
-          const pct = row.original.plannedAmount ? (diff / row.original.plannedAmount) * 100 : 0;
+          const actual = computeActualAmount(row.original, vouchers);
+          const diff = actual - row.original.plannedAmount;
           const isOver = diff > 0;
           const isUnder = diff < 0;
           return (
             <span
               className={`whitespace-nowrap text-sm font-medium tabular-nums ${isOver ? "text-red-600 dark:text-red-400" : isUnder ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}
             >
-              {varianceLabel(row.original.plannedAmount, row.original.actualAmount)}
+              {varianceLabel(row.original.plannedAmount, actual)}
             </span>
           );
         },
       },
+      ...(canManage
+        ? [
+            {
+              id: "actions",
+              enableHiding: false,
+              header: () => <span className="sr-only">Actions</span>,
+              cell: ({ row }: { row: { original: BudgetHead } }) => (
+                <div onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+                      <MoreHorizontal className="size-4" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem className="gap-2" onClick={() => setEditing(row.original)}>
+                        <Pencil className="size-4 text-muted-foreground" />
+                        Edit head
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        className="gap-2"
+                        onClick={() => setDeleteTarget(row.original)}
+                      >
+                        <Trash2 className="size-4" />
+                        Delete head
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ),
+            } satisfies ColumnDef<BudgetHead>,
+          ]
+        : []),
     ],
-    [],
+    [canManage],
   );
 
   const filters = React.useMemo<DataTableFilterConfig<BudgetHead>[]>(
@@ -264,6 +345,44 @@ export function BudgetHeadsTable({
             onSave={handleAddSave}
             onCancel={() => setAddOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit budget head</DialogTitle>
+            <DialogDescription>Update this head&apos;s planned amount or ledger.</DialogDescription>
+          </DialogHeader>
+          {editing && (
+            <EditBudgetHeadForm
+              key={editing.id}
+              head={editing}
+              onSave={handleEditSave}
+              onCancel={() => setEditing(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete budget head</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">{deleteTarget?.name}</span> from the{" "}
+              {financialYear} budget? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

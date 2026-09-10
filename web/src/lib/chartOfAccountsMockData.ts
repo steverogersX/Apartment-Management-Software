@@ -75,8 +75,22 @@ export const ledgerAccounts: LedgerAccount[] = [
     groupId: "g-direct-exp",
   },
   { id: "la-water", name: "Water Charges Expense", type: "Expense", groupId: "g-direct-exp" },
+  { id: "la-lift-amc", name: "Lift AMC Expense", type: "Expense", groupId: "g-direct-exp" },
+  { id: "la-landscaping", name: "Landscaping Expense", type: "Expense", groupId: "g-direct-exp" },
+  {
+    id: "la-diesel",
+    name: "Diesel Generator Fuel Expense",
+    type: "Expense",
+    groupId: "g-direct-exp",
+  },
   { id: "la-insurance", name: "Insurance Expense", type: "Expense", groupId: "g-indirect-exp" },
   { id: "la-office", name: "Office Admin Expense", type: "Expense", groupId: "g-indirect-exp" },
+  {
+    id: "la-other-income",
+    name: "Interest & Other Income",
+    type: "Income",
+    groupId: "g-indirect-inc",
+  },
 ];
 
 export function accountName(id: string) {

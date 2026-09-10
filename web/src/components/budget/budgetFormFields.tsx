@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ledgerAccounts } from "@/lib/chartOfAccountsMockData";
 import type { EditBudgetHeadInput } from "@/lib/budgetMockData";
 
 export function fieldError(errors: unknown[]): string | undefined {
@@ -86,20 +87,25 @@ export function BudgetFormFields({ form }: { form: any }) {
         )}
       </form.Field>
 
-      <form.Field name="actualAmount">
+      <form.Field name="ledgerAccountId">
         {(field: any) => (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="budget-actual">Actual amount</Label>
-            <Input
-              id="budget-actual"
-              type="number"
-              value={field.state.value}
-              onBlur={field.handleBlur}
-              onChange={(e) =>
-                field.handleChange(e.target.value === "" ? 0 : Number(e.target.value))
-              }
-              aria-invalid={field.state.meta.errors.length > 0}
-            />
+            <Label>Ledger account</Label>
+            <Select value={field.state.value} onValueChange={(v) => field.handleChange(v ?? "")}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select ledger account" />
+              </SelectTrigger>
+              <SelectContent>
+                {ledgerAccounts.map((a) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              &quot;Actual&quot; for this head is the sum of posted vouchers against this ledger.
+            </p>
             {fieldError(field.state.meta.errors) && (
               <p className="text-xs text-destructive">{fieldError(field.state.meta.errors)}</p>
             )}

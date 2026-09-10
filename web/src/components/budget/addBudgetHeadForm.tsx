@@ -20,7 +20,7 @@ export function AddBudgetHeadForm({
       name: "",
       type: "Expense",
       plannedAmount: 0,
-      actualAmount: 0,
+      ledgerAccountId: "",
       financialYear,
     } as EditBudgetHeadInput,
     validators: { onChange: editBudgetHeadSchema },

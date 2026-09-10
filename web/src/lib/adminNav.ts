@@ -169,6 +169,11 @@ export const adminNavGroups: AdminNavGroup[] = [
         permissions: [Permission.InvoicingViewAll, Permission.InvoicingViewOwn],
       },
       {
+        label: "Chart of Accounts",
+        href: "/dashboard/accounts/chart-of-accounts",
+        permissions: [Permission.ChartOfAccountsView],
+      },
+      {
         label: "Billing Details",
         href: "/dashboard/accounts/billing-details",
         permissions: [Permission.BillingSettingsView],

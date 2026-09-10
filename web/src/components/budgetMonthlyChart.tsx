@@ -39,11 +39,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  computeActualMonthlyBreakdown,
   currentFinancialYear,
   currentMonthIndexInFY,
   MONTHS_FY,
+  plannedMonthlyBreakdown,
   type BudgetHead,
 } from "@/lib/budgetMockData";
+import { vouchers } from "@/lib/vouchersMockData";
 
 type ViewMode = "monthly" | "cumulative";
 
@@ -81,29 +84,31 @@ export function BudgetMonthlyChart({
   const isCurrentFY = financialYear === currentFinancialYear();
   const currentMonthIdx = isCurrentFY ? currentMonthIndexInFY() : null;
 
-  const monthlyTotals = React.useMemo(
-    () =>
-      MONTHS_FY.map((month, i) => ({
-        month,
-        planned: scopeHeads.reduce((sum, h) => sum + h.monthly[i].planned, 0),
-        actual: scopeHeads.reduce((sum, h) => sum + h.monthly[i].actual, 0),
-        isFuture: currentMonthIdx !== null && i > currentMonthIdx,
-      })),
-    [scopeHeads, currentMonthIdx],
-  );
+  const monthlyTotals = React.useMemo(() => {
+    const plannedByHead = scopeHeads.map((h) => plannedMonthlyBreakdown(h.name, h.plannedAmount));
+    const actualByHead = scopeHeads.map((h) => computeActualMonthlyBreakdown(h, vouchers));
+    return MONTHS_FY.map((month, i) => ({
+      month,
+      planned: plannedByHead.reduce((sum, months) => sum + months[i], 0),
+      actual: actualByHead.reduce((sum, months) => sum + months[i], 0),
+      isFuture: currentMonthIdx !== null && i > currentMonthIdx,
+    }));
+  }, [scopeHeads, currentMonthIdx]);
 
   const cumulativeTotals = React.useMemo(() => {
-    let plannedRunning = 0;
-    let actualRunning = 0;
-    return monthlyTotals.map((m, i) => {
-      plannedRunning += m.planned;
-      actualRunning += m.actual;
-      return {
-        month: m.month,
-        planned: plannedRunning,
-        actual: currentMonthIdx !== null && i > currentMonthIdx ? null : actualRunning,
-      };
-    });
+    const plannedRunningByIndex = monthlyTotals.reduce<number[]>((acc, m, i) => {
+      acc.push((acc[i - 1] ?? 0) + m.planned);
+      return acc;
+    }, []);
+    const actualRunningByIndex = monthlyTotals.reduce<number[]>((acc, m, i) => {
+      acc.push((acc[i - 1] ?? 0) + m.actual);
+      return acc;
+    }, []);
+    return monthlyTotals.map((m, i) => ({
+      month: m.month,
+      planned: plannedRunningByIndex[i],
+      actual: currentMonthIdx !== null && i > currentMonthIdx ? null : actualRunningByIndex[i],
+    }));
   }, [monthlyTotals, currentMonthIdx]);
 
   if (expenseHeads.length === 0) {
@@ -116,7 +121,6 @@ export function BudgetMonthlyChart({
     );
   }
 
-  const chartData = viewMode === "monthly" ? monthlyTotals : cumulativeTotals;
   const todayMonthLabel = currentMonthIdx !== null ? MONTHS_FY[currentMonthIdx] : null;
 
   return (

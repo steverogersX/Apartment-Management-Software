@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { Voucher } from "./vouchersMockData";
+
 export type BudgetHeadType = "Income" | "Expense";
 
 export const MONTHS_FY = [
@@ -19,35 +21,28 @@ export const MONTHS_FY = [
 
 export type BudgetMonth = (typeof MONTHS_FY)[number];
 
-export type MonthlyAmount = {
-  month: BudgetMonth;
-  planned: number;
-  actual: number;
-};
-
 export type BudgetHead = {
   id: string;
   name: string;
   type: BudgetHeadType;
   plannedAmount: number;
-  actualAmount: number;
   financialYear: string;
-  monthly: MonthlyAmount[];
+  ledgerAccountId: string;
 };
 
 export const editBudgetHeadSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   type: z.enum(["Income", "Expense"]),
   plannedAmount: z.coerce.number().min(0, "Planned amount must be >= 0"),
-  actualAmount: z.coerce.number().min(0, "Actual amount must be >= 0"),
   financialYear: z.string().min(1, "Financial year is required"),
+  ledgerAccountId: z.string().min(1, "Ledger account is required"),
 });
 
 export type EditBudgetHeadInput = z.infer<typeof editBudgetHeadSchema>;
 
 export const FINANCIAL_YEARS: string[] = ["2025-26", "2024-25", "2026-27"];
 
-// Fixed monthly-share profiles (Apr -> Mar) used to spread a head's single annual
+// Fixed monthly-share profiles (Apr -> Mar) used to spread a head's planned annual
 // figure across months for the monthly spending view. Chosen by keyword so seeded
 // heads read as plausible seasonal spend instead of a flat line every month.
 const FLAT_PROFILE = Array(12).fill(1);
@@ -78,221 +73,253 @@ function distributeAcrossMonths(total: number, weights: number[]): number[] {
   return rounded;
 }
 
-export function generateMonthlyBreakdown(
-  name: string,
-  plannedAmount: number,
-  actualAmount: number,
-): MonthlyAmount[] {
-  const weights = profileForHeadName(name);
-  const plannedByMonth = distributeAcrossMonths(plannedAmount, weights);
-  const actualByMonth = distributeAcrossMonths(actualAmount, weights);
-  return MONTHS_FY.map((month, i) => ({
-    month,
-    planned: plannedByMonth[i],
-    actual: actualByMonth[i],
-  }));
+// The planned annual figure spread across months by the head's seasonal profile —
+// this is a budgeted estimate, not a record of transactions, so it stays synthetic.
+export function plannedMonthlyBreakdown(name: string, plannedAmount: number): number[] {
+  return distributeAcrossMonths(plannedAmount, profileForHeadName(name));
 }
 
-function withMonthly(head: Omit<BudgetHead, "monthly">): BudgetHead {
-  return {
-    ...head,
-    monthly: generateMonthlyBreakdown(head.name, head.plannedAmount, head.actualAmount),
-  };
+// The India-style financial year (Apr -> Mar) that `fy` ("YYYY-YY") spans, as a
+// half-open [start, end) date range.
+export function financialYearRange(fy: string): { start: Date; end: Date } {
+  const startYear = Number(fy.split("-")[0]);
+  return { start: new Date(startYear, 3, 1), end: new Date(startYear + 1, 3, 1) };
+}
+
+function actualLedgerSide(head: Pick<BudgetHead, "type">): "debitAccountId" | "creditAccountId" {
+  return head.type === "Income" ? "creditAccountId" : "debitAccountId";
+}
+
+// A budget head's "actual" is never stored — it's the sum of posted vouchers
+// against its linked ledger for the head's financial year, so it can never drift
+// out of sync with what Vouchers/Chart of Accounts records as having happened.
+export function computeActualAmount(
+  head: Pick<BudgetHead, "type" | "ledgerAccountId" | "financialYear">,
+  vouchers: Voucher[],
+): number {
+  const { start, end } = financialYearRange(head.financialYear);
+  const side = actualLedgerSide(head);
+  return vouchers
+    .filter((v) => v.status === "Posted" && v[side] === head.ledgerAccountId)
+    .filter((v) => {
+      const d = new Date(v.date);
+      return d >= start && d < end;
+    })
+    .reduce((sum, v) => sum + v.amount, 0);
+}
+
+// Same as computeActualAmount but bucketed by month (Apr = 0 ... Mar = 11) using
+// each voucher's real posting date, for the Monthly Spending view.
+export function computeActualMonthlyBreakdown(
+  head: Pick<BudgetHead, "type" | "ledgerAccountId" | "financialYear">,
+  vouchers: Voucher[],
+): number[] {
+  const { start, end } = financialYearRange(head.financialYear);
+  const side = actualLedgerSide(head);
+  const buckets = Array(12).fill(0) as number[];
+  vouchers
+    .filter((v) => v.status === "Posted" && v[side] === head.ledgerAccountId)
+    .forEach((v) => {
+      const d = new Date(v.date);
+      if (d < start || d >= end) return;
+      buckets[(d.getMonth() + 9) % 12] += v.amount;
+    });
+  return buckets;
 }
 
 export const budgetHeads: BudgetHead[] = [
-  withMonthly({
+  {
     id: "bh-1",
     name: "Housekeeping",
     type: "Expense",
     plannedAmount: 480000,
-    actualAmount: 520000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-housekeeping",
+  },
+  {
     id: "bh-2",
     name: "Security Services",
     type: "Expense",
     plannedAmount: 600000,
-    actualAmount: 580000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-security",
+  },
+  {
     id: "bh-3",
     name: "Electricity - Common Area",
     type: "Expense",
     plannedAmount: 360000,
-    actualAmount: 390000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-electricity",
+  },
+  {
     id: "bh-4",
     name: "Water Charges",
     type: "Expense",
     plannedAmount: 240000,
-    actualAmount: 235000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-water",
+  },
+  {
     id: "bh-5",
     name: "Lift AMC",
     type: "Expense",
     plannedAmount: 180000,
-    actualAmount: 180000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-lift-amc",
+  },
+  {
     id: "bh-6",
     name: "Landscaping",
     type: "Expense",
     plannedAmount: 120000,
-    actualAmount: 80000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-landscaping",
+  },
+  {
     id: "bh-7",
     name: "Insurance",
     type: "Expense",
     plannedAmount: 150000,
-    actualAmount: 150000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-insurance",
+  },
+  {
     id: "bh-8",
     name: "Repairs & Maintenance",
     type: "Expense",
     plannedAmount: 300000,
-    actualAmount: 340000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-repairs",
+  },
+  {
     id: "bh-9",
     name: "Diesel Generator Fuel",
     type: "Expense",
     plannedAmount: 90000,
-    actualAmount: 105000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-diesel",
+  },
+  {
     id: "bh-10",
     name: "Office Admin",
     type: "Expense",
     plannedAmount: 100000,
-    actualAmount: 95000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-office",
+  },
+  {
     id: "bh-11",
     name: "Sinking Fund Contribution",
     type: "Income",
     plannedAmount: 200000,
-    actualAmount: 180000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-sinking",
+  },
+  {
     id: "bh-12",
     name: "Interest/Other Income",
     type: "Income",
     plannedAmount: 50000,
-    actualAmount: 65000,
     financialYear: "2025-26",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-other-income",
+  },
+  {
     id: "bh-13",
     name: "Housekeeping",
     type: "Expense",
     plannedAmount: 450000,
-    actualAmount: 445000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-housekeeping",
+  },
+  {
     id: "bh-14",
     name: "Security Services",
     type: "Expense",
     plannedAmount: 580000,
-    actualAmount: 590000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-security",
+  },
+  {
     id: "bh-15",
     name: "Electricity - Common Area",
     type: "Expense",
     plannedAmount: 340000,
-    actualAmount: 355000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-electricity",
+  },
+  {
     id: "bh-16",
     name: "Water Charges",
     type: "Expense",
     plannedAmount: 220000,
-    actualAmount: 215000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-water",
+  },
+  {
     id: "bh-17",
     name: "Lift AMC",
     type: "Expense",
     plannedAmount: 170000,
-    actualAmount: 170000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-lift-amc",
+  },
+  {
     id: "bh-18",
     name: "Landscaping",
     type: "Expense",
     plannedAmount: 110000,
-    actualAmount: 105000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-landscaping",
+  },
+  {
     id: "bh-19",
     name: "Insurance",
     type: "Expense",
     plannedAmount: 140000,
-    actualAmount: 140000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-insurance",
+  },
+  {
     id: "bh-20",
     name: "Repairs & Maintenance",
     type: "Expense",
     plannedAmount: 280000,
-    actualAmount: 295000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-repairs",
+  },
+  {
     id: "bh-21",
     name: "Diesel Generator Fuel",
     type: "Expense",
     plannedAmount: 85000,
-    actualAmount: 82000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-diesel",
+  },
+  {
     id: "bh-22",
     name: "Office Admin",
     type: "Expense",
     plannedAmount: 95000,
-    actualAmount: 90000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-office",
+  },
+  {
     id: "bh-23",
     name: "Sinking Fund Contribution",
     type: "Income",
     plannedAmount: 180000,
-    actualAmount: 175000,
     financialYear: "2024-25",
-  }),
-  withMonthly({
+    ledgerAccountId: "la-sinking",
+  },
+  {
     id: "bh-24",
     name: "Interest/Other Income",
     type: "Income",
     plannedAmount: 40000,
-    actualAmount: 48000,
     financialYear: "2024-25",
-  }),
+    ledgerAccountId: "la-other-income",
+  },
 ];
 
 // The India-style financial year (Apr -> Mar) containing today, as "YYYY-YY".
