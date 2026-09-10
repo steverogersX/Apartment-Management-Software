@@ -30,7 +30,7 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import {
-  Check,
+  ChevronDown,
   ChevronRight,
   GripVertical,
   Plus,
@@ -208,6 +208,7 @@ type DataTableBaseProps<TData> = {
   onRowClick?: (row: TData) => void;
   initialSorting?: SortingState;
   onBulkDelete?: (rows: TData[]) => void;
+  defaultFilterValues?: Record<string, string>;
 };
 
 type DataTableExpandableProps<TData> =
@@ -237,6 +238,7 @@ export function DataTable<TData>({
   onRowClick,
   initialSorting,
   onBulkDelete,
+  defaultFilterValues,
   renderSubRow,
   getRowId,
 }: DataTableBaseProps<TData> & DataTableExpandableProps<TData>) {
@@ -322,7 +324,14 @@ export function DataTable<TData>({
   }, [columns]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [activeFilterIds, setActiveFilterIds] = React.useState<string[]>(filters.map((f) => f.id));
-  const [filterValues, setFilterValues] = React.useState<Record<string, string>>({});
+  const [filterValues, setFilterValues] = React.useState<Record<string, string>>(
+    () => defaultFilterValues ?? {},
+  );
+  const [selectFilterQuery, setSelectFilterQuery] = React.useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    if (defaultFilterValues) setFilterValues(defaultFilterValues);
+  }, [defaultFilterValues]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -509,42 +518,73 @@ export function DataTable<TData>({
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           render={
-                            <button type="button" className="px-0.5 text-sm text-foreground" />
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-sm px-1 py-0.5 text-xs font-medium whitespace-nowrap text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50"
+                            />
                           }
                         >
-                          {filter.label}:{" "}
-                          {filter.type === "groupBy"
-                            ? (filter.options.find(
-                                (o) => o.value === (filterValues[filter.id] ?? "none"),
-                              )?.label ?? "None")
-                            : (filter.options.find((o) => o.value === filterValues[filter.id])
-                                ?.label ?? "All")}
+                          <span>
+                            {filter.label}:{" "}
+                            {filter.type === "groupBy"
+                              ? (filter.options.find(
+                                  (o) => o.value === (filterValues[filter.id] ?? "none"),
+                                )?.label ?? "None")
+                              : (filter.options.find((o) => o.value === filterValues[filter.id])
+                                  ?.label ?? `All ${filter.label}`)}
+                          </span>
+                          <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-40">
+                        <DropdownMenuContent align="start" className="w-56 p-1.5">
+                          {filter.id === "flat" && (
+                            <div className="p-1 pb-1.5">
+                              <div className="flex items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1.5">
+                                <Search className="size-3.5 shrink-0 text-muted-foreground" />
+                                <input
+                                  value={selectFilterQuery[filter.id] ?? ""}
+                                  onChange={(e) =>
+                                    setSelectFilterQuery((v) => ({
+                                      ...v,
+                                      [filter.id]: e.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                  placeholder="Search flats…"
+                                  className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                                />
+                              </div>
+                            </div>
+                          )}
                           {(filter.type === "groupBy"
                             ? filter.options
-                            : [
-                                { label: `All ${filter.label.toLowerCase()}`, value: "all" },
-                                ...filter.options,
-                              ]
-                          ).map((opt) => {
-                            const current =
-                              filterValues[filter.id] ||
-                              (filter.type === "groupBy" ? "none" : "all");
-                            const isSelected = current === opt.value;
-                            return (
-                              <DropdownMenuItem
-                                key={opt.value}
-                                onClick={() =>
-                                  setFilterValues((v) => ({ ...v, [filter.id]: opt.value }))
-                                }
-                                className="justify-between"
-                              >
-                                {opt.label}
-                                {isSelected && <Check className="size-4 shrink-0" />}
-                              </DropdownMenuItem>
-                            );
-                          })}
+                            : [{ label: `All ${filter.label}`, value: "all" }, ...filter.options]
+                          )
+                            .filter((opt) => {
+                              const q = selectFilterQuery[filter.id];
+                              if (!q || filter.id !== "flat") return true;
+                              return opt.label.toLowerCase().includes(q.toLowerCase());
+                            })
+                            .map((opt) => {
+                              const current =
+                                filterValues[filter.id] ||
+                                (filter.type === "groupBy" ? "none" : "all");
+                              const isSelected = current === opt.value;
+                              return (
+                                <DropdownMenuItem
+                                  key={opt.value}
+                                  onClick={() => {
+                                    setFilterValues((v) => ({ ...v, [filter.id]: opt.value }));
+                                    setSelectFilterQuery((v) => ({ ...v, [filter.id]: "" }));
+                                  }}
+                                  className={cn(
+                                    "px-2 py-1.5",
+                                    isSelected && "bg-accent/60 text-accent-foreground",
+                                  )}
+                                >
+                                  {opt.label}
+                                </DropdownMenuItem>
+                              );
+                            })}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
