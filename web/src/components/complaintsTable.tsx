@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
 import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
 
-import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { avatarUrlForName, cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { ComplaintPriority, ComplaintStatus, complaints } from "@/lib/mockData";
+import { residents } from "@/lib/residentsMockData";
 
 export type ComplaintRow = {
   id: string;
@@ -20,6 +22,10 @@ export type ComplaintRow = {
   createdAt: string;
   societyName?: string;
   assignedTo?: { name: string; initials: string } | null;
+  raisedBy?: string;
+  tower?: string;
+  flatNumber?: string;
+  flatLabel?: string;
 };
 
 const STATUS_DOT: Record<ComplaintStatus, string> = {
@@ -56,6 +62,8 @@ export function ComplaintsTable({
   showSociety = false,
   showAssignee = true,
   showPageSize = false,
+  enableGrouping = false,
+  onRowClick,
 }: {
   data?: ComplaintRow[];
   title?: string;
@@ -63,8 +71,29 @@ export function ComplaintsTable({
   showSociety?: boolean;
   showAssignee?: boolean;
   showPageSize?: boolean;
+  enableGrouping?: boolean;
+  onRowClick?: (row: ComplaintRow) => void;
 }) {
-  const source = dataProp ?? complaints;
+  const rawSource = (dataProp ?? complaints) as ComplaintRow[];
+  const source = React.useMemo(() => {
+    return rawSource.map((row) => {
+      if (row.flatLabel) return row;
+      // Prefer the complaint's own tower/flatNumber; fall back to a residents lookup
+      // by name (same flatFor pattern as notices/forum/polls) for rows that predate it.
+      if (row.tower && row.flatNumber) {
+        return { ...row, flatLabel: `${row.tower}-${row.flatNumber}` };
+      }
+      const raisedBy = row.raisedBy;
+      if (!raisedBy) return row;
+      const resident = residents.find((r) => r.name === raisedBy);
+      if (!resident) return row;
+      return {
+        ...row,
+        tower: resident.tower,
+        flatLabel: `${resident.tower}-${resident.flatNumber}`,
+      };
+    });
+  }, [rawSource]);
 
   const columns = React.useMemo<ColumnDef<ComplaintRow>[]>(() => {
     const all: ColumnDef<ComplaintRow>[] = [
@@ -93,6 +122,15 @@ export function ComplaintsTable({
             <span className="truncate font-medium text-foreground">{row.original.title}</span>
             <span className="truncate text-xs text-muted-foreground">{row.original.category}</span>
           </div>
+        ),
+      },
+      {
+        id: "flat",
+        accessorKey: "flatLabel",
+        meta: { label: "Flat" },
+        header: () => <DataTableColumnHeader label="Flat" />,
+        cell: ({ row }) => (
+          <span className="whitespace-nowrap text-foreground">{row.original.flatLabel ?? "—"}</span>
         ),
       },
       {
@@ -162,27 +200,33 @@ export function ComplaintsTable({
             return <span className="whitespace-nowrap text-muted-foreground">Unassigned</span>;
           }
           return (
-            <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/complaints/assignee/${encodeURIComponent(assignee.name)}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex w-fit items-center gap-2 rounded-md hover:underline"
+            >
               <Avatar size="sm">
+                <AvatarImage src={avatarUrlForName(assignee.name)} alt={assignee.name} />
                 <AvatarFallback className="text-[10px]">{assignee.initials}</AvatarFallback>
               </Avatar>
               <span className="whitespace-nowrap text-foreground">{assignee.name}</span>
-            </div>
+            </Link>
           );
         },
       },
     ];
 
     return all.filter((c) => {
-      if (compact && (c.id === "createdAt" || c.id === "assignedTo")) return false;
+      if (compact && (c.id === "createdAt" || c.id === "assignedTo" || c.id === "flat"))
+        return false;
       if (c.id === "societyName") return showSociety;
       if (c.id === "assignedTo") return showAssignee;
       return true;
     });
   }, [compact, showSociety, showAssignee]);
 
-  const filters = React.useMemo<DataTableFilterConfig<ComplaintRow>[]>(
-    () => [
+  const filters = React.useMemo<DataTableFilterConfig<ComplaintRow>[]>(() => {
+    const base: DataTableFilterConfig<ComplaintRow>[] = [
       {
         id: "status",
         label: "Status",
@@ -195,9 +239,23 @@ export function ComplaintsTable({
         ),
         predicate: (row, value) => row.status === value,
       },
-    ],
-    [],
-  );
+    ];
+    if (enableGrouping) {
+      base.push({
+        id: "groupBy",
+        label: "Group by",
+        type: "groupBy",
+        options: [
+          { label: "None", value: "none" },
+          { label: "Flat", value: "flat" },
+          { label: "Tower", value: "tower" },
+        ],
+        groupBy: (row, value) =>
+          value === "flat" ? (row.flatLabel ?? "Unknown") : `Tower ${row.tower ?? "Unknown"}`,
+      });
+    }
+    return base;
+  }, [enableGrouping]);
 
   return (
     <DataTable
@@ -210,6 +268,7 @@ export function ComplaintsTable({
       itemLabel="complaint"
       emptyMessage="No complaints match this filter."
       initialSorting={compact ? [] : [{ id: "createdAt", desc: true }]}
+      onRowClick={onRowClick}
     />
   );
 }
