@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InvoicingTable } from "@/components/invoicingTable";
+import { CollectionCyclesTable } from "@/components/invoicing/collectionCyclesTable";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentFlat } from "@/hooks/useCurrentFlat";
+import { invoices } from "@/lib/invoicingMockData";
 
 export default function InvoicingPage() {
   const { has } = useAuth();
@@ -25,6 +28,8 @@ export default function InvoicingPage() {
     );
   }
 
+  const scopedInvoices = canViewAll ? invoices : invoices.filter((inv) => inv.flatId === flatId);
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
@@ -35,7 +40,23 @@ export default function InvoicingPage() {
             : "Your flat's maintenance invoices."}
         </p>
       </div>
-      <InvoicingTable flatId={canViewAll ? null : flatId} readOnly={!canViewAll} />
+
+      {canViewAll ? (
+        <Tabs defaultValue="invoices">
+          <TabsList>
+            <TabsTrigger value="invoices">All Invoices</TabsTrigger>
+            <TabsTrigger value="cycles">Collection Cycles</TabsTrigger>
+          </TabsList>
+          <TabsContent value="invoices" className="animate-rise mt-4">
+            <InvoicingTable flatId={null} />
+          </TabsContent>
+          <TabsContent value="cycles" className="animate-rise mt-4">
+            <CollectionCyclesTable invoices={scopedInvoices} />
+          </TabsContent>
+        </Tabs>
+      ) : (
+        <InvoicingTable flatId={flatId} readOnly />
+      )}
     </div>
   );
 }

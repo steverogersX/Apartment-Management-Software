@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Boxes, Landmark, Megaphone, Sofa, Ticket, Users, Wrench } from "lucide-react";
+import { Boxes, Landmark, Megaphone, Sofa, Ticket, Users } from "lucide-react";
 
 import { Permission, type PermissionDefinition } from "@shared/index";
 
@@ -132,22 +132,6 @@ export const adminNavGroups: AdminNavGroup[] = [
     label: "Amenities",
     icon: Sofa,
     items: [{ label: "Bookings & History", permission: Permission.AmenitiesManage }],
-  },
-  {
-    label: "Maintenance",
-    icon: Wrench,
-    items: [
-      {
-        label: "Records",
-        href: "/dashboard/maintenance/records",
-        permission: Permission.AssetsView,
-      },
-      {
-        label: "History",
-        href: "/dashboard/maintenance/history",
-        permission: Permission.AssetsView,
-      },
-    ],
   },
   {
     label: "Asset & Inventory",
