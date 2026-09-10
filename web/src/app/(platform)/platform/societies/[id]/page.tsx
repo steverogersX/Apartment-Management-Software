@@ -16,13 +16,13 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { SocietyLogo } from "@/components/societyLogo";
 import { useBreadcrumbTitle } from "@/components/breadcrumbs";
 import { getSocietiesRequest } from "@/lib/societyApi";
 import { getSocietyDetails } from "@/lib/platformMockData";
-import { getInitials } from "@/lib/utils";
+import { avatarUrlForName, getInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 
 function formatDate(date: Date | string) {
@@ -147,6 +147,7 @@ export default function SocietyDetailPage() {
           <h2 className="text-sm font-semibold text-foreground">Society admin</h2>
           <div className="mt-4 flex items-center gap-3">
             <Avatar className="size-10">
+              <AvatarImage src={avatarUrlForName(details.admin.name)} alt={details.admin.name} />
               <AvatarFallback>{getInitials(details.admin.name)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col">
