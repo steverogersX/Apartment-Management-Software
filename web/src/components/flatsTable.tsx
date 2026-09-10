@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ChevronRight, Home, Plus } from "lucide-react";
+import { ChevronRight, Home, Plus, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { cn, getInitials, gradientForName } from "@/lib/utils";
@@ -355,6 +355,24 @@ export function FlatsTable() {
           );
         },
       },
+      {
+        id: "actions",
+        enableHiding: false,
+        header: () => null,
+        cell: ({ row }) =>
+          row.original.occupancyStatus === "vacant" ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2 text-xs"
+              onClick={(e) => e.stopPropagation()}
+              render={<Link href={`/dashboard/people-hub/flats/${row.original.id}`} />}
+            >
+              <UserPlus className="size-3.5" />
+              Assign
+            </Button>
+          ) : null,
+      },
     ],
     [],
   );
@@ -419,32 +437,66 @@ export function FlatsTable() {
 
   const renderSubRow = React.useCallback((row: FlatRecord) => <FlatSubRow flat={row} />, []);
 
+  const [statusFilter, setStatusFilter] = React.useState<"all" | FlatOccupancyStatus>("all");
+  const vacantCount = React.useMemo(
+    () => flats.filter((f) => f.occupancyStatus === "vacant").length,
+    [],
+  );
+  const filterValues = React.useMemo<Record<string, string>>(() => {
+    const values: Record<string, string> = {};
+    if (statusFilter !== "all") values.occupancyStatus = statusFilter;
+    return values;
+  }, [statusFilter]);
+
   return (
-    <DataTable
-      data={flats}
-      columns={columns}
-      getRowId={(f) => f.id}
-      renderSubRow={renderSubRow}
-      enableRowSelection
-      title="All flats"
-      filters={filters}
-      enableColumnReorder
-      enableColumnVisibility
-      enableFilterCustomization
-      showPageSize
-      pageSize={8}
-      itemLabel="flat"
-      emptyMessage="No flats match these filters."
-      toolbarActions={
-        <Button
-          size="sm"
-          className="gap-1.5"
-          render={<Link href="/dashboard/people-hub/flats/new" />}
-        >
-          <Plus className="size-3.5" />
-          Add flat
-        </Button>
-      }
-    />
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-1 self-start rounded-lg border border-border bg-card p-1">
+        {(["all", "occupied", "vacant"] as const).map((status) => (
+          <Button
+            key={status}
+            variant={statusFilter === status ? "secondary" : "ghost"}
+            size="sm"
+            className="gap-1.5 capitalize"
+            onClick={() => setStatusFilter(status)}
+          >
+            {status}
+            {status === "vacant" && (
+              <Badge variant="outline" className="px-1.5 py-0 text-[11px]">
+                {vacantCount}
+              </Badge>
+            )}
+          </Button>
+        ))}
+      </div>
+
+      <DataTable
+        key={statusFilter}
+        data={flats}
+        columns={columns}
+        getRowId={(f) => f.id}
+        renderSubRow={renderSubRow}
+        enableRowSelection
+        title="All flats"
+        filters={filters}
+        defaultFilterValues={filterValues}
+        enableColumnReorder
+        enableColumnVisibility
+        enableFilterCustomization
+        showPageSize
+        pageSize={8}
+        itemLabel="flat"
+        emptyMessage="No flats match these filters."
+        toolbarActions={
+          <Button
+            size="sm"
+            className="gap-1.5"
+            render={<Link href="/dashboard/people-hub/flats/new" />}
+          >
+            <Plus className="size-3.5" />
+            Add flat
+          </Button>
+        }
+      />
+    </div>
   );
 }

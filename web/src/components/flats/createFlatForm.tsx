@@ -19,7 +19,11 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { flats, type FlatType } from "@/lib/flatsMockData";
-import { residents, type ResidentOccupancyType } from "@/lib/residentsMockData";
+import {
+  isUnassignedResident,
+  residents,
+  type ResidentOccupancyType,
+} from "@/lib/residentsMockData";
 import { cn, getInitials, gradientForName } from "@/lib/utils";
 
 const FLAT_TYPES: FlatType[] = ["1BHK", "2BHK", "3BHK", "4BHK"];
@@ -409,6 +413,10 @@ export function CreateFlatForm() {
                                 (p) => p.kind === "existing" && p.residentId === r.id,
                               ),
                           )
+                          .sort(
+                            (a, b) =>
+                              Number(isUnassignedResident(b)) - Number(isUnassignedResident(a)),
+                          )
                           .map((r) => (
                             <SelectItem key={r.id} value={r.id} className="py-1.5">
                               <span className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -418,7 +426,9 @@ export function CreateFlatForm() {
                                     {r.name}
                                   </span>
                                   <span className="truncate text-xs text-muted-foreground">
-                                    {r.tower}-{r.flatNumber}
+                                    {isUnassignedResident(r)
+                                      ? "Unassigned"
+                                      : `${r.tower}-${r.flatNumber}`}
                                   </span>
                                 </span>
                               </span>

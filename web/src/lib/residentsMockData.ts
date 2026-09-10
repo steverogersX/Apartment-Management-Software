@@ -190,4 +190,26 @@ export const residents: ResidentRecord[] = [
     status: "active",
     moveInDate: "2022-09-30T00:00:00+05:30",
   },
+  // Registered but not yet placed in a flat — flatId/flatNumber/tower are empty strings
+  // (this record's sentinel for "unassigned"), not omitted, so every consumer that reads
+  // resident.tower/flatNumber directly keeps working without a null check.
+  {
+    id: "13",
+    name: "Pavan Konkonapala",
+    email: "pavan.konkonapala@gmail.com",
+    phone: "+91 90000 00000",
+    flatNumber: "",
+    tower: "",
+    flatId: "",
+    occupancyType: "owner",
+    memberCount: 1,
+    vehiclesCount: 0,
+    status: "pending",
+    moveInDate: "2026-09-01T00:00:00+05:30",
+  },
 ];
+
+/** True when a resident hasn't been placed into any flat yet. */
+export function isUnassignedResident(resident: ResidentRecord): boolean {
+  return !resident.flatId;
+}

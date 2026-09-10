@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { flats, type FlatOccupancyStatus, type FlatRecord } from "@/lib/flatsMockData";
 import {
+  isUnassignedResident,
   residents,
   type ResidentOccupancyType,
   type ResidentStatus,
@@ -259,7 +260,8 @@ export function AllResidentsTable() {
       },
       {
         id: "flat",
-        accessorFn: (row) => `${row.tower}-${row.flatNumber}`,
+        accessorFn: (row) =>
+          isUnassignedResident(row) ? "Unassigned" : `${row.tower}-${row.flatNumber}`,
         header: ({ column }) => (
           <DataTableColumnHeader
             label="Flat"
@@ -267,15 +269,18 @@ export function AllResidentsTable() {
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
-        cell: ({ row }) => (
-          <Link
-            href={`/dashboard/people-hub/flats/${row.original.flatId}`}
-            onClick={(e) => e.stopPropagation()}
-            className="whitespace-nowrap text-sm font-medium text-foreground underline-offset-2 hover:underline"
-          >
-            {row.original.tower}-{row.original.flatNumber}
-          </Link>
-        ),
+        cell: ({ row }) =>
+          isUnassignedResident(row.original) ? (
+            <span className="whitespace-nowrap text-sm text-muted-foreground">Unassigned</span>
+          ) : (
+            <Link
+              href={`/dashboard/people-hub/flats/${row.original.flatId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="whitespace-nowrap text-sm font-medium text-foreground underline-offset-2 hover:underline"
+            >
+              {row.original.tower}-{row.original.flatNumber}
+            </Link>
+          ),
       },
       {
         id: "occupancyType",
@@ -373,6 +378,17 @@ export function AllResidentsTable() {
           value: v,
         })),
         predicate: (row, value) => row.status === value,
+      },
+      {
+        id: "flatStatus",
+        label: "Flat",
+        type: "select",
+        options: [
+          { label: "Assigned", value: "assigned" },
+          { label: "Unassigned", value: "unassigned" },
+        ],
+        predicate: (row, value) =>
+          value === "unassigned" ? isUnassignedResident(row) : !isUnassignedResident(row),
       },
       {
         id: "groupBy",

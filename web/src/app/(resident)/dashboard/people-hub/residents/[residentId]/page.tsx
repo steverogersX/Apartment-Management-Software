@@ -118,10 +118,12 @@ export default function ResidentDetailPage() {
                   >
                     {flat.tower}-{flat.flatNumber}
                   </Link>
-                ) : (
+                ) : resident.flatId ? (
                   <span className="font-medium text-foreground">
                     {resident.tower}-{resident.flatNumber}
                   </span>
+                ) : (
+                  <span className="font-medium text-muted-foreground">Unassigned</span>
                 )}
               </span>
               <span className="text-muted-foreground/40">·</span>

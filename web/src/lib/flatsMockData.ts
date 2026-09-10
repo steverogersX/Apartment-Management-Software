@@ -136,7 +136,8 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
-    owner: null,
+    // Neha Kulkarni moved out 2025-11-20 (see flatOccupancyHistory) but still owns this flat.
+    owner: { name: "Neha Kulkarni", phone: "+91 93456 78901", email: "neha.kulkarni@gmail.com" },
   },
   {
     id: "flat-a601",
@@ -200,7 +201,13 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
-    owner: null,
+    // Harish Krishnan moved out (see flatOccupancyHistory / residentsMockData) but still owns
+    // this flat — vacant just means nobody lives here right now, not that it's unowned.
+    owner: {
+      name: "Harish Krishnan",
+      phone: "+91 91919 20202",
+      email: "harish.krishnan@gmail.com",
+    },
   },
   {
     id: "flat-b201",
@@ -224,7 +231,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
-    owner: null,
+    owner: { name: "Rajesh Kumar", phone: "+91 99001 22334", email: "rajesh.kumar@gmail.com" },
   },
   {
     id: "flat-b305",
@@ -236,7 +243,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
-    owner: null,
+    owner: { name: "Sneha Joshi", phone: "+91 99112 33445", email: "sneha.joshi@gmail.com" },
   },
   {
     id: "flat-c410",
@@ -248,7 +255,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "paid",
     currentResidentIds: [],
-    owner: null,
+    owner: { name: "Manoj Verma", phone: "+91 99223 44556", email: "manoj.verma@gmail.com" },
   },
 ];
 
