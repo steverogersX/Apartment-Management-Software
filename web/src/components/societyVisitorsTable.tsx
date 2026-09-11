@@ -224,34 +224,59 @@ export function SocietyVisitorsTable() {
 
   function handleDeny(profile: VisitorProfile) {
     if (!denyTarget || !denyReason.trim()) return;
-    const pending = visitors.find(
-      (v) => v.phone === profile.phone && v.status === "pending_approval",
-    );
-    if (!pending) return;
     const now = new Date().toISOString();
     const reason = denyReason.trim();
-    setVisitors((prev) =>
-      prev.map((v) =>
-        v.id === pending.id
-          ? {
-              ...v,
-              status: "denied" as const,
-              deniedBy: "Admin",
-              deniedAt: now,
-              deniedReason: reason,
-            }
-          : v,
-      ),
+    const today = todayStr(0);
+    const target = visitors.find(
+      (v) =>
+        v.phone === profile.phone &&
+        (v.status === "pending_approval" || (v.status === "expected" && v.date === today)),
     );
-    const idx = initialVisitors.findIndex((v) => v.id === pending.id);
-    if (idx !== -1)
-      initialVisitors[idx] = {
-        ...initialVisitors[idx],
+
+    if (target) {
+      setVisitors((prev) =>
+        prev.map((v) =>
+          v.id === target.id
+            ? {
+                ...v,
+                status: "denied" as const,
+                deniedBy: "Admin",
+                deniedAt: now,
+                deniedReason: reason,
+              }
+            : v,
+        ),
+      );
+      const idx = initialVisitors.findIndex((v) => v.id === target.id);
+      if (idx !== -1)
+        initialVisitors[idx] = {
+          ...initialVisitors[idx],
+          status: "denied",
+          deniedBy: "Admin",
+          deniedAt: now,
+          deniedReason: reason,
+        };
+    } else {
+      const mostRecent = visitors
+        .filter((v) => v.phone === profile.phone)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      if (!mostRecent) return;
+      const newVisit: SocietyVisitor = {
+        ...mostRecent,
+        id: `sv-deny-${profile.phone}-${Date.now()}`,
+        date: today,
+        arrivedAt: null,
+        checkIn: null,
+        checkOut: null,
         status: "denied",
+        verifiedBy: null,
         deniedBy: "Admin",
         deniedAt: now,
         deniedReason: reason,
       };
+      setVisitors((prev) => [...prev, newVisit]);
+      initialVisitors.push(newVisit);
+    }
     setDenyTarget(null);
     setDenyReason("");
   }
@@ -427,15 +452,28 @@ export function SocietyVisitorsTable() {
                   Unblock
                 </Button>
               ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
-                  onClick={() => setBlockTarget(row.original)}
-                >
-                  <ShieldX className="size-3.5" />
-                  Block
-                </Button>
+                <>
+                  {!hasPending && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                      onClick={() => setDenyTarget(row.original)}
+                    >
+                      <X className="size-3.5" />
+                      Deny
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                    onClick={() => setBlockTarget(row.original)}
+                  >
+                    <ShieldX className="size-3.5" />
+                    Block
+                  </Button>
+                </>
               )}
             </div>
           );
@@ -548,7 +586,7 @@ export function SocietyVisitorsTable() {
           type="button"
           onClick={() => setStatFilter((prev) => (prev === "inside" ? null : "inside"))}
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+            "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
             statFilter === "inside"
               ? "border-foreground bg-foreground text-background"
               : "border-border bg-card hover:bg-muted",
@@ -566,7 +604,7 @@ export function SocietyVisitorsTable() {
           type="button"
           onClick={() => setStatFilter((prev) => (prev === "awaiting" ? null : "awaiting"))}
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+            "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
             statFilter === "awaiting"
               ? "border-amber-600 bg-amber-600 text-white"
               : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300",
@@ -586,7 +624,7 @@ export function SocietyVisitorsTable() {
             setStatFilter((prev) => (prev === "expectedToday" ? null : "expectedToday"))
           }
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+            "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
             statFilter === "expectedToday"
               ? "border-foreground bg-foreground text-background"
               : "border-border bg-card hover:bg-muted",
@@ -604,7 +642,7 @@ export function SocietyVisitorsTable() {
           type="button"
           onClick={() => setStatFilter((prev) => (prev === "deniedToday" ? null : "deniedToday"))}
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+            "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors",
             statFilter === "deniedToday"
               ? "border-foreground bg-foreground text-background"
               : "border-border bg-card hover:bg-muted",
@@ -651,15 +689,27 @@ export function SocietyVisitorsTable() {
             <textarea
               value={denyReason}
               onChange={(e) => setDenyReason(e.target.value)}
-              placeholder="Reason (optional)"
+              placeholder="Reason for denying entry"
               rows={3}
               className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
             />
             <div className="mt-4 flex justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setDenyTarget(null)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDenyTarget(null);
+                  setDenyReason("");
+                }}
+              >
                 Cancel
               </Button>
-              <Button variant="destructive" size="sm" onClick={() => handleDeny(denyTarget)}>
+              <Button
+                variant="destructive"
+                size="sm"
+                disabled={!denyReason.trim()}
+                onClick={() => handleDeny(denyTarget)}
+              >
                 Deny
               </Button>
             </div>

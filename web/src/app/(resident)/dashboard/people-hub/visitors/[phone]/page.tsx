@@ -162,9 +162,35 @@ export default function VisitorDetailPage() {
   }
 
   function handleDeny(visitId: string) {
-    if (!denyReason.trim() && !denyTargetId) return;
+    if (!denyReason.trim()) return;
     const now = new Date().toISOString();
-    const reason = denyReason.trim() || "No reason provided";
+    const reason = denyReason.trim();
+
+    if (visitId === "new") {
+      const mostRecent = [...visits].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+      )[0];
+      if (!mostRecent) return;
+      const newVisit: SocietyVisitor = {
+        ...mostRecent,
+        id: `sv-deny-${profile?.phone}-${Date.now()}`,
+        date: new Date().toISOString().slice(0, 10),
+        arrivedAt: null,
+        checkIn: null,
+        checkOut: null,
+        status: "denied",
+        verifiedBy: null,
+        deniedBy: "Admin",
+        deniedAt: now,
+        deniedReason: reason,
+      };
+      setVisits((prev) => [...prev, newVisit]);
+      societyVisitors.push(newVisit);
+      setDenyTargetId(null);
+      setDenyReason("");
+      return;
+    }
+
     setVisits((prev) =>
       prev.map((v) =>
         v.id === visitId
@@ -189,6 +215,14 @@ export default function VisitorDetailPage() {
       };
     setDenyTargetId(null);
     setDenyReason("");
+  }
+
+  function openDenyForProfile() {
+    const today = new Date().toISOString().slice(0, 10);
+    const target = visits.find(
+      (v) => v.status === "pending_approval" || (v.status === "expected" && v.date === today),
+    );
+    setDenyTargetId(target ? target.id : "new");
   }
 
   return (
@@ -284,14 +318,24 @@ export default function VisitorDetailPage() {
                   Unblock visitor
                 </Button>
               ) : (
-                <Button
-                  variant="destructive"
-                  className="gap-1.5"
-                  onClick={() => setBlockOpen(true)}
-                >
-                  <Ban className="size-3.5" />
-                  Block visitor
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-1.5 text-destructive hover:text-destructive"
+                    onClick={openDenyForProfile}
+                  >
+                    <X className="size-3.5" />
+                    Deny entry
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 gap-1.5"
+                    onClick={() => setBlockOpen(true)}
+                  >
+                    <Ban className="size-3.5" />
+                    Block visitor
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -525,16 +569,23 @@ export default function VisitorDetailPage() {
               id="deny-reason"
               value={denyReason}
               onChange={(e) => setDenyReason(e.target.value)}
-              placeholder="Reason (optional)"
+              placeholder="Reason for denying entry"
               rows={3}
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDenyTargetId(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDenyTargetId(null);
+                setDenyReason("");
+              }}
+            >
               Cancel
             </Button>
             <Button
               variant="destructive"
+              disabled={!denyReason.trim()}
               onClick={() => {
                 if (denyTargetId) handleDeny(denyTargetId);
               }}
