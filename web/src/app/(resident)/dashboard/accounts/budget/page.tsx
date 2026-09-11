@@ -16,7 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BudgetHeadsTable } from "@/components/budgetHeadsTable";
 import { BudgetMonthlyChart } from "@/components/budgetMonthlyChart";
 import { BudgetSummaryChart } from "@/components/budgetSummaryChart";
-import { BudgetOwnSummary } from "@/components/budget/budgetOwnSummary";
 import { useAuth } from "@/hooks/useAuth";
 import { budgetHeads, currentFinancialYear, FINANCIAL_YEARS } from "@/lib/budgetMockData";
 
@@ -37,7 +36,7 @@ export default function BudgetPage() {
     [financialYear, version],
   );
 
-  if (!canViewAll && !has("BudgetViewOwn")) {
+  if (!canViewAll) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
         <p className="text-sm text-muted-foreground">
@@ -81,42 +80,38 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      {canViewAll ? (
-        <Tabs defaultValue="overview">
-          <TabsList>
-            <TabsTrigger value="overview" className="gap-1.5">
-              <LayoutGrid className="size-3.5" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="monthly" className="gap-1.5">
-              <CalendarClock className="size-3.5" />
-              Monthly Spending
-            </TabsTrigger>
-            <TabsTrigger value="heads" className="gap-1.5">
-              <ListTree className="size-3.5" />
-              Budget Heads
-            </TabsTrigger>
-          </TabsList>
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview" className="gap-1.5">
+            <LayoutGrid className="size-3.5" />
+            Overview
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="gap-1.5">
+            <CalendarClock className="size-3.5" />
+            Monthly Spending
+          </TabsTrigger>
+          <TabsTrigger value="heads" className="gap-1.5">
+            <ListTree className="size-3.5" />
+            Budget Heads
+          </TabsTrigger>
+        </TabsList>
 
-          <TabsContent value="overview" className="animate-rise mt-4">
-            <BudgetSummaryChart heads={heads} />
-          </TabsContent>
+        <TabsContent value="overview" className="animate-rise mt-4">
+          <BudgetSummaryChart heads={heads} />
+        </TabsContent>
 
-          <TabsContent value="monthly" className="animate-rise mt-4">
-            <BudgetMonthlyChart heads={heads} financialYear={financialYear} />
-          </TabsContent>
+        <TabsContent value="monthly" className="animate-rise mt-4">
+          <BudgetMonthlyChart heads={heads} financialYear={financialYear} />
+        </TabsContent>
 
-          <TabsContent value="heads" className="animate-rise mt-4">
-            <BudgetHeadsTable
-              financialYear={financialYear}
-              key={`${financialYear}-${version}`}
-              onMutate={() => setVersion((v) => v + 1)}
-            />
-          </TabsContent>
-        </Tabs>
-      ) : (
-        <BudgetOwnSummary heads={heads} />
-      )}
+        <TabsContent value="heads" className="animate-rise mt-4">
+          <BudgetHeadsTable
+            financialYear={financialYear}
+            key={`${financialYear}-${version}`}
+            onMutate={() => setVersion((v) => v + 1)}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
