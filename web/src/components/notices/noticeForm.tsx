@@ -231,7 +231,7 @@ export function NoticeForm({
                         type="button"
                         onClick={() => field.handleChange(p)}
                         className={cn(
-                          "rounded-[5px] px-3 py-1 text-xs font-medium capitalize transition-colors",
+                          "cursor-pointer rounded-[5px] px-3 py-1 text-xs font-medium capitalize transition-colors",
                           field.state.value === p
                             ? p === "flash"
                               ? "bg-destructive text-white"

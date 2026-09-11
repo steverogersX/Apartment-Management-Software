@@ -102,7 +102,7 @@ export function MultiSelectDropdown({
               <button
                 type="button"
                 onClick={() => remove(v)}
-                className="rounded-full p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+                className="cursor-pointer rounded-full p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
                 aria-label={`Remove ${v}`}
               >
                 <X className="size-3" />

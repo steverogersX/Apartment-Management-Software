@@ -225,7 +225,7 @@ function ReplyNodeItem({
             type="button"
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? "Expand replies" : "Collapse replies"}
-            className="absolute top-6 left-3 z-10 flex size-3.5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+            className="absolute top-6 left-3 z-10 flex size-3.5 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
           >
             {collapsed ? <Plus className="size-2.5" /> : <Minus className="size-2.5" />}
           </button>
@@ -243,7 +243,7 @@ function ReplyNodeItem({
             <button
               type="button"
               onClick={() => setCollapsed(false)}
-              className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+              className="cursor-pointer text-xs text-muted-foreground transition-colors hover:text-foreground"
             >
               {countDescendants(node) + 1} repl{countDescendants(node) + 1 === 1 ? "y" : "ies"}{" "}
               hidden

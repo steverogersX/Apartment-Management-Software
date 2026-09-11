@@ -40,7 +40,7 @@ export function TagInput({
             <button
               type="button"
               onClick={() => removeTag(tag)}
-              className="rounded-full p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
+              className="cursor-pointer rounded-full p-0.5 text-muted-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
               aria-label={`Remove ${tag} tag`}
             >
               <X className="size-3" />
@@ -70,7 +70,7 @@ export function TagInput({
               type="button"
               onClick={() => addTag(s)}
               className={cn(
-                "rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground hover:text-foreground",
+                "cursor-pointer rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:border-foreground hover:text-foreground",
               )}
             >
               + {s}

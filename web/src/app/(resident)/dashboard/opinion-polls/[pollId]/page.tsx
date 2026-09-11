@@ -260,7 +260,7 @@ export default function PollDetailPage() {
                       type="button"
                       onClick={() => setSelectedOptionId(isActive ? null : opt.id)}
                       className={cn(
-                        "flex flex-col gap-1 rounded-md border px-3 py-2 text-left transition-colors",
+                        "flex cursor-pointer flex-col gap-1 rounded-md border px-3 py-2 text-left transition-colors",
                         isActive
                           ? "border-foreground bg-muted/50"
                           : "border-transparent hover:bg-muted/40",

@@ -237,7 +237,7 @@ export default function MeetingDetailPage() {
                         type="button"
                         onClick={() => setSelectedBucket(isActive ? null : bucket)}
                         className={cn(
-                          "flex flex-1 flex-col items-center gap-1 rounded-md border px-3 py-2 text-sm transition-colors",
+                          "flex flex-1 cursor-pointer flex-col items-center gap-1 rounded-md border px-3 py-2 text-sm transition-colors",
                           isActive
                             ? "border-foreground bg-muted/50"
                             : "border-border hover:bg-muted/40",

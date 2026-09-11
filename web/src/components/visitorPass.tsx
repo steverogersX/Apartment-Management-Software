@@ -150,7 +150,7 @@ export function VisitorPass({
           <button
             type="button"
             onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded-full bg-background/15 px-2 py-1 font-mono text-[11px] font-medium tracking-tight transition-colors hover:bg-background/25"
+            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-background/15 px-2 py-1 font-mono text-[11px] font-medium tracking-tight transition-colors hover:bg-background/25"
           >
             {code}
             {copied ? <Check className="size-3" /> : <Copy className="size-3" />}

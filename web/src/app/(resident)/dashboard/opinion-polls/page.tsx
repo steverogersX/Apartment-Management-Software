@@ -122,7 +122,7 @@ export default function OpinionPollsPage() {
                   key={poll.id}
                   type="button"
                   onClick={() => router.push(`/dashboard/opinion-polls/${poll.id}`)}
-                  className="flex w-full flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex w-full cursor-pointer flex-col gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/50 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-1.5">

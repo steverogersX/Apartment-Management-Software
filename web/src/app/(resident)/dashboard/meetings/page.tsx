@@ -132,7 +132,7 @@ export default function MeetingsPage() {
                   key={meeting.id}
                   type="button"
                   onClick={() => router.push(`/dashboard/meetings/${meeting.id}`)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                  className="flex w-full cursor-pointer items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/50"
                 >
                   <Avatar size="sm" className="shrink-0">
                     <AvatarImage

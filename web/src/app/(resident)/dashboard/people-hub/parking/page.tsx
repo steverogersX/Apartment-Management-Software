@@ -114,7 +114,7 @@ function SlotTile({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        "group relative flex min-h-[5.5rem] flex-col items-center justify-center gap-1 rounded-lg border px-2 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+        "group relative flex min-h-[5.5rem] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-2 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
         occupied
           ? "border-emerald-300 bg-emerald-50 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70"
           : "border-dashed border-border bg-muted/30 hover:border-foreground/30 hover:bg-muted",

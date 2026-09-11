@@ -149,7 +149,7 @@ export function AttachmentDropzone({
                     e.stopPropagation();
                     removeAt(i);
                   }}
-                  className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:text-foreground"
+                  className="absolute top-1 right-1 flex size-5 cursor-pointer items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:text-foreground"
                   aria-label={`Remove ${att.name}`}
                 >
                   <X className="size-3" />
@@ -187,14 +187,14 @@ export function CoverImageDropzone({
           <button
             type="button"
             onClick={() => inputRef.current?.click()}
-            className="rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-background"
+            className="cursor-pointer rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium shadow-sm hover:bg-background"
           >
             Replace
           </button>
           <button
             type="button"
             onClick={() => onChange(undefined)}
-            className="rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium text-destructive shadow-sm hover:bg-background"
+            className="cursor-pointer rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium text-destructive shadow-sm hover:bg-background"
           >
             Remove
           </button>
@@ -315,7 +315,7 @@ export function InlineAttachments({
                 <button
                   type="button"
                   onClick={() => removeAt(i)}
-                  className="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
+                  className="absolute inset-0 flex cursor-pointer items-center justify-center bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100"
                   aria-label={`Remove ${att.name}`}
                 >
                   <X className="size-4" />
@@ -328,7 +328,7 @@ export function InlineAttachments({
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="inline-flex w-fit items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <ImageIcon className="size-3.5" />
         Add image or file

@@ -107,7 +107,7 @@ export function AccountMenu({
       <DropdownMenuTrigger
         render={
           <button
-            className="flex items-center gap-1.5 rounded-full pr-1 pl-0.5"
+            className="flex cursor-pointer items-center gap-1.5 rounded-full pr-1 pl-0.5"
             disabled={isSwitching}
           />
         }

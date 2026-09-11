@@ -51,7 +51,7 @@ export function NotificationsMenu() {
             <button
               type="button"
               onClick={markAllAsRead}
-              className="flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="flex cursor-pointer items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               <Check className="size-3.5" />
               Mark all read
@@ -71,7 +71,7 @@ export function NotificationsMenu() {
                   type="button"
                   onClick={() => markAsRead(n.id)}
                   className={cn(
-                    "flex items-start gap-2.5 border-b border-border px-3 py-2.5 text-left transition-colors last:border-0 hover:bg-muted/50",
+                    "flex cursor-pointer items-start gap-2.5 border-b border-border px-3 py-2.5 text-left transition-colors last:border-0 hover:bg-muted/50",
                     !n.isRead && "bg-accent/50",
                   )}
                 >

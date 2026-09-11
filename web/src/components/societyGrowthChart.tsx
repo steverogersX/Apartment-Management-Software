@@ -65,8 +65,8 @@ export function SocietyGrowthChart() {
                   }}
                   className={
                     preset.months === months
-                      ? "w-full rounded-md bg-muted px-2.5 py-1.5 text-left text-sm font-medium text-foreground"
-                      : "w-full rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                      ? "w-full cursor-pointer rounded-md bg-muted px-2.5 py-1.5 text-left text-sm font-medium text-foreground"
+                      : "w-full cursor-pointer rounded-md px-2.5 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                   }
                 >
                   {preset.label}

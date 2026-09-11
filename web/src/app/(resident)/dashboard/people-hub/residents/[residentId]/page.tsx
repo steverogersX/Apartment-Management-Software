@@ -54,7 +54,7 @@ export default function ResidentDetailPage() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline"
+          className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-foreground underline"
         >
           <ArrowLeft className="size-3.5" />
           Back
@@ -73,7 +73,7 @@ export default function ResidentDetailPage() {
       <button
         type="button"
         onClick={() => router.back()}
-        className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex w-fit cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" />
         Back

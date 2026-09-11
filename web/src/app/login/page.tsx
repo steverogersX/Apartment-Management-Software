@@ -224,7 +224,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setForgotOpen(true)}
-                  className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="cursor-pointer text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Forgot password?
                 </button>
@@ -242,7 +242,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-0 top-0 flex h-8 w-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                  className="absolute right-0 top-0 flex h-8 w-8 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}

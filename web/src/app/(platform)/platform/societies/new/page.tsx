@@ -138,7 +138,7 @@ export default function CreateSocietyPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+                className="absolute inset-y-0 right-0 flex w-9 cursor-pointer items-center justify-center text-muted-foreground hover:text-foreground"
               >
                 {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
               </button>
