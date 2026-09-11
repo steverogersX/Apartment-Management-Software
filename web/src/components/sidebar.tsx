@@ -17,6 +17,7 @@ import {
   Siren,
   PanelLeftClose,
   PanelLeftOpen,
+  PartyPopper,
   Feather,
 } from "lucide-react";
 
@@ -57,13 +58,7 @@ export type { NavItem };
  * permissions (Resident Owner today). Staff-only roles (Treasurer, Secretary, Committee, Guard,
  * Society Admin) don't have a flat of their own, so these must never show for them by default.
  */
-const RESIDENT_SELF_SERVICE = [
-  Permission.InvoicingViewOwn,
-  Permission.DuesReceiptsViewOwn,
-  Permission.BudgetViewOwn,
-  Permission.AmenitiesBook,
-  Permission.ComplaintsRaise,
-];
+const RESIDENT_SELF_SERVICE = [Permission.AmenitiesBook, Permission.ComplaintsRaise];
 
 const defaultNavItems: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
@@ -91,20 +86,28 @@ const defaultNavItems: NavItem[] = [
     icon: UserCheck,
     permissions: RESIDENT_SELF_SERVICE,
   },
+  // Events are community content — read access for the whole society, intentionally ungated
+  // like Notice Board. Recording contributions and managing events stay permission-gated
+  // on the page itself (EventsManage).
+  { label: "Events", href: "/dashboard/accounts/events", icon: PartyPopper },
+  // Notice Board (Communication group) already covers reading notices for every role — no duplicate entry here.
+  // The old Bills & Payments stub was removed because it read disconnected mock numbers;
+  // Accounts as a whole is permission-gated, so residents have no billing path here.
+];
+
+const defaultSoonItems: NavItem[] = [
   {
     label: "Amenities",
     href: "/dashboard/amenities",
     icon: Sofa,
     permission: Permission.AmenitiesBook,
   },
-  // Notice Board (Communication group) already covers reading notices for every role — no duplicate entry here.
-  // Bills & Payments was a standalone stub reading disconnected mock numbers ("Flat 304" hardcoded,
-  // inconsistent with real data) — Accounts > Invoicing and Accounts > Dues and Receipts (adminNav
-  // Accounts group) already give residents the same own-flat billing view on the real, wired data,
-  // via InvoicingViewOwn/DuesReceiptsViewOwn. No need for a third, stale path to the same thing.
-];
-
-const defaultSoonItems: NavItem[] = [
+  {
+    label: "Amenities Management",
+    icon: Sofa,
+    permission: Permission.AmenitiesManage,
+    soon: true,
+  },
   { label: "Domestic Staff", icon: HandHelping, soon: true },
   { label: "Chat", icon: MessageCircle, soon: true },
   { label: "Safety / SOS", icon: Siren, soon: true },
@@ -409,7 +412,7 @@ export function SidebarContent({
               onClick={onToggle}
               aria-label="Expand sidebar"
               title="Expand"
-              className="group/collapse relative flex size-9 items-center justify-center overflow-hidden rounded-full border bg-card shadow-sm transition-all hover:border-foreground/20 hover:bg-muted"
+              className="group/collapse relative flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-full border bg-card shadow-sm transition-all hover:border-foreground/20 hover:bg-muted"
             >
               <Feather className="absolute size-4 transition-all duration-200 group-hover/collapse:scale-75 group-hover/collapse:opacity-0" />
               <PanelLeftOpen className="absolute size-4 scale-75 opacity-0 transition-all duration-200 group-hover/collapse:scale-100 group-hover/collapse:opacity-100" />
@@ -430,7 +433,7 @@ export function SidebarContent({
                 onClick={onToggle}
                 aria-label="Collapse sidebar"
                 title="Collapse"
-                className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
+                className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <PanelLeftClose className="size-4" />
               </button>

@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Boxes, Landmark, Megaphone, Sofa, Ticket, Users } from "lucide-react";
+import { Boxes, Landmark, Megaphone, Ticket, Users } from "lucide-react";
 
 import { Permission, type PermissionDefinition } from "@shared/index";
 
@@ -76,14 +76,6 @@ export const adminNavGroups: AdminNavGroup[] = [
       // Notice Board is read access for the whole society — intentionally ungated.
       { label: "Notice Board", href: "/dashboard/notices" },
       {
-        label: "Events",
-        href: "/dashboard/accounts/events",
-        // EventsViewOwn only — this is resident-only in mockBackend.ts (RESIDENT_ONLY_PERMISSIONS),
-        // so Society Admin/Treasurer/Secretary/Committee (who hold EventsViewAll) don't get a second
-        // entry point here; they already have Accounts > Events.
-        permission: Permission.EventsViewOwn,
-      },
-      {
         label: "Discussion Forum",
         href: "/dashboard/discussion-forum",
         permission: Permission.ForumPost,
@@ -127,11 +119,6 @@ export const adminNavGroups: AdminNavGroup[] = [
     ],
   },
   {
-    label: "Amenities",
-    icon: Sofa,
-    items: [{ label: "Bookings & History", permission: Permission.AmenitiesManage }],
-  },
-  {
     label: "Asset & Inventory",
     icon: Boxes,
     items: [
@@ -154,17 +141,12 @@ export const adminNavGroups: AdminNavGroup[] = [
       {
         label: "Budget",
         href: "/dashboard/accounts/budget",
-        permissions: [Permission.BudgetViewAll, Permission.BudgetViewOwn],
-      },
-      {
-        label: "Events",
-        href: "/dashboard/accounts/events",
-        permissions: [Permission.EventsViewAll, Permission.EventsViewOwn],
+        permissions: [Permission.BudgetViewAll],
       },
       {
         label: "Invoicing",
         href: "/dashboard/accounts/invoicing",
-        permissions: [Permission.InvoicingViewAll, Permission.InvoicingViewOwn],
+        permissions: [Permission.InvoicingViewAll],
       },
       {
         label: "Chart of Accounts",
@@ -179,7 +161,7 @@ export const adminNavGroups: AdminNavGroup[] = [
       {
         label: "Dues and Receipts",
         href: "/dashboard/accounts/dues-and-receipts",
-        permissions: [Permission.DuesReceiptsViewAll, Permission.DuesReceiptsViewOwn],
+        permissions: [Permission.DuesReceiptsViewAll],
       },
       {
         label: "Purchasing",

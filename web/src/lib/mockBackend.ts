@@ -132,10 +132,6 @@ const RESIDENT_PERMISSIONS: PermissionKey[] = [
   "ComplaintsRaise",
   "AmenitiesView",
   "AmenitiesBook",
-  "InvoicingViewOwn",
-  "DuesReceiptsViewOwn",
-  "BudgetViewOwn",
-  "EventsViewOwn",
   "ForumPost",
 ];
 

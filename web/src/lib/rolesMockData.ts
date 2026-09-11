@@ -133,17 +133,7 @@ export const roles: RoleRecord[] = [
     description: "Default role for flat owners.",
     isSystem: true,
     memberCount: countForRole("Resident Owner"),
-    permissions: [
-      "AmenitiesView",
-      "AmenitiesBook",
-      "ComplaintsRaise",
-      "BillingView",
-      "InvoicingViewOwn",
-      "DuesReceiptsViewOwn",
-      "BudgetViewOwn",
-      "EventsViewOwn",
-      "ForumPost",
-    ],
+    permissions: ["AmenitiesView", "AmenitiesBook", "ComplaintsRaise", "BillingView", "ForumPost"],
     updatedAt: "2024-11-02T10:00:00+05:30",
   },
   {

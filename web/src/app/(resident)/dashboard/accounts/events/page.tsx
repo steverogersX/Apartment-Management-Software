@@ -97,17 +97,6 @@ export default function EventsPage() {
     [statusFilter, version],
   );
 
-  if (!has("EventsViewAll") && !has("EventsViewOwn")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">You do not have permission to view events.</p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
-  }
-
   function handleCreate(values: AddEventInput) {
     communityEvents.push({
       id: crypto.randomUUID(),

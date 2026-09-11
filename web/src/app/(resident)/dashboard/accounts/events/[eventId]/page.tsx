@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -132,9 +131,7 @@ function EventTimeline({ entries }: { entries: TimelineEntry[] }) {
                   </p>
                 </>
               )}
-              <p className="text-[11px] text-muted-foreground/80">
-                {formatDateTime(entry.date)} · by {entry.data.recordedBy}
-              </p>
+              <p className="text-[11px] text-muted-foreground/80">{formatDateTime(entry.date)}</p>
             </div>
           </div>
         );
@@ -160,17 +157,6 @@ export default function EventDetailPage() {
     [params.eventId, version],
   );
 
-  if (!has("EventsViewAll") && !has("EventsViewOwn")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">You do not have permission to view events.</p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
-  }
-
   if (!event) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
@@ -178,7 +164,7 @@ export default function EventDetailPage() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline"
+          className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-foreground underline"
         >
           <ArrowLeft className="size-3.5" />
           Back
@@ -256,7 +242,7 @@ export default function EventDetailPage() {
       <button
         type="button"
         onClick={() => router.back()}
-        className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="inline-flex w-fit cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" />
         Back
