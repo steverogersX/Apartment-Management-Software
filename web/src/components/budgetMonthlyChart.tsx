@@ -58,6 +58,22 @@ function formatCompact(amount: number) {
   return `₹${(amount / 1000).toFixed(0)}k`;
 }
 
+function VarianceLabel({ diff }: { diff: number }) {
+  if (diff === 0) {
+    return <span className="text-muted-foreground">On budget</span>;
+  }
+  const isOver = diff > 0;
+  return (
+    <span
+      className={
+        isOver ? "text-red-600 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"
+      }
+    >
+      {isOver ? "Overspent" : "Saved"} {formatCurrency(Math.abs(diff))}
+    </span>
+  );
+}
+
 const config: ChartConfig = {
   planned: { label: "Planned", color: "#94a3b8" },
   actual: { label: "Actual", color: "#3b82f6" },
@@ -310,8 +326,6 @@ export function BudgetMonthlyChart({
             <TableBody>
               {monthlyTotals.map((m) => {
                 const diff = m.actual - m.planned;
-                const isOver = diff > 0 && !m.isFuture;
-                const isUnder = diff < 0 && !m.isFuture;
                 return (
                   <TableRow
                     key={m.month}
@@ -329,16 +343,8 @@ export function BudgetMonthlyChart({
                     <TableCell className="text-right tabular-nums">
                       {m.isFuture ? "—" : formatCurrency(m.actual)}
                     </TableCell>
-                    <TableCell
-                      className={`text-right tabular-nums ${
-                        isOver
-                          ? "text-red-600 dark:text-red-400"
-                          : isUnder
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : ""
-                      }`}
-                    >
-                      {m.isFuture ? "—" : `${diff > 0 ? "+" : ""}${formatCurrency(diff)}`}
+                    <TableCell className="text-right tabular-nums">
+                      {m.isFuture ? "—" : <VarianceLabel diff={diff} />}
                     </TableCell>
                   </TableRow>
                 );
@@ -356,9 +362,12 @@ export function BudgetMonthlyChart({
                   )}
                 </TableCell>
                 <TableCell className="text-right font-semibold tabular-nums">
-                  {formatCurrency(
-                    monthlyTotals.reduce((s, m) => s + (m.isFuture ? 0 : m.actual - m.planned), 0),
-                  )}
+                  <VarianceLabel
+                    diff={monthlyTotals.reduce(
+                      (s, m) => s + (m.isFuture ? 0 : m.actual - m.planned),
+                      0,
+                    )}
+                  />
                 </TableCell>
               </TableRow>
             </TableFooter>

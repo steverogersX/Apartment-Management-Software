@@ -6,28 +6,27 @@ export function formatCurrency(amount: number) {
 
 export function VarianceStat({ planned, actual }: { planned: number; actual: number }) {
   const variance = actual - planned;
-  const variancePct = planned ? (variance / planned) * 100 : 0;
-  const isBad = variance > 0;
-  const isGood = variance < 0;
-  const colorClass = isBad
+  const variancePct = planned ? (Math.abs(variance) / planned) * 100 : 0;
+  const isOver = variance > 0;
+  const isUnder = variance < 0;
+  const colorClass = isOver
     ? "text-red-600 dark:text-red-400"
-    : isGood
+    : isUnder
       ? "text-emerald-600 dark:text-emerald-400"
       : "";
+  const direction = isOver ? "Overspent" : isUnder ? "Saved" : null;
 
   return (
     <Card>
       <CardHeader className="pb-2">
         <p className="text-xs text-muted-foreground">Variance</p>
         <CardTitle className={`text-2xl tabular-nums ${colorClass}`}>
-          {variance > 0 ? "+" : ""}
-          {formatCurrency(variance)}
+          {formatCurrency(Math.abs(variance))}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-0">
         <p className={`text-xs tabular-nums ${colorClass || "text-muted-foreground"}`}>
-          {variancePct > 0 ? "+" : ""}
-          {variancePct.toFixed(1)}%
+          {direction ? `${direction} · ${variancePct.toFixed(1)}%` : "On budget"}
         </p>
       </CardContent>
     </Card>

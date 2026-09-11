@@ -40,9 +40,10 @@ function formatCurrency(amount: number) {
 
 function varianceLabel(planned: number, actual: number) {
   const diff = actual - planned;
-  const pct = planned ? (diff / planned) * 100 : 0;
-  const sign = diff > 0 ? "+" : "";
-  return `${sign}${formatCurrency(diff)} (${sign}${pct.toFixed(1)}%)`;
+  if (diff === 0) return "On budget";
+  const pct = planned ? (Math.abs(diff) / planned) * 100 : 0;
+  const direction = diff > 0 ? "Overspent" : "Saved";
+  return `${direction} ${formatCurrency(Math.abs(diff))} (${pct.toFixed(1)}%)`;
 }
 
 export function BudgetHeadsTable({
