@@ -32,6 +32,7 @@ import { AddVoucherForm } from "./vouchers/addVoucherForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function statusVariant(status: VoucherStatus) {
   if (status === "Posted") return "secondary";
@@ -40,6 +41,7 @@ function statusVariant(status: VoucherStatus) {
 }
 
 export function VouchersTable() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
   const canManage = has("VouchersManage");
@@ -78,6 +80,7 @@ export function VouchersTable() {
       details: values.narration,
     });
     setAddOpen(false);
+    toast({ title: "Voucher created" });
   }
 
   function handlePost(voucher: Voucher) {
@@ -93,6 +96,7 @@ export function VouchersTable() {
       performedBy: actor,
       details: "Draft → Posted",
     });
+    toast({ title: "Voucher posted" });
   }
 
   function handleCancel(voucher: Voucher) {
@@ -113,6 +117,7 @@ export function VouchersTable() {
     });
     setCancelOpen(false);
     setCancelReason("");
+    toast({ title: "Voucher cancelled", variant: "info" });
   }
 
   const columns = React.useMemo<ColumnDef<Voucher>[]>(

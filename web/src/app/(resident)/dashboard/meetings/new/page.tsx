@@ -10,8 +10,10 @@ import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { MeetingFormInput } from "@/lib/meetingsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function NewMeetingPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const canCreate = has("MeetingsSchedule");
@@ -53,6 +55,7 @@ export default function NewMeetingPage() {
 
     meetings.unshift(newMeeting);
     router.push("/dashboard/meetings");
+    toast({ title: "Meeting scheduled" });
   }
 
   return (

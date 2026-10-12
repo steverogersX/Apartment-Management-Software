@@ -17,6 +17,7 @@ import {
 import { parseCsv } from "@/lib/parseCsv";
 import { roleOptions } from "@/lib/usersMockData";
 import { FileDropzone } from "@/components/users/fileDropzone";
+import { useToast } from "@/components/ui/toast";
 
 type PreviewRow = {
   name: string;
@@ -86,6 +87,7 @@ function downloadTemplate() {
 }
 
 export function BulkUserUpload() {
+  const { toast } = useToast();
   const router = useRouter();
   const [file, setFile] = React.useState<File | null>(null);
   const [rows, setRows] = React.useState<PreviewRow[] | null>(null);
@@ -120,6 +122,7 @@ export function BulkUserUpload() {
     await new Promise((resolve) => setTimeout(resolve, 500));
     setImporting(false);
     router.push("/dashboard/users");
+    toast({ title: "Users imported" });
   }
 
   return (

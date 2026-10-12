@@ -27,6 +27,8 @@ import { useNow } from "@/hooks/useNow";
 import { getInitials, gradientForName } from "@/lib/utils";
 import { currentFlat } from "@/lib/mockData";
 import { sessions as initialSessions } from "@/lib/sessionsMockData";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 const flatFields: {
   label: string;
@@ -54,6 +56,7 @@ function relativeTime(iso: string, now: number) {
 }
 
 export default function ProfilePage() {
+  const { toast } = useToast();
   const { user, societies, activeSocietyId, switchSociety } = useAuth();
   const now = useNow();
 
@@ -78,6 +81,7 @@ export default function ProfilePage() {
     setSavingDetails(true);
     await new Promise((resolve) => setTimeout(resolve, 400));
     setSavingDetails(false);
+    toast({ title: "Profile saved" });
   }
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -97,6 +101,7 @@ export default function ProfilePage() {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
+    toast({ title: "Password changed" });
   }
 
   function revokeSession(id: string) {
@@ -106,7 +111,10 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Profile</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Profile
+        </h1>
         <p className="text-sm text-muted-foreground">
           Your account, security, and the roles you hold.
         </p>

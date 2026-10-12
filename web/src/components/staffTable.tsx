@@ -4,7 +4,7 @@ import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { BadgeCheck, BadgeX } from "lucide-react";
 
-import { avatarUrlForName, cn, formatCurrency, getInitials, gradientForName } from "@/lib/utils";
+import { avatarUrlForName, formatCurrency, getInitials, gradientForName } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
@@ -15,12 +15,7 @@ import {
   type StaffRole,
   type StaffStatus,
 } from "@/lib/staffMockData";
-
-const STATUS_DOT: Record<StaffStatus, string> = {
-  active: "bg-emerald-500",
-  on_leave: "bg-amber-500",
-  inactive: "bg-muted-foreground",
-};
+import { StatusIcon } from "@/components/statusIcon";
 
 const STATUS_LABEL: Record<StaffStatus, string> = {
   active: "Active",
@@ -137,9 +132,7 @@ export function StaffTable({
         header: () => <DataTableColumnHeader label="Status" />,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span
-              className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[row.original.status])}
-            />
+            <StatusIcon status={row.original.status} />
             <span className="whitespace-nowrap text-foreground">
               {STATUS_LABEL[row.original.status]}
             </span>

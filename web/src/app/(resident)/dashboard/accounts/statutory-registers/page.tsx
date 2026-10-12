@@ -18,6 +18,7 @@ import { NominationsTable } from "@/components/statutory/nominationsTable";
 import { InvestmentsTable } from "@/components/statutory/investmentsTable";
 import { formatDate } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 function meetingTypeLabel(meeting: Meeting) {
   if (meeting.audience.scope === "All") return "General Body";
@@ -188,7 +189,8 @@ export default function StatutoryRegistersPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
           Statutory Registers
         </h1>
         <p className="text-sm text-muted-foreground">

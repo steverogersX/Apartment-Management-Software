@@ -47,12 +47,15 @@ import { recordAudit } from "@/lib/auditLog";
 import { createVoucher } from "@/lib/vouchersMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 function prTotal(pr: PurchaseRequest) {
   return pr.items.reduce((s, it) => s + it.quantity * it.estimatedUnitPrice, 0);
 }
 
 export default function PurchasingPage() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
   const canApprove = has("PurchasingApprove");
@@ -99,6 +102,7 @@ export default function PurchasingPage() {
       details: `${pr.items.length} items · ${formatCurrency(prTotal(pr))}`,
     });
     setPrDialogOpen(false);
+    toast({ title: "Purchase request created" });
   }
 
   function handleApprove(pr: PurchaseRequest) {
@@ -129,6 +133,7 @@ export default function PurchasingPage() {
       action: "Approve",
       performedBy: actor,
     });
+    toast({ title: "Purchase request approved" });
   }
 
   function handleReject(pr: PurchaseRequest) {
@@ -176,6 +181,7 @@ export default function PurchasingPage() {
     });
     setRejectOpen(false);
     setRejectReason("");
+    toast({ title: "Purchase request rejected", variant: "info" });
   }
 
   function handleCreatePO(values: {
@@ -215,6 +221,7 @@ export default function PurchasingPage() {
       details: `From ${pr.requestNumber} · ${formatCurrency(total)}`,
     });
     setPoDialogOpen(false);
+    toast({ title: "Purchase order created" });
   }
 
   function handleReceive(
@@ -286,6 +293,7 @@ export default function PurchasingPage() {
         details: `${it.receivedQuantity} ${it.unit} via ${order.poNumber}`,
       });
     });
+    toast({ title: "Goods received" });
   }
 
   function handleVendorPayment(order: PurchaseOrder) {
@@ -332,6 +340,7 @@ export default function PurchasingPage() {
       performedBy: actor,
       details: `Auto-generated from ${order.poNumber}`,
     });
+    toast({ title: "Vendor payment recorded" });
   }
 
   function handleAddVendor(values: AddVendorInput) {
@@ -354,6 +363,7 @@ export default function PurchasingPage() {
       performedBy: actor,
     });
     setVendorDialogOpen(false);
+    toast({ title: "Vendor added" });
   }
 
   const prColumns = React.useMemo<ColumnDef<PurchaseRequest>[]>(
@@ -616,7 +626,10 @@ export default function PurchasingPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Purchasing</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Purchasing
+        </h1>
         <p className="text-sm text-muted-foreground">
           Purchase requests, orders and vendor management.
         </p>

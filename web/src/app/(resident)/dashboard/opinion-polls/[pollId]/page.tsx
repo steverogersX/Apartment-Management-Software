@@ -14,6 +14,7 @@ import { SetBreadcrumbTitle } from "@/components/breadcrumbs";
 import { getPollById, isPollClosed, opinionPolls } from "@/lib/pollsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function PropertyRow({
   icon: Icon,
@@ -61,6 +62,7 @@ function formatRelativeTime(iso: string) {
 }
 
 export default function PollDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ pollId: string }>();
   const router = useRouter();
   const poll = getPollById(params.pollId);
@@ -120,6 +122,7 @@ export default function PollDetailPage() {
     const idx = opinionPolls.findIndex((x) => x.id === p.id);
     if (idx !== -1) opinionPolls[idx] = updatedPoll;
     setSelected([]);
+    toast({ title: "Vote recorded" });
   }
 
   const sortedOptions = React.useMemo(() => {
@@ -281,7 +284,7 @@ export default function PollDetailPage() {
                       </div>
                       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-foreground transition-all"
+                          className="h-full origin-left animate-grow-x bg-foreground transition-all"
                           style={{ width: `${percent}%` }}
                         />
                       </div>

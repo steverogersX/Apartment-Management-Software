@@ -2,6 +2,7 @@ import { Dumbbell, Waves, TreePalm, Music } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PageIcon } from "@/components/pageIcon";
 
 const amenities = [
   { name: "Clubhouse", icon: Music, status: "Open", hours: "6 AM – 10 PM" },
@@ -14,7 +15,10 @@ export default function AmenitiesPage() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Amenities</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Amenities
+        </h1>
         <p className="text-sm text-muted-foreground">View rules, timings, and book a slot.</p>
       </div>
 

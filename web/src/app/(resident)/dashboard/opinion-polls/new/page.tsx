@@ -10,8 +10,10 @@ import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { PollFormInput } from "@/lib/pollsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function NewPollPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const canCreate = has("PollsCreate");
@@ -59,6 +61,7 @@ export default function NewPollPage() {
 
     opinionPolls.unshift(newPoll);
     router.push("/dashboard/opinion-polls");
+    toast({ title: "Poll created" });
   }
 
   return (

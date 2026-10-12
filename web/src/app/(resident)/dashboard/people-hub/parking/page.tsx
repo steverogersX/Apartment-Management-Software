@@ -64,6 +64,8 @@ import {
   type ParkingSlotRecord,
   type ParkingVehicleType,
 } from "@/lib/parkingMockData";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 type OccupancyStatus = "full" | "partial" | "vacant";
 type StatusFilter = "all" | "occupied" | "vacant";
@@ -507,6 +509,7 @@ const tableColumns: ColumnDef<HubSlotRow>[] = [
 ];
 
 function ParkingPageInner() {
+  const { toast } = useToast();
   const searchParams = useSearchParams();
   const deepLinkedSlot = searchParams.get("slot");
 
@@ -635,6 +638,7 @@ function ParkingPageInner() {
         timestamp,
       },
     ]);
+    toast({ title: "Vehicle assigned to slot" });
   }
 
   function handleDeassign(assignmentId: string) {
@@ -663,6 +667,7 @@ function ParkingPageInner() {
         timestamp,
       },
     ]);
+    toast({ title: "Vehicle removed from slot", variant: "info" });
   }
 
   function handleCreateSlot(values: AddParkingSlotInput) {
@@ -676,6 +681,7 @@ function ParkingPageInner() {
     };
     setSlots((prev) => [...prev, newSlot]);
     setCreateOpen(false);
+    toast({ title: "Parking slot created" });
   }
 
   const spaceLeft = selectedSlot ? selectedSlot.capacity - selectedSlot.assignments.length : 0;
@@ -684,7 +690,10 @@ function ParkingPageInner() {
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">Parking</h1>
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
+            Parking
+          </h1>
           <p className="text-sm text-muted-foreground">
             {totalVehicleCount} vehicles parked across {occupiedSlotCount} of {slots.length} slots —
             a slot can hold more than one vehicle. Pick a slot to see who&apos;s parked and its full

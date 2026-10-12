@@ -9,8 +9,10 @@ import { elections } from "@/lib/electionsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { ElectionFormInput } from "@/lib/electionsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function NewElectionPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const canCreate = has("ElectionsManage");
@@ -60,6 +62,7 @@ export default function NewElectionPage() {
 
     elections.unshift(newElection);
     router.push("/dashboard/election-polls");
+    toast({ title: "Election created" });
   }
 
   return (

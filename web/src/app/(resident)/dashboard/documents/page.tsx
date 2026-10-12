@@ -36,6 +36,8 @@ import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Attachment } from "@/lib/attachmentTypes";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 function iconForType(type: Attachment["type"]) {
   switch (type) {
@@ -75,6 +77,7 @@ function handleDownload(doc: SocietyDocument) {
 }
 
 export default function DocumentsPage() {
+  const { toast } = useToast();
   const { has } = useAuth();
   const canUpload = has("DocumentsUpload");
   const [docs, setDocs] = React.useState<SocietyDocument[]>(() =>
@@ -142,6 +145,7 @@ export default function DocumentsPage() {
     setDocs((prev) => [newDoc, ...prev]);
     setOpen(false);
     resetForm();
+    toast({ title: "Document uploaded" });
   }
 
   const columns = React.useMemo<ColumnDef<SocietyDocument>[]>(
@@ -279,7 +283,10 @@ export default function DocumentsPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Documents</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Documents
+        </h1>
         <p className="text-sm text-muted-foreground">
           Society files — bylaws, budgets, minutes, and more.
         </p>

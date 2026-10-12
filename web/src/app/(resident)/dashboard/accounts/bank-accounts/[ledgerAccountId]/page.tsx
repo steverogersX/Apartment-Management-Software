@@ -46,6 +46,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function maskedAccountNumber(accountNumber: string) {
   const digits = accountNumber.replace(/\D/g, "");
@@ -67,6 +68,7 @@ function isDirectionCompatible(
 }
 
 export default function BankAccountDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ ledgerAccountId: string }>();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -192,6 +194,7 @@ export default function BankAccountDetailPage() {
       });
       setVersion((v) => v + 1);
     }
+    toast({ title: "Auto-reconcile complete" });
   }
 
   const matchCandidates = matchTarget

@@ -28,6 +28,7 @@ import { residents } from "@/lib/residentsMockData";
 import type { Attachment } from "@/lib/attachmentTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -39,6 +40,7 @@ function formatDateTime(iso: string) {
 }
 
 export default function ForumThreadPage() {
+  const { toast } = useToast();
   const params = useParams<{ threadId: string }>();
   const router = useRouter();
   const { has } = useAuth();
@@ -138,6 +140,7 @@ export default function ForumThreadPage() {
     addReply(null, body, composerAttachments);
     setComposerBody("");
     setComposerAttachments([]);
+    toast({ title: "Reply posted" });
   }
 
   async function handleReplyPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {

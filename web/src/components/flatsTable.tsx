@@ -6,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Bike, Car, ChevronRight, Home, Plus, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -34,20 +34,11 @@ import {
 import { duesForFlat, maintenanceStatusForFlat } from "@/lib/maintenanceMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
-
-const OCCUPANCY_DOT: Record<FlatOccupancyStatus, string> = {
-  occupied: "bg-emerald-500",
-  vacant: "bg-zinc-400",
-};
+import { StatusIcon } from "@/components/statusIcon";
 
 const OCCUPANCY_LABEL: Record<FlatOccupancyStatus, string> = {
   occupied: "Occupied",
   vacant: "Vacant",
-};
-
-const MAINTENANCE_DOT: Record<FlatMaintenanceStatus, string> = {
-  paid: "bg-emerald-500",
-  due: "bg-red-500",
 };
 
 const MAINTENANCE_LABEL: Record<FlatMaintenanceStatus, string> = {
@@ -69,7 +60,7 @@ function FlatMaintenanceCell({ flat }: { flat: FlatRecord }) {
   const status = maintenanceStatusForFlat(flat.tower, flat.flatNumber);
   const content = (
     <>
-      <span className={cn("size-1.5 shrink-0 rounded-full", MAINTENANCE_DOT[status])} />
+      <StatusIcon status={status} />
       <span className="whitespace-nowrap text-foreground">{MAINTENANCE_LABEL[status]}</span>
     </>
   );
@@ -301,9 +292,7 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
                   </TableCell>
                   <TableCell className="px-4 py-2">
                     <span className="inline-flex items-center gap-1.5">
-                      <span
-                        className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[r.status])}
-                      />
+                      <StatusIcon status={r.status} />
                       <span className="whitespace-nowrap text-sm text-foreground">
                         {STATUS_LABEL[r.status]}
                       </span>
@@ -326,12 +315,6 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
     </div>
   );
 }
-
-const STATUS_DOT: Record<string, string> = {
-  active: "bg-emerald-500",
-  pending: "bg-amber-500",
-  moved_out: "bg-zinc-400",
-};
 
 const STATUS_LABEL: Record<string, string> = {
   active: "Active",
@@ -405,7 +388,7 @@ export function FlatsTable() {
           const status = row.original.occupancyStatus;
           return (
             <div className="flex items-center gap-2">
-              <span className={cn("size-1.5 shrink-0 rounded-full", OCCUPANCY_DOT[status])} />
+              <StatusIcon status={status} />
               <span className="whitespace-nowrap text-foreground">{OCCUPANCY_LABEL[status]}</span>
             </div>
           );

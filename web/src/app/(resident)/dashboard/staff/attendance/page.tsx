@@ -17,6 +17,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -31,6 +33,7 @@ const staffById = new Map(staffMembers.map((s) => [s.id, s]));
 type AttendanceRow = StaffAttendanceEvent & { staffName: string; staffRole: string };
 
 export default function StaffAttendancePage() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const [events, setEvents] = React.useState<StaffAttendanceEvent[]>(() => [
     ...staffAttendanceEventsSource,
@@ -59,6 +62,7 @@ export default function StaffAttendancePage() {
     };
     staffAttendanceEventsSource.push(event);
     setEvents((prev) => [...prev, event]);
+    toast({ title: "Checked in" });
   }
 
   function handleCheckOut(staffId: string) {
@@ -72,6 +76,7 @@ export default function StaffAttendancePage() {
     setEvents((prev) =>
       prev.map((e) => (e.staffId === staffId && e.date === today ? { ...e, checkOutAt: now } : e)),
     );
+    toast({ title: "Checked out" });
   }
 
   const logRows = React.useMemo<AttendanceRow[]>(
@@ -177,7 +182,10 @@ export default function StaffAttendancePage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Staff Attendance</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Staff Attendance
+        </h1>
         <p className="text-sm text-muted-foreground">
           Today's roster and the full gate attendance log for every staff member.
         </p>

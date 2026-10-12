@@ -28,6 +28,7 @@ import { slaRules } from "@/lib/helpdeskSettingsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 function formatHours(hours: number): string {
   if (hours < 24) return `${Math.round(hours)}h`;
@@ -123,7 +124,10 @@ export default function HelpdeskReportsPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Helpdesk Reports</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Helpdesk Reports
+        </h1>
         <p className="text-sm text-muted-foreground">Society-wide complaint analytics.</p>
       </div>
 

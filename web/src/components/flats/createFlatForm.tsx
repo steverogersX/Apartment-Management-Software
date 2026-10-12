@@ -25,6 +25,7 @@ import {
   type ResidentOccupancyType,
 } from "@/lib/residentsMockData";
 import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 const FLAT_TYPES: FlatType[] = ["1BHK", "2BHK", "3BHK", "4BHK"];
 
@@ -67,6 +68,7 @@ function ResidentAvatar({
 }
 
 export function CreateFlatForm() {
+  const { toast } = useToast();
   const router = useRouter();
   const [flatNumber, setFlatNumber] = React.useState("");
   const [tower, setTower] = React.useState("");
@@ -197,6 +199,7 @@ export function CreateFlatForm() {
     }
 
     router.push("/dashboard/people-hub/flats");
+    toast({ title: "Flat added" });
   }
 
   return (

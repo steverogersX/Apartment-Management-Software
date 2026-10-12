@@ -25,6 +25,7 @@ import { boardNotices, getNoticeById } from "@/lib/noticesMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -48,6 +49,7 @@ function formatRelativeTime(iso: string) {
 }
 
 export default function NoticeDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ noticeId: string }>();
   const router = useRouter();
   const { has } = useAuth();
@@ -133,6 +135,7 @@ export default function NoticeDetailPage() {
       if (!boardNotices[idx].readBy.some((r) => r.name === currentUser))
         boardNotices[idx].readBy.push(receipt);
     }
+    toast({ title: "Notice acknowledged" });
   }
 
   const audienceLabel =

@@ -3,19 +3,14 @@
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import type { FlatMaintenanceDue, MaintenancePaymentStatus } from "@/lib/maintenanceMockData";
+import { StatusIcon } from "@/components/statusIcon";
 
 export type DuesRow = FlatMaintenanceDue & { flatLabel?: string };
-
-const STATUS_DOT: Record<MaintenancePaymentStatus, string> = {
-  paid: "bg-emerald-500",
-  pending: "bg-amber-500",
-  overdue: "bg-red-500",
-};
 
 const STATUS_LABEL: Record<MaintenancePaymentStatus, string> = {
   paid: "Paid",
@@ -110,9 +105,7 @@ export function MaintenanceDuesTable({
         header: () => <DataTableColumnHeader label="Status" />,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span
-              className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[row.original.status])}
-            />
+            <StatusIcon status={row.original.status} />
             <span className="whitespace-nowrap text-foreground">
               {STATUS_LABEL[row.original.status]}
             </span>

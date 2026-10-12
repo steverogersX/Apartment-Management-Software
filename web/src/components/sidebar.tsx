@@ -220,17 +220,19 @@ function NavGroupItem({ group, collapsed }: { group: AdminNavGroup; collapsed: b
                   <Link
                     href={item.href}
                     className={cn(
-                      "relative flex h-8 cursor-pointer items-center truncate rounded-md px-2 text-[13px] font-medium transition-colors",
+                      "relative flex h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-[13px] font-medium transition-colors",
                       active
                         ? "font-semibold text-foreground before:absolute before:-left-1 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:content-['']"
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    {item.label}
+                    {item.icon && <item.icon className="size-3.5 shrink-0" />}
+                    <span className="truncate">{item.label}</span>
                   </Link>
                 ) : (
-                  <span className="flex h-8 cursor-default items-center truncate rounded-md px-2 text-[13px] font-medium text-muted-foreground">
-                    {item.label}
+                  <span className="flex h-8 cursor-default items-center gap-2 rounded-md px-2 text-[13px] font-medium text-muted-foreground">
+                    {item.icon && <item.icon className="size-3.5 shrink-0" />}
+                    <span className="truncate">{item.label}</span>
                   </span>
                 )}
               </div>

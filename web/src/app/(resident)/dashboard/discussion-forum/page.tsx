@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { FORUM_CATEGORIES, forumThreads } from "@/lib/forumMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 function formatRelativeTime(iso: string) {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -75,7 +76,10 @@ export default function DiscussionForumPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Discussion Forum</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Discussion Forum
+        </h1>
         <p className="text-sm text-muted-foreground">
           Ask questions, share ideas, and discuss society matters.
         </p>

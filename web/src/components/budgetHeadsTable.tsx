@@ -34,6 +34,7 @@ import { AddBudgetHeadForm } from "./budget/addBudgetHeadForm";
 import { EditBudgetHeadForm } from "./budget/editBudgetHeadForm";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function varianceLabel(planned: number, actual: number) {
   const diff = actual - planned;
@@ -50,6 +51,7 @@ export function BudgetHeadsTable({
   financialYear: string;
   onMutate?: () => void;
 }) {
+  const { toast } = useToast();
   const { has } = useAuth();
   const canManage = has("BudgetManage");
   const [version, setVersion] = React.useState(0);
@@ -89,6 +91,7 @@ export function BudgetHeadsTable({
     setVersion((v) => v + 1);
     onMutate?.();
     setAddOpen(false);
+    toast({ title: "Budget head added" });
   }
 
   function handleEditSave(values: EditBudgetHeadInput) {
@@ -108,6 +111,7 @@ export function BudgetHeadsTable({
     setVersion((v) => v + 1);
     onMutate?.();
     setEditing(null);
+    toast({ title: "Budget head updated" });
   }
 
   function handleDelete() {
@@ -117,6 +121,7 @@ export function BudgetHeadsTable({
     setVersion((v) => v + 1);
     onMutate?.();
     setDeleteTarget(null);
+    toast({ title: "Budget head deleted", variant: "info" });
   }
 
   function handleClone() {
@@ -134,6 +139,7 @@ export function BudgetHeadsTable({
     });
     setVersion((v) => v + 1);
     onMutate?.();
+    toast({ title: "Budget heads cloned" });
   }
 
   const columns = React.useMemo<ColumnDef<BudgetHead>[]>(

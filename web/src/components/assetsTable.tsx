@@ -7,7 +7,6 @@ import { useRouter } from "next/navigation";
 
 import { Plus } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
@@ -31,12 +30,8 @@ import { AddAssetForm } from "./assets/addAssetForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { formatCurrency } from "@/lib/utils";
-
-const STATUS_DOT: Record<AssetStatus, string> = {
-  Active: "bg-emerald-500",
-  "Under Repair": "bg-amber-500",
-  Retired: "bg-zinc-400",
-};
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
 
 const STATUS_LABEL: Record<AssetStatus, string> = {
   Active: "Active",
@@ -54,6 +49,7 @@ function formatDate(iso: string | null) {
 }
 
 export function AssetsTable() {
+  const { toast } = useToast();
   const router = useRouter();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -88,6 +84,7 @@ export function AssetsTable() {
       performedBy: actor,
     });
     setAddOpen(false);
+    toast({ title: "Asset added" });
   }
 
   const columns = React.useMemo<ColumnDef<Asset>[]>(
@@ -206,7 +203,7 @@ export function AssetsTable() {
           const status = row.original.status;
           return (
             <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status])} />
+              <StatusIcon status={status} />
               <Badge
                 variant={
                   status === "Active"

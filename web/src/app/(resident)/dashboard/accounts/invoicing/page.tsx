@@ -6,6 +6,7 @@ import { CollectionCyclesTable } from "@/components/invoicing/collectionCyclesTa
 import { useAuth } from "@/hooks/useAuth";
 import { invoices } from "@/lib/invoicingMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function InvoicingPage() {
   const { has } = useAuth();
@@ -18,7 +19,10 @@ export default function InvoicingPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Invoicing</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Invoicing
+        </h1>
         <p className="text-sm text-muted-foreground">
           Generate and track maintenance invoices for flats.
         </p>

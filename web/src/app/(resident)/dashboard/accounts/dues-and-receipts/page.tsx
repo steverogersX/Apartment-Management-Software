@@ -22,6 +22,7 @@ import { flats } from "@/lib/flatsMockData";
 import { computeInvoiceTotals, computeOutstandingBalance, invoices } from "@/lib/invoicingMockData";
 import { getAgeingBucket, receipts, type AgeingBucket, type Receipt } from "@/lib/duesMockData";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 type DuesRow = {
   flatId: string;
@@ -291,7 +292,10 @@ export default function DuesAndReceiptsPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Dues and Receipts</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Dues and Receipts
+        </h1>
         <p className="text-sm text-muted-foreground">
           Outstanding balances and payment receipts register.
         </p>

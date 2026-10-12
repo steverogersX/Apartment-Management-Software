@@ -9,8 +9,10 @@ import { boardNotices, type BoardNotice } from "@/lib/noticesMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { NoticeFormInput } from "@/lib/noticesMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function NewNoticePage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const canCreate = has("NoticesPost");
@@ -57,6 +59,7 @@ export default function NewNoticePage() {
     };
     boardNotices.unshift(newNotice);
     router.push("/dashboard/notices");
+    toast({ title: "Notice published" });
   }
 
   return (

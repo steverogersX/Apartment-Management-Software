@@ -11,6 +11,7 @@ import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { ComplaintPriority, ComplaintStatus, complaints } from "@/lib/mockData";
 import { residents } from "@/lib/residentsMockData";
+import { StatusIcon } from "@/components/statusIcon";
 
 export type ComplaintRow = {
   id: string;
@@ -26,13 +27,6 @@ export type ComplaintRow = {
   tower?: string;
   flatNumber?: string;
   flatLabel?: string;
-};
-
-const STATUS_DOT: Record<ComplaintStatus, string> = {
-  open: "bg-blue-500",
-  in_progress: "bg-amber-500",
-  resolved: "bg-emerald-500",
-  escalated: "bg-red-500",
 };
 
 const STATUS_LABEL: Record<ComplaintStatus, string> = {
@@ -150,7 +144,7 @@ export function ComplaintsTable({
           const status = row.original.status;
           return (
             <div className="flex items-center gap-2">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status])} />
+              <StatusIcon status={status} />
               <span className="whitespace-nowrap text-foreground">{STATUS_LABEL[status]}</span>
             </div>
           );

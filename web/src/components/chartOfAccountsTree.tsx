@@ -28,6 +28,7 @@ import { AddAccountGroupForm } from "./chart-of-accounts/addAccountGroupForm";
 import { AddLedgerAccountForm } from "./chart-of-accounts/addLedgerAccountForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
+import { useToast } from "@/components/ui/toast";
 
 function LedgerRow({ account }: { account: LedgerAccount }) {
   return (
@@ -101,6 +102,7 @@ function GroupNode({
 }
 
 export function ChartOfAccountsTree() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
   const canManage = has("ChartOfAccountsManage");
@@ -139,6 +141,7 @@ export function ChartOfAccountsTree() {
       performedBy: actor,
     });
     setGroupOpen(false);
+    toast({ title: "Account group added" });
   }
 
   function handleAddLedger(values: AddLedgerAccountInput) {
@@ -163,6 +166,7 @@ export function ChartOfAccountsTree() {
       performedBy: actor,
     });
     setLedgerOpen(false);
+    toast({ title: "Ledger account added" });
   }
 
   const topLevel = groups.filter((g) => g.parentGroupId === null);

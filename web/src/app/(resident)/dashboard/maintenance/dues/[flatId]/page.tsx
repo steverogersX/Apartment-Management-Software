@@ -30,6 +30,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 const STATUS_LABEL: Record<MaintenancePaymentStatus, string> = {
   paid: "Paid",
@@ -44,6 +45,7 @@ const STATUS_VARIANT: Record<MaintenancePaymentStatus, "default" | "secondary" |
 };
 
 export default function FlatMaintenanceDuesPage() {
+  const { toast } = useToast();
   const { has } = useAuth();
   const params = useParams<{ flatId: string }>();
   const [tower, flatNumber] = decodeURIComponent(params.flatId).split("-");
@@ -76,6 +78,7 @@ export default function FlatMaintenanceDuesPage() {
     }
     setDues((prev) => prev.map((d) => (d.id === payTarget.id ? { ...d, ...patch } : d)));
     setPayTarget(null);
+    toast({ title: "Payment recorded" });
   }
 
   if (!has("MaintenanceViewAll")) {

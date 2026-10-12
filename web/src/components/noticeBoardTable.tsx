@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { cn, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 const CATEGORY_VARIANT: Record<string, "secondary" | "outline" | "default"> = {
   Maintenance: "secondary",
@@ -27,6 +28,7 @@ const CATEGORY_VARIANT: Record<string, "secondary" | "outline" | "default"> = {
 };
 
 export function NoticeBoardTable() {
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const [notices, setNotices] = React.useState<BoardNotice[]>(() =>
@@ -52,6 +54,7 @@ export function NoticeBoardTable() {
           : n,
       ),
     );
+    toast({ title: "Notice acknowledged" });
   }
 
   function handleRowClick(row: BoardNotice) {

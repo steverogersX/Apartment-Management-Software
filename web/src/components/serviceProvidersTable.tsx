@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Plus } from "lucide-react";
 
-import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,11 +32,8 @@ import {
 } from "@/lib/providersMockData";
 import { AddProviderForm } from "./providers/addProviderForm";
 import { useAuth } from "@/hooks/useAuth";
-
-const STATUS_DOT: Record<ServiceProviderStatus, string> = {
-  active: "bg-emerald-500",
-  blocked: "bg-red-500",
-};
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
 
 const STATUS_LABEL: Record<ServiceProviderStatus, string> = {
   active: "Active",
@@ -57,6 +54,7 @@ function lastVerifiedBy(providerId: string) {
 }
 
 export function ServiceProvidersTable() {
+  const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
   const actorName = user?.displayName ?? user?.email ?? "Admin";
@@ -97,6 +95,7 @@ export function ServiceProvidersTable() {
       });
     });
     setAddOpen(false);
+    toast({ title: "Service provider added" });
   }
 
   const columns = React.useMemo<ColumnDef<ServiceProvider>[]>(
@@ -209,7 +208,7 @@ export function ServiceProvidersTable() {
           const status = row.original.status;
           return (
             <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status])} />
+              <StatusIcon status={status} />
               <Badge variant={status === "active" ? "secondary" : "destructive"}>
                 {STATUS_LABEL[status]}
               </Badge>

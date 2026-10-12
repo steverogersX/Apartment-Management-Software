@@ -14,16 +14,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { flats, flatVehicleHistory } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { StatusIcon } from "@/components/statusIcon";
 
 const OCCUPANCY_LABEL: Record<string, string> = {
   owner: "Owner",
   tenant: "Tenant",
-};
-
-const STATUS_DOT: Record<string, string> = {
-  active: "bg-emerald-500",
-  moved_out: "bg-zinc-400",
-  pending: "bg-amber-500",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -94,9 +89,7 @@ export default function ResidentDetailPage() {
                 {OCCUPANCY_LABEL[resident.occupancyType]}
               </Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span
-                  className={`size-1.5 shrink-0 rounded-full ${STATUS_DOT[resident.status] ?? "bg-zinc-400"}`}
-                />
+                <StatusIcon status={resident.status} />
                 {STATUS_LABEL[resident.status] ?? resident.status}
               </span>
             </div>

@@ -17,6 +17,8 @@ import {
   type VisitorProfile,
 } from "@/lib/visitorsMockData";
 import { cn, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
 
 function todayStr(offset = 0) {
   const d = new Date();
@@ -51,11 +53,6 @@ const CATEGORY_LABEL: Record<SocietyVisitorCategory, string> = {
   cab: "Cab",
   service: "Service",
   other: "Other",
-};
-
-const STATUS_DOT: Record<VisitorProfile["status"], string> = {
-  active: "bg-emerald-500",
-  blocked: "bg-red-500",
 };
 
 const STATUS_LABEL: Record<VisitorProfile["status"], string> = {
@@ -125,6 +122,7 @@ function deriveProfiles(
 }
 
 export function SocietyVisitorsTable() {
+  const { toast } = useToast();
   const router = useRouter();
   const [visitors, setVisitors] = React.useState<SocietyVisitor[]>(() => [...initialVisitors]);
   const [blockedByPhone, setBlockedByPhone] = React.useState<Record<string, BlockRecord>>(() => ({
@@ -212,6 +210,7 @@ export function SocietyVisitorsTable() {
         checkIn: now,
         verifiedBy: "Admin",
       };
+    toast({ title: "Visitor approved" });
   }
 
   function handleDeny(profile: VisitorProfile) {
@@ -271,6 +270,7 @@ export function SocietyVisitorsTable() {
     }
     setDenyTarget(null);
     setDenyReason("");
+    toast({ title: "Visitor denied", variant: "info" });
   }
 
   function handleBlock(profile: VisitorProfile) {
@@ -281,6 +281,7 @@ export function SocietyVisitorsTable() {
     }));
     setBlockTarget(null);
     setBlockReason("");
+    toast({ title: "Visitor blocked", variant: "info" });
   }
 
   function handleUnblock(profile: VisitorProfile) {
@@ -289,6 +290,7 @@ export function SocietyVisitorsTable() {
       delete next[profile.phone];
       return next;
     });
+    toast({ title: "Visitor unblocked" });
   }
 
   const columns = React.useMemo<ColumnDef<VisitorProfile>[]>(
@@ -392,7 +394,7 @@ export function SocietyVisitorsTable() {
           const s = row.original.status;
           return (
             <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[s])} />
+              <StatusIcon status={s} />
               <Badge variant={s === "active" ? "secondary" : "destructive"}>
                 {STATUS_LABEL[s]}
               </Badge>

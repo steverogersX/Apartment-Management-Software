@@ -26,8 +26,10 @@ import {
 import { AddInventoryItemForm } from "./inventory/addInventoryItemForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
+import { useToast } from "@/components/ui/toast";
 
 export function InventoryTable() {
+  const { toast } = useToast();
   const router = useRouter();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -56,6 +58,7 @@ export function InventoryTable() {
       performedBy: actor,
     });
     setAddOpen(false);
+    toast({ title: "Item added" });
   }
 
   const columns = React.useMemo<ColumnDef<InventoryItem>[]>(

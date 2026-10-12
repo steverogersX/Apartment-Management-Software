@@ -30,8 +30,10 @@ import { InventoryLedgerTimeline } from "@/components/inventoryLedgerTimeline";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function InventoryItemDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ itemId: string }>();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -93,6 +95,7 @@ export default function InventoryItemDetailPage() {
       performedBy: actor,
     });
     setEditOpen(false);
+    toast({ title: "Item updated" });
   }
 
   function handleTransaction(values: AddStockTransactionInput) {
@@ -130,6 +133,7 @@ export default function InventoryItemDetailPage() {
     }
     setItem((prev) => (prev ? { ...prev, currentStock: nextBalance } : prev));
     setTxnOpen(false);
+    toast({ title: "Stock transaction recorded" });
   }
 
   return (

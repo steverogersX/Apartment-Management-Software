@@ -42,6 +42,9 @@ import {
   gradientForName,
 } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
+import { CountUp } from "@/components/countUp";
 
 const STATUS_LABEL: Record<StaffStatus, string> = {
   active: "Active",
@@ -60,6 +63,7 @@ const STATUS_VARIANT: Record<StaffStatus, "default" | "secondary" | "outline"> =
 };
 
 export default function StaffPage() {
+  const { toast } = useToast();
   const { has } = useAuth();
   const [staff, setStaff] = React.useState<StaffMember[]>(() => [...staffMembersSource]);
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
@@ -87,6 +91,7 @@ export default function StaffPage() {
     staffMembersSource.push(member);
     setStaff((prev) => [...prev, member]);
     setAddOpen(false);
+    toast({ title: "Staff member added" });
   }
 
   function handleEdit(values: EditStaffInput) {
@@ -97,6 +102,7 @@ export default function StaffPage() {
     }
     setStaff((prev) => prev.map((s) => (s.id === selected.id ? { ...s, ...values } : s)));
     setEditOpen(false);
+    toast({ title: "Staff member updated" });
   }
 
   if (!has("StaffManage") && !has("StaffViewAttendance")) {
@@ -106,7 +112,10 @@ export default function StaffPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Staff</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Staff
+        </h1>
         <p className="text-sm text-muted-foreground">
           Society-employed security, housekeeping, and maintenance workforce.
         </p>
@@ -119,7 +128,9 @@ export default function StaffPage() {
             <Users className="size-3.5 text-muted-foreground" />
           </CardHeader>
           <CardContent className="pt-0">
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{headcount}</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">
+              <CountUp value={headcount} />
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -129,7 +140,7 @@ export default function StaffPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {formatCurrency(monthlyCost)}
+              <CountUp value={monthlyCost} format={formatCurrency} />
             </p>
           </CardContent>
         </Card>
@@ -139,7 +150,9 @@ export default function StaffPage() {
             <CalendarDays className="size-3.5 text-muted-foreground" />
           </CardHeader>
           <CardContent className="pt-0">
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{onLeaveCount}</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">
+              <CountUp value={onLeaveCount} />
+            </p>
           </CardContent>
         </Card>
       </div>

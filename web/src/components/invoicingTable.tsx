@@ -33,6 +33,7 @@ import { GenerateInvoicesForm } from "./invoicing/generateInvoicesForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function flatLabel(flatId: string) {
   const f = flats.find((fl) => fl.id === flatId);
@@ -53,6 +54,7 @@ export function InvoicingTable({
   flatId = null,
   readOnly = false,
 }: { flatId?: string | null; readOnly?: boolean } = {}) {
+  const { toast } = useToast();
   const router = useRouter();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -156,6 +158,7 @@ export function InvoicingTable({
     });
     setRows((prev) => [...prev, ...newInvoices]);
     setGenerateOpen(false);
+    toast({ title: "Invoices generated" });
   }
 
   const summary = React.useMemo(() => {

@@ -15,6 +15,7 @@ import { elections, getElectionById, isElectionClosed } from "@/lib/electionsMoc
 import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -26,6 +27,7 @@ function formatDateTime(iso: string) {
 }
 
 export default function ElectionDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ electionId: string }>();
   const router = useRouter();
   const initial = getElectionById(params.electionId);
@@ -103,6 +105,7 @@ export default function ElectionDetailPage() {
     const idx = elections.findIndex((e) => e.id === currentElection.id);
     if (idx !== -1) elections[idx] = updated;
     setSelected([]);
+    toast({ title: "Ballot cast" });
   }
 
   return (
@@ -290,7 +293,7 @@ export default function ElectionDetailPage() {
                         </div>
                         <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                           <div
-                            className={`h-full transition-all ${isWinner ? "bg-emerald-600" : "bg-foreground"}`}
+                            className={`h-full origin-left animate-grow-x transition-all ${isWinner ? "bg-emerald-600" : "bg-foreground"}`}
                             style={{ width: `${percent}%` }}
                           />
                         </div>

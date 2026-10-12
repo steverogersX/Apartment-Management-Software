@@ -38,6 +38,8 @@ import { EditProviderForm } from "@/components/providers/editProviderForm";
 import { ProviderActivityTimeline } from "@/components/providerActivityTimeline";
 import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
 
 function isWithinDays(iso: string, days: number) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -63,6 +65,7 @@ function elapsedSince(iso: string) {
 }
 
 export default function ProviderDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ providerId: string }>();
   const initialProvider = React.useMemo(
     () => serviceProviders.find((p) => p.id === params.providerId) ?? null,
@@ -145,6 +148,7 @@ export default function ProviderDetailPage() {
       },
       ...prev,
     ]);
+    toast({ title: "Flat unlinked", variant: "info" });
   }
 
   function handleAssign() {
@@ -171,6 +175,7 @@ export default function ProviderDetailPage() {
     ]);
     setSelectedFlat("");
     setAssignOpen(false);
+    toast({ title: "Flat assigned" });
   }
 
   function handleEditSave(values: EditProviderInput) {
@@ -191,6 +196,7 @@ export default function ProviderDetailPage() {
       ]);
     }
     setEditOpen(false);
+    toast({ title: "Provider updated" });
   }
 
   const flatOptions = React.useMemo(() => {
@@ -366,9 +372,7 @@ export default function ProviderDetailPage() {
               </h1>
               <Badge variant="outline">{provider.category}</Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span
-                  className={`size-1.5 shrink-0 rounded-full ${provider.status === "active" ? "bg-emerald-500" : "bg-red-500"}`}
-                />
+                <StatusIcon status={provider.status} />
                 {provider.status === "active" ? "Active" : "Blocked"}
               </span>
               <Button

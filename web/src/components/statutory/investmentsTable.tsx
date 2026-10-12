@@ -26,6 +26,7 @@ import { InvestmentForm } from "./investmentForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -37,6 +38,7 @@ function formatDate(iso: string | null) {
 }
 
 export function InvestmentsTable() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const canManage = has("StatutoryRegistersManage");
   const actor = user?.displayName ?? "Unknown";
@@ -65,6 +67,7 @@ export function InvestmentsTable() {
       performedBy: actor,
     });
     setAddOpen(false);
+    toast({ title: "Investment added" });
   }
 
   const columns = React.useMemo<ColumnDef<Investment>[]>(

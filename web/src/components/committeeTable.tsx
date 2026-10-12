@@ -31,6 +31,7 @@ import {
   type CommitteeMember,
   type CommitteePosition,
 } from "@/lib/committeeMockData";
+import { useToast } from "@/components/ui/toast";
 
 type DraftState = {
   name: string;
@@ -232,6 +233,7 @@ function DeleteConfirmDialog({
 }
 
 export function CommitteeTable() {
+  const { toast } = useToast();
   const [members, setMembers] = React.useState<CommitteeMember[]>([...committeeMembers]);
   const [formOpen, setFormOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<CommitteeMember | null>(null);
@@ -274,12 +276,14 @@ export function CommitteeTable() {
     }
     setFormOpen(false);
     setEditing(null);
+    toast({ title: "Committee member saved" });
   }
 
   function handleDelete() {
     if (!deleteTarget) return;
     setMembers((prev) => prev.filter((m) => m.id !== deleteTarget.id));
     setDeleteTarget(null);
+    toast({ title: "Committee member removed", variant: "info" });
   }
 
   const columns = React.useMemo<ColumnDef<CommitteeMember>[]>(

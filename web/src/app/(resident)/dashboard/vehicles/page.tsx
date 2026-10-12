@@ -43,6 +43,7 @@ import {
   type MyVehicleType,
 } from "@/lib/vehiclesMockData";
 import { cn } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 function StickerBadge({ status }: { status: MyVehicle["stickerStatus"] }) {
   if (status === "active") {
@@ -282,7 +283,8 @@ export default function VehiclesPage() {
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
             Vehicles & Parking
           </h1>
           <p className="text-sm text-muted-foreground">

@@ -19,11 +19,8 @@ import {
 import { flats, type FlatOccupancyStatus } from "@/lib/flatsMockData";
 import { residents, type ResidentRecord } from "@/lib/residentsMockData";
 import { cn, getInitials, gradientForName } from "@/lib/utils";
-
-const OCCUPANCY_STATUS_DOT: Record<FlatOccupancyStatus, string> = {
-  occupied: "bg-emerald-500",
-  vacant: "bg-zinc-400",
-};
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
 
 const OCCUPANCY_STATUS_LABEL: Record<FlatOccupancyStatus, string> = {
   occupied: "Occupied",
@@ -36,6 +33,7 @@ const RESIDENT_OCCUPANCY_LABEL: Record<string, string> = {
 };
 
 export default function FlatDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ flatId: string }>();
   const [version, setVersion] = React.useState(0);
   const [assignOpen, setAssignOpen] = React.useState(false);
@@ -93,6 +91,7 @@ export default function FlatDetailPage() {
       occupancyStatus: "occupied",
     };
     setVersion((v) => v + 1);
+    toast({ title: "Resident assigned" });
   }
 
   function handleAssignExisting(residentId: string) {
@@ -132,6 +131,7 @@ export default function FlatDetailPage() {
       occupancyStatus: "occupied",
     };
     setVersion((v) => v + 1);
+    toast({ title: "Resident assigned" });
   }
 
   return (
@@ -156,12 +156,7 @@ export default function FlatDetailPage() {
               </h1>
               <Badge variant="outline">{flat.type}</Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span
-                  className={cn(
-                    "size-1.5 shrink-0 rounded-full",
-                    OCCUPANCY_STATUS_DOT[flat.occupancyStatus],
-                  )}
-                />
+                <StatusIcon status={flat.occupancyStatus} />
                 {OCCUPANCY_STATUS_LABEL[flat.occupancyStatus]}
               </span>
             </div>

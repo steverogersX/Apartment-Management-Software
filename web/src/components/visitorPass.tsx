@@ -135,7 +135,7 @@ export function VisitorPass({
 
       {/* Tear-off stub */}
       <div className="flex w-[148px] shrink-0 flex-col items-center justify-center gap-2.5 bg-foreground px-4 py-5 text-background">
-        <div className="rounded-lg bg-white p-2">
+        <div className="animate-pop rounded-lg bg-white p-2">
           <QRCodeSVG value={qrValue} size={92} level="M" />
         </div>
         {copyable ? (

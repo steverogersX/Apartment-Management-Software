@@ -47,8 +47,10 @@ import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function InvoiceDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ invoiceId: string }>();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -177,6 +179,7 @@ export default function InvoiceDetailPage() {
       if (fIdx !== -1) flats[fIdx].maintenanceStatus = "paid";
     }
     setPaymentOpen(false);
+    toast({ title: "Payment recorded" });
   }
 
   function handleAddLateFee() {
@@ -206,6 +209,7 @@ export default function InvoiceDetailPage() {
     setLateOpen(false);
     setLateAmount(500);
     setLateDesc("Late fee");
+    toast({ title: "Late fee added" });
   }
 
   function handleReminder() {
@@ -225,6 +229,7 @@ export default function InvoiceDetailPage() {
       performedBy: actor,
       details: `Reminder #${next.remindersSent} sent`,
     });
+    toast({ title: "Reminder sent" });
   }
 
   function handleCancel() {
@@ -248,6 +253,7 @@ export default function InvoiceDetailPage() {
     });
     setCancelOpen(false);
     setCancelReason("");
+    toast({ title: "Invoice cancelled", variant: "info" });
   }
 
   return (

@@ -32,6 +32,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -54,13 +56,8 @@ function expiryStatus(iso: string | null) {
   return { label: "Valid", variant: "secondary" as const, dot: "bg-emerald-500" };
 }
 
-const STATUS_DOT: Record<Asset["status"], string> = {
-  Active: "bg-emerald-500",
-  "Under Repair": "bg-amber-500",
-  Retired: "bg-zinc-400",
-};
-
 export default function AssetDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ assetId: string }>();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -136,6 +133,7 @@ export default function AssetDetailPage() {
       performedBy: actor,
     });
     setEditOpen(false);
+    toast({ title: "Asset updated" });
   }
 
   function handleLogService(values: AddServiceLogInput) {
@@ -169,6 +167,7 @@ export default function AssetDetailPage() {
       setAsset((prev) => (prev ? { ...prev, amcExpiry: values.newAmcExpiry as string } : prev));
     }
     setLogOpen(false);
+    toast({ title: "Service logged" });
   }
 
   const warranty = expiryStatus(asset.warrantyExpiry);
@@ -192,7 +191,7 @@ export default function AssetDetailPage() {
               <Badge variant="outline">{asset.assetTag}</Badge>
               <Badge variant="outline">{asset.category}</Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[asset.status])} />
+                <StatusIcon status={asset.status} />
                 {asset.status}
               </span>
               {canManage && (

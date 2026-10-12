@@ -40,6 +40,7 @@ import {
   type VisitorProfile,
 } from "@/lib/visitorsMockData";
 import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function elapsedSince(iso: string) {
   const ms = Date.now() - new Date(iso).getTime();
@@ -61,6 +62,7 @@ function displayStatus(visit: SocietyVisitor) {
 }
 
 export default function VisitorDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ phone: string }>();
   const phone = decodeURIComponent(params.phone);
   const initialProfile = React.useMemo(
@@ -118,6 +120,7 @@ export default function VisitorDetailPage() {
     );
     setBlockReason("");
     setBlockOpen(false);
+    toast({ title: "Visitor blocked", variant: "info" });
   }
 
   function handleUnblock() {
@@ -132,6 +135,7 @@ export default function VisitorDetailPage() {
           }
         : prev,
     );
+    toast({ title: "Visitor unblocked" });
   }
 
   function handleApprove(visitId: string) {
@@ -151,6 +155,7 @@ export default function VisitorDetailPage() {
         checkIn: now,
         verifiedBy: "Admin",
       };
+    toast({ title: "Visitor approved" });
   }
 
   function handleDeny(visitId: string) {
@@ -207,6 +212,7 @@ export default function VisitorDetailPage() {
       };
     setDenyTargetId(null);
     setDenyReason("");
+    toast({ title: "Visitor denied", variant: "info" });
   }
 
   function openDenyForProfile() {

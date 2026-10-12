@@ -24,6 +24,7 @@ import { ShareCertificateForm } from "./shareCertificateForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function flatLabel(flatId: string) {
   const f = flats.find((x) => x.id === flatId);
@@ -31,6 +32,7 @@ function flatLabel(flatId: string) {
 }
 
 export function ShareCertificatesTable() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const canManage = has("StatutoryRegistersManage");
   const actor = user?.displayName ?? "Unknown";
@@ -59,6 +61,7 @@ export function ShareCertificatesTable() {
       performedBy: actor,
     });
     setAddOpen(false);
+    toast({ title: "Share certificate added" });
   }
 
   const columns = React.useMemo<ColumnDef<ShareCertificate>[]>(

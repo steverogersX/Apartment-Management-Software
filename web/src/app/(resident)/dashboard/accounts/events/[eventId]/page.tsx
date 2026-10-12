@@ -49,6 +49,7 @@ import {
 import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 type TimelineEntry =
   | { kind: "contribution"; id: string; date: string; data: EventContribution }
@@ -126,6 +127,7 @@ function EventTimeline({ entries }: { entries: TimelineEntry[] }) {
 }
 
 export default function EventDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ eventId: string }>();
   const router = useRouter();
   const { has } = useAuth();
@@ -195,6 +197,7 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setContributeOpen(false);
+    toast({ title: "Contribution recorded" });
   }
 
   function handleTopUp(values: RecordTopUpInput) {
@@ -209,6 +212,7 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setTopUpOpen(false);
+    toast({ title: "Top-up recorded" });
   }
 
   function handleRecordExpense(values: RecordExpenseInput) {
@@ -225,6 +229,7 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setExpenseOpen(false);
+    toast({ title: "Expense recorded" });
   }
 
   function handleClose() {
@@ -238,6 +243,7 @@ export default function EventDetailPage() {
     };
     setVersion((v) => v + 1);
     setCloseOpen(false);
+    toast({ title: "Event closed", variant: "info" });
   }
 
   return (

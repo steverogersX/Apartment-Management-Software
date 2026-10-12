@@ -24,6 +24,8 @@ import {
   type FlatVehicleEntry,
 } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 type HubVehicleRow = {
   id: string;
@@ -143,6 +145,7 @@ const columns: ColumnDef<HubVehicleRow>[] = [
 ];
 
 export default function PeopleHubVehiclesPage() {
+  const { toast } = useToast();
   const [version, setVersion] = React.useState(0);
   const [createOpen, setCreateOpen] = React.useState(false);
 
@@ -206,12 +209,16 @@ export default function PeopleHubVehiclesPage() {
     flatVehicleHistory.push(newEntry);
     setVersion((v) => v + 1);
     setCreateOpen(false);
+    toast({ title: "Vehicle added" });
   }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Vehicles</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Vehicles
+        </h1>
         <p className="text-sm text-muted-foreground">
           Every registered vehicle in the society — flat, owner, and slot.
         </p>

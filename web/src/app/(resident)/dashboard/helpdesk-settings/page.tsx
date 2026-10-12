@@ -22,6 +22,7 @@ import type {
   SlaRule,
 } from "@/lib/helpdeskSettingsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function HelpdeskSettingsPage() {
   const { has } = useAuth();
@@ -127,7 +128,10 @@ export default function HelpdeskSettingsPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Helpdesk Settings</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Helpdesk Settings
+        </h1>
         <p className="text-sm text-muted-foreground">
           Manage categories, SLA rules, and notifications for complaints.
         </p>

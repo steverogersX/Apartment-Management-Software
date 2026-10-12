@@ -17,6 +17,7 @@ import {
 import { FileDropzone } from "@/components/users/fileDropzone";
 import { parseCsv } from "@/lib/parseCsv";
 import { flats, type FlatType } from "@/lib/flatsMockData";
+import { useToast } from "@/components/ui/toast";
 
 const FLAT_TYPES: FlatType[] = ["1BHK", "2BHK", "3BHK", "4BHK"];
 
@@ -70,6 +71,7 @@ function downloadTemplate() {
 }
 
 export function BulkAddFlatsForm() {
+  const { toast } = useToast();
   const router = useRouter();
   const [file, setFile] = React.useState<File | null>(null);
   const [rows, setRows] = React.useState<PreviewRow[] | null>(null);
@@ -121,6 +123,7 @@ export function BulkAddFlatsForm() {
     await new Promise((resolve) => setTimeout(resolve, 400));
     setImporting(false);
     router.push("/dashboard/people-hub/flats");
+    toast({ title: "Flats imported" });
   }
 
   return (

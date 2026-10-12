@@ -17,6 +17,7 @@ import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
 import type { Attachment } from "@/lib/attachmentTypes";
+import { useToast } from "@/components/ui/toast";
 
 function PropertyRow({
   icon: Icon,
@@ -48,6 +49,7 @@ function formatDateTime(iso: string) {
 }
 
 export default function MeetingDetailPage() {
+  const { toast } = useToast();
   const params = useParams<{ meetingId: string }>();
   const router = useRouter();
   const { has } = useAuth();
@@ -112,6 +114,7 @@ export default function MeetingDetailPage() {
     setMeeting(updated);
     const idx = meetings.findIndex((m) => m.id === current.id);
     if (idx !== -1) meetings[idx] = updated;
+    toast({ title: "RSVP updated" });
   }
 
   const selectedVoters = selectedBucket

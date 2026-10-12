@@ -23,8 +23,12 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
+import { CountUp } from "@/components/countUp";
 
 export default function SocietyMaintenancePage() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const [log, setLog] = React.useState<MaintenanceLogEntry[]>(() => [...maintenanceLogSource]);
   const [addOpen, setAddOpen] = React.useState(false);
@@ -57,6 +61,7 @@ export default function SocietyMaintenancePage() {
     maintenanceLogSource.unshift(entry);
     setLog((prev) => [entry, ...prev]);
     setAddOpen(false);
+    toast({ title: "Maintenance entry logged" });
   }
 
   if (!has("MaintenanceViewAll")) {
@@ -67,7 +72,8 @@ export default function SocietyMaintenancePage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
             Society Maintenance
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -90,7 +96,7 @@ export default function SocietyMaintenancePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {societyEntries.length}
+              <CountUp value={societyEntries.length} />
             </p>
           </CardContent>
         </Card>
@@ -101,7 +107,7 @@ export default function SocietyMaintenancePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {formatCurrency(totalSocietyCost)}
+              <CountUp value={totalSocietyCost} format={formatCurrency} />
             </p>
           </CardContent>
         </Card>
@@ -112,7 +118,7 @@ export default function SocietyMaintenancePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {flatEntries.length}
+              <CountUp value={flatEntries.length} />
             </p>
           </CardContent>
         </Card>
