@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { CalendarClock, LayoutGrid, ListTree } from "lucide-react";
 
 import { Label } from "@/components/ui/label";
@@ -18,6 +17,7 @@ import { BudgetMonthlyChart } from "@/components/budgetMonthlyChart";
 import { BudgetSummaryChart } from "@/components/budgetSummaryChart";
 import { useAuth } from "@/hooks/useAuth";
 import { budgetHeads, currentFinancialYear, FINANCIAL_YEARS } from "@/lib/budgetMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function BudgetPage() {
   const { has } = useAuth();
@@ -37,16 +37,7 @@ export default function BudgetPage() {
   );
 
   if (!canViewAll) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view the budget.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view the budget." />;
   }
 
   return (

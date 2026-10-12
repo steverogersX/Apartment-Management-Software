@@ -24,14 +24,7 @@ import {
 import { NominationForm } from "./nominationForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatDate } from "@/lib/utils";
 
 function flatLabel(flatId: string) {
   const f = flats.find((x) => x.id === flatId);

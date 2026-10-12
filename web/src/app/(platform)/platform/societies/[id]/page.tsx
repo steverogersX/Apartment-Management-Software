@@ -22,16 +22,8 @@ import { SocietyLogo } from "@/components/societyLogo";
 import { useBreadcrumbTitle } from "@/components/breadcrumbs";
 import { getSocietiesRequest } from "@/lib/societyApi";
 import { getSocietyDetails } from "@/lib/platformMockData";
-import { avatarUrlForName, getInitials } from "@/lib/utils";
+import { avatarUrlForName, formatDate, getInitials } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-
-function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 function DetailRow({
   icon: Icon,

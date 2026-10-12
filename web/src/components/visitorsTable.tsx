@@ -15,7 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,14 +50,6 @@ export const STATUS_META: Record<
   denied: { label: "Denied", color: "text-red-600 dark:text-red-400", icon: CircleX },
   expired: { label: "Expired", color: "text-muted-foreground", icon: CircleSlash },
 };
-
-export function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export function formatTime(time: string) {
   const [h, m] = time.split(":").map(Number);
@@ -192,7 +184,6 @@ export function VisitorsTable() {
       <DataTable
         data={visitors_log}
         columns={columns}
-        title="Visitor log"
         filters={filters}
         showPageSize
         pageSize={5}

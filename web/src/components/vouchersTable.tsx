@@ -31,18 +31,7 @@ import { accountName } from "@/lib/chartOfAccountsMockData";
 import { AddVoucherForm } from "./vouchers/addVoucherForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 function statusVariant(status: VoucherStatus) {
   if (status === "Posted") return "secondary";

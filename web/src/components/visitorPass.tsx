@@ -4,7 +4,7 @@ import * as React from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, CalendarDays, Clock, Home, Ticket, UserCheck, UserRound } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { SocietyLogo } from "@/components/societyLogo";
 import { currentFlat, society, type VisitorStatus } from "@/lib/mockData";
 
@@ -25,14 +25,6 @@ const STATUS_LABEL: Record<VisitorStatus, string> = {
   denied: "Denied",
   expired: "Expired",
 };
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function formatTime(time: string) {
   const [h, m] = time.split(":").map(Number);

@@ -42,3 +42,25 @@ export function getInitials(name: string) {
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
 }
+
+export function formatCurrency(amount: number) {
+  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
+}
+
+export function formatDate(date: Date | string) {
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function formatDateTime(date: Date | string) {
+  return new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

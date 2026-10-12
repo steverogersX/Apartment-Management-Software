@@ -24,15 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { boardNotices, getNoticeById } from "@/lib/noticesMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
-import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { avatarUrlForName, formatDate, getInitials, gradientForName } from "@/lib/utils";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {

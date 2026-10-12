@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
@@ -28,6 +27,7 @@ import { complaints, type ComplaintStatus } from "@/lib/mockData";
 import { slaRules } from "@/lib/helpdeskSettingsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials } from "@/lib/utils";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 function formatHours(hours: number): string {
   if (hours < 24) return `${Math.round(hours)}h`;
@@ -40,16 +40,7 @@ export default function HelpdeskReportsPage() {
   const router = useRouter();
 
   if (!has("ComplaintsViewAll")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view helpdesk reports.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view helpdesk reports." />;
   }
 
   const total = complaints.length;

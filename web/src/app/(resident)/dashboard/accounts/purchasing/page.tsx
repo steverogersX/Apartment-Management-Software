@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Check, Plus, X } from "lucide-react";
 
@@ -46,18 +45,8 @@ import { ReceiveGoodsForm } from "@/components/purchasing/receiveGoodsForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { createVoucher } from "@/lib/vouchersMockData";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+import { PermissionDenied } from "@/components/permissionDenied";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 function prTotal(pr: PurchaseRequest) {
   return pr.items.reduce((s, it) => s + it.quantity * it.estimatedUnitPrice, 0);
@@ -70,16 +59,7 @@ export default function PurchasingPage() {
   const canManage = has("PurchasingManage");
 
   if (!has("PurchasingView")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view purchasing.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view purchasing." />;
   }
   const [prs, setPrs] = React.useState<PurchaseRequest[]>(() => [...initialPRs]);
   const [pos, setPos] = React.useState<PurchaseOrder[]>(() => [...initialPOs]);

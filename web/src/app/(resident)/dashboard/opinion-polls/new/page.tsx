@@ -9,6 +9,7 @@ import { opinionPolls, type OpinionPoll } from "@/lib/pollsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { PollFormInput } from "@/lib/pollsMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function NewPollPage() {
   const router = useRouter();
@@ -17,15 +18,11 @@ export default function NewPollPage() {
 
   if (!canCreate) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">You do not have permission to create polls.</p>
-        <Link
-          href="/dashboard/opinion-polls"
-          className="text-sm font-medium text-foreground underline"
-        >
-          Back to polls
-        </Link>
-      </div>
+      <PermissionDenied
+        message="You do not have permission to create polls."
+        backHref="/dashboard/opinion-polls"
+        backLabel="Back to polls"
+      />
     );
   }
 

@@ -16,7 +16,7 @@ import {
   type SocietyVisitorCategory,
   type VisitorProfile,
 } from "@/lib/visitorsMockData";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 function todayStr(offset = 0) {
   const d = new Date();
@@ -43,14 +43,6 @@ function isWithinDays(dateStr: string, days: number) {
   const now = new Date();
   const diff = now.getTime() - d.getTime();
   return diff >= 0 && diff <= days * 24 * 60 * 60 * 1000;
-}
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 const CATEGORY_LABEL: Record<SocietyVisitorCategory, string> = {
@@ -663,7 +655,6 @@ export function SocietyVisitorsTable() {
         data={filteredByStat}
         columns={columns}
         getRowId={(r) => r.phone}
-        title="Visitors"
         filters={filters}
         enableColumnVisibility
         enableColumnReorder

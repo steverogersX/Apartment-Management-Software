@@ -35,6 +35,7 @@ import { residents } from "@/lib/residentsMockData";
 import { users } from "@/lib/usersMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -157,22 +158,13 @@ export default function ComplaintsManagePage() {
   }, []);
 
   if (!has("ComplaintsViewAll")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view complaints.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view complaints." />;
   }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Complaints</h1>
+        <h1 className="text-lg font-semibold tracking-tight text-foreground">Manage Complaints</h1>
         <p className="text-sm text-muted-foreground">All complaints across the society.</p>
       </div>
 

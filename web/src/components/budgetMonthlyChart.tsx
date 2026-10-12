@@ -47,12 +47,9 @@ import {
   type BudgetHead,
 } from "@/lib/budgetMockData";
 import { vouchers } from "@/lib/vouchersMockData";
+import { formatCurrency } from "@/lib/utils";
 
 type ViewMode = "monthly" | "cumulative";
-
-function formatCurrency(amount: number) {
-  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
-}
 
 function formatCompact(amount: number) {
   return `₹${(amount / 1000).toFixed(0)}k`;

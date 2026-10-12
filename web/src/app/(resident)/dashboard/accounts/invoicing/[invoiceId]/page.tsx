@@ -43,22 +43,10 @@ import {
 import { receipts, type RecordPaymentInput } from "@/lib/duesMockData";
 import { createVoucher } from "@/lib/vouchersMockData";
 import { RecordPaymentForm } from "@/components/dues/recordPaymentForm";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { useCurrentFlat } from "@/hooks/useCurrentFlat";
 import { recordAudit } from "@/lib/auditLog";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function InvoiceDetailPage() {
   const params = useParams<{ invoiceId: string }>();
@@ -66,8 +54,6 @@ export default function InvoiceDetailPage() {
   const actor = user?.displayName ?? "Unknown";
   const canManageInvoices = has("InvoicingManage");
   const canRecordPayment = has("DuesReceiptsManage");
-  const { flatId: ownFlatId } = useCurrentFlat();
-  const scopedOut = !has("InvoicingViewAll") && has("InvoicingViewOwn");
   const initial = React.useMemo(
     () => invoices.find((inv) => inv.id === params.invoiceId) ?? null,
     [params.invoiceId],
@@ -93,39 +79,14 @@ export default function InvoiceDetailPage() {
 
   useBreadcrumbTitle(invoice?.invoiceNumber ?? null);
 
-  if (!has("InvoicingViewAll") && !has("InvoicingViewOwn")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view invoices.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+  if (!has("InvoicingViewAll")) {
+    return <PermissionDenied message="You do not have permission to view invoices." />;
   }
 
   if (!invoice) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Invoice not found.</p>
-        <Link
-          href="/dashboard/accounts/invoicing"
-          className="text-sm font-medium text-foreground underline"
-        >
-          Back to Invoicing
-        </Link>
-      </div>
-    );
-  }
-
-  if (scopedOut && invoice.flatId !== ownFlatId) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view this invoice.
-        </p>
         <Link
           href="/dashboard/accounts/invoicing"
           className="text-sm font-medium text-foreground underline"

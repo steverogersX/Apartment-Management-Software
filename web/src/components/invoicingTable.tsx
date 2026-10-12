@@ -32,18 +32,7 @@ import {
 import { GenerateInvoicesForm } from "./invoicing/generateInvoicesForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 function flatLabel(flatId: string) {
   const f = flats.find((fl) => fl.id === flatId);

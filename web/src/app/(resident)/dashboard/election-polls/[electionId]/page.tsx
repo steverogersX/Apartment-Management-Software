@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SetBreadcrumbTitle } from "@/components/breadcrumbs";
 import { elections, getElectionById, isElectionClosed } from "@/lib/electionsMockData";
+import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
 
@@ -59,7 +60,7 @@ export default function ElectionDetailPage() {
   const showPending = (closed && !election.resultsPublished) || (!closed && hasVoted);
   const showResults = closed && election.resultsPublished;
   const totalVotes = Object.values(election.ballots).reduce((sum, v) => sum + v, 0);
-  const totalFlats = 60;
+  const totalFlats = flats.length;
 
   const sortedCandidates = React.useMemo(() => {
     if (!showResults) return election.candidates;

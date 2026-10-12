@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +16,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PermissionDenied } from "@/components/permissionDenied";
 import { useAuth } from "@/hooks/useAuth";
-import { useCurrentFlat } from "@/hooks/useCurrentFlat";
 import { flats } from "@/lib/flatsMockData";
 import { computeInvoiceTotals, computeOutstandingBalance, invoices } from "@/lib/invoicingMockData";
 import { getAgeingBucket, receipts, type AgeingBucket, type Receipt } from "@/lib/duesMockData";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 type DuesRow = {
   flatId: string;
@@ -33,18 +33,6 @@ type DuesRow = {
   lastPaymentDate: string | null;
 };
 
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function flatLabelFor(flatId: string) {
   const f = flats.find((fl) => fl.id === flatId);
   return f ? `${f.tower}-${f.flatNumber}` : flatId;
@@ -52,29 +40,15 @@ function flatLabelFor(flatId: string) {
 
 export default function DuesAndReceiptsPage() {
   const { has } = useAuth();
-  const { flatId: ownFlatId } = useCurrentFlat();
-  const canViewAll = has("DuesReceiptsViewAll");
   const [receiptOpen, setReceiptOpen] = React.useState<Receipt | null>(null);
 
-  if (!canViewAll && !has("DuesReceiptsViewOwn")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view dues and receipts.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+  if (!has("DuesReceiptsViewAll")) {
+    return <PermissionDenied message="You do not have permission to view dues and receipts." />;
   }
-
-  const scopedInvoices = canViewAll ? invoices : invoices.filter((inv) => inv.flatId === ownFlatId);
-  const scopedReceipts = canViewAll ? receipts : receipts.filter((r) => r.flatId === ownFlatId);
 
   const duesRows = React.useMemo<DuesRow[]>(() => {
     const map = new Map<string, { invoices: typeof invoices; receipts: Receipt[] }>();
-    scopedInvoices.forEach((inv) => {
+    invoices.forEach((inv) => {
       if (inv.status === "Paid" || inv.status === "Cancelled") return;
       const outstanding = computeOutstandingBalance(inv);
       if (outstanding <= 0) return;
@@ -82,7 +56,7 @@ export default function DuesAndReceiptsPage() {
       entry.invoices.push(inv);
       map.set(inv.flatId, entry);
     });
-    scopedReceipts.forEach((r) => {
+    receipts.forEach((r) => {
       const entry = map.get(r.flatId);
       if (entry) entry.receipts.push(r);
     });
@@ -98,17 +72,7 @@ export default function DuesAndReceiptsPage() {
         .map((inv) => inv.dueDate)
         .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0];
       const ageing = getAgeingBucket(oldestDue);
-      const lastPayment = val.receipts.length
-        ? val.receipts
-            .map((r) => r.paymentDate)
-            .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0]
-        : (val.invoices
-            .map((inv) =>
-              scopedInvoices.filter((i) => i.flatId === flatId && i.paidOn).map((i) => i.paidOn!),
-            )
-            .flat()[0] ?? null);
-      // fallback to latest receipt date for flat
-      const flatReceipts = scopedReceipts.filter((r) => r.flatId === flatId);
+      const flatReceipts = receipts.filter((r) => r.flatId === flatId);
       const lastPay = flatReceipts.length
         ? flatReceipts.sort(
             (a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
@@ -388,7 +352,7 @@ export default function DuesAndReceiptsPage() {
 
         <TabsContent value="receipts" className="mt-4">
           <DataTable
-            data={[...scopedReceipts].sort(
+            data={[...receipts].sort(
               (a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
             )}
             columns={receiptColumns}

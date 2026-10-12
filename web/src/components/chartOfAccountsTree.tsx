@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import {
   accountGroups,
   ledgerAccounts,
@@ -28,10 +28,6 @@ import { AddAccountGroupForm } from "./chart-of-accounts/addAccountGroupForm";
 import { AddLedgerAccountForm } from "./chart-of-accounts/addLedgerAccountForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
 
 function LedgerRow({ account }: { account: LedgerAccount }) {
   return (

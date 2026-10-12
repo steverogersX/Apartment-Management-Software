@@ -25,6 +25,7 @@ import {
 import { InvestmentForm } from "./investmentForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
+import { formatCurrency } from "@/lib/utils";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -33,10 +34,6 @@ function formatDate(iso: string | null) {
     month: "short",
     year: "numeric",
   });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 export function InvestmentsTable() {

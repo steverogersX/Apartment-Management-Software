@@ -15,15 +15,12 @@ import {
   type BankAccountDetails,
 } from "@/lib/bankAccountsMockData";
 import { accountName } from "@/lib/chartOfAccountsMockData";
+import { formatCurrency } from "@/lib/utils";
 
 function maskedAccountNumber(accountNumber: string) {
   const digits = accountNumber.replace(/\D/g, "");
   if (digits.length <= 4) return accountNumber;
   return `••••${digits.slice(-4)}`;
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 export type BankAccountRow = BankAccountDetails & {

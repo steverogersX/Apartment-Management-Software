@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flats, flatVehicleHistory } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName } from "@/lib/utils";
 
 const OCCUPANCY_LABEL: Record<string, string> = {
   owner: "Owner",
@@ -31,14 +31,6 @@ const STATUS_LABEL: Record<string, string> = {
   moved_out: "Moved out",
   pending: "Pending",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export default function ResidentDetailPage() {
   const params = useParams<{ residentId: string }>();

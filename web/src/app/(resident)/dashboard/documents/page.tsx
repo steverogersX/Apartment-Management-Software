@@ -35,6 +35,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { Attachment } from "@/lib/attachmentTypes";
+import { formatDate } from "@/lib/utils";
 
 function iconForType(type: Attachment["type"]) {
   switch (type) {
@@ -60,14 +61,6 @@ const CATEGORY_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
   Bylaws: "default",
   General: "outline",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function handleDownload(doc: SocietyDocument) {
   // No detail page — clicking a row triggers download/open directly, same as notices detail download button

@@ -7,7 +7,7 @@ import { Download, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataTable } from "@/components/dataTable";
+import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
   Dialog,
@@ -28,6 +28,7 @@ import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { receipts } from "@/lib/duesMockData";
 import { computeInvoiceTotals, isOverdue, type Invoice } from "@/lib/invoicingMockData";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 type CycleStatus = "Collected" | "Overdue" | "Partial" | "Pending";
 
@@ -52,18 +53,6 @@ const STATUS_BADGE_CLASS: Record<CycleStatus, string> = {
   Pending:
     "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300",
 };
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function flatLabelFor(flatId: string) {
   const f = flats.find((fl) => fl.id === flatId);
@@ -295,6 +284,25 @@ export function CollectionCyclesTable({ invoices: source }: { invoices: Invoice[
     [],
   );
 
+  const filters = React.useMemo<DataTableFilterConfig<Cycle>[]>(
+    () => [
+      {
+        id: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Search billing period or tower",
+        predicate: (row, query) => {
+          const q = query.toLowerCase();
+          return (
+            row.billingPeriod.toLowerCase().includes(q) ||
+            row.towers.some((t) => t.toLowerCase().includes(q))
+          );
+        },
+      },
+    ],
+    [],
+  );
+
   const summary = React.useMemo(() => {
     const totalCycles = cycles.length;
     const totalCollected = cycles.reduce((s, c) => s + c.totalCollected, 0);
@@ -338,6 +346,7 @@ export function CollectionCyclesTable({ invoices: source }: { invoices: Invoice[
         columns={columns}
         getRowId={(c) => c.billingPeriod}
         title="Collection cycles"
+        filters={filters}
         showPageSize
         pageSize={8}
         itemLabel="cycle"

@@ -44,18 +44,8 @@ import { vouchers, type Voucher } from "@/lib/vouchersMockData";
 import { accountName } from "@/lib/chartOfAccountsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+import { PermissionDenied } from "@/components/permissionDenied";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 function maskedAccountNumber(accountNumber: string) {
   const digits = accountNumber.replace(/\D/g, "");
@@ -92,16 +82,7 @@ export default function BankAccountDetailPage() {
   useBreadcrumbTitle(details ? ledgerName : null);
 
   if (!has("BankAccountsView")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view bank accounts.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view bank accounts." />;
   }
 
   const balance = React.useMemo(

@@ -9,6 +9,7 @@ import { forumThreads, type ForumThread } from "@/lib/forumMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { ForumThreadFormInput } from "@/lib/forumMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function NewThreadPage() {
   const router = useRouter();
@@ -17,17 +18,11 @@ export default function NewThreadPage() {
 
   if (!canCreate) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to create threads.
-        </p>
-        <Link
-          href="/dashboard/discussion-forum"
-          className="text-sm font-medium text-foreground underline"
-        >
-          Back to forum
-        </Link>
-      </div>
+      <PermissionDenied
+        message="You do not have permission to create threads."
+        backHref="/dashboard/discussion-forum"
+        backLabel="Back to forum"
+      />
     );
   }
 

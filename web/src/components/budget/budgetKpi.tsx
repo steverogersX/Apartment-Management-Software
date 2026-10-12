@@ -1,8 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-export function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+import { formatCurrency } from "@/lib/utils";
 
 export function VarianceStat({ planned, actual }: { planned: number; actual: number }) {
   const variance = actual - planned;

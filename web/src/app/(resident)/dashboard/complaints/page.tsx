@@ -23,7 +23,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import Link from "next/link";
 
 import { ComplaintsTable, type ComplaintRow } from "@/components/complaintsTable";
 import { ComplaintTimeline } from "@/components/complaints/complaintTimeline";
@@ -36,6 +35,7 @@ import {
 } from "@/lib/mockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName } from "@/lib/utils";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -113,22 +113,13 @@ export default function ComplaintsPage() {
   }
 
   if (!has("ComplaintsRaise")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view this page.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view this page." />;
   }
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Complaints</h1>
+        <h1 className="text-lg font-semibold tracking-tight text-foreground">My Complaints</h1>
         <p className="text-sm text-muted-foreground">
           Raise, track, and resolve issues for Flat 304 — only you can mark your own ticket
           resolved.

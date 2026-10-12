@@ -33,10 +33,7 @@ import { vouchers } from "@/lib/vouchersMockData";
 import { AddBudgetHeadForm } from "./budget/addBudgetHeadForm";
 import { EditBudgetHeadForm } from "./budget/editBudgetHeadForm";
 import { useAuth } from "@/hooks/useAuth";
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
-}
+import { formatCurrency } from "@/lib/utils";
 
 function varianceLabel(planned: number, actual: number) {
   const diff = actual - planned;

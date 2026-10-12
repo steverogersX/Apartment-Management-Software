@@ -8,6 +8,7 @@ import { NoticeForm } from "@/components/notices/noticeForm";
 import { boardNotices, type BoardNotice } from "@/lib/noticesMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { NoticeFormInput } from "@/lib/noticesMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function NewNoticePage() {
   const router = useRouter();
@@ -16,14 +17,11 @@ export default function NewNoticePage() {
 
   if (!canCreate) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to create notices.
-        </p>
-        <Link href="/dashboard/notices" className="text-sm font-medium text-foreground underline">
-          Back to notices
-        </Link>
-      </div>
+      <PermissionDenied
+        message="You do not have permission to create notices."
+        backHref="/dashboard/notices"
+        backLabel="Back to notices"
+      />
     );
   }
 

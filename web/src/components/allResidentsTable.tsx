@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DoodleHouse } from "@/components/icons/doodleHouse";
@@ -55,14 +55,6 @@ const FLAT_OCCUPANCY_LABEL: Record<FlatOccupancyStatus, string> = {
   occupied: "Occupied",
   vacant: "Vacant",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});

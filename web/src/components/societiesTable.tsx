@@ -4,17 +4,9 @@ import type { SocietyResponse } from "@shared/index";
 import Link from "next/link";
 import { MapPin, Users } from "lucide-react";
 
-import { cn, getInitials } from "@/lib/utils";
+import { cn, formatDate, getInitials } from "@/lib/utils";
 import { getSocietyDetails } from "@/lib/platformMockData";
 import { SocietyLogo } from "@/components/societyLogo";
-
-function formatDate(date: Date | string) {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export function SocietiesTable({ societies }: { societies: SocietyResponse[] }) {
   if (!societies.length) {

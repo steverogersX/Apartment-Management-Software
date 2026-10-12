@@ -2,19 +2,9 @@
 
 import { ArrowUpCircle, Circle, CircleCheck, Clock3 } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import type { ComplaintStatus, ComplaintStatusEvent } from "@/lib/mockData";
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 const STAGE_META: Record<
   ComplaintStatus,

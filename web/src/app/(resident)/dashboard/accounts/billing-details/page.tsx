@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Check, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +31,7 @@ import type {
   LateFeeSettings,
   PaymentDetails,
 } from "@/lib/billingSettingsMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function BillingDetailsPage() {
   const { has, user } = useAuth();
@@ -39,16 +39,7 @@ export default function BillingDetailsPage() {
   const canManage = has("BillingSettingsManage");
 
   if (!has("BillingSettingsView")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to manage billing settings.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to manage billing settings." />;
   }
 
   const [rate, setRate] = React.useState<BillingRateSettings>({ ...initialRate });

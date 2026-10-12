@@ -39,15 +39,7 @@ import {
   type SocietyVisitor,
   type VisitorProfile,
 } from "@/lib/visitorsMockData";
-import { cn, getInitials, gradientForName } from "@/lib/utils";
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
 
 function elapsedSince(iso: string) {
   const ms = Date.now() - new Date(iso).getTime();

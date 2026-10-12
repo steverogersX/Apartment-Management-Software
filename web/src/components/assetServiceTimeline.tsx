@@ -4,16 +4,7 @@ import { ClipboardCheck, Hammer, RefreshCw, Wrench } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { AssetServiceLog } from "@/lib/assetsMockData";
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatDateTime } from "@/lib/utils";
 
 function formatRelativeTime(iso: string) {
   const now = new Date();

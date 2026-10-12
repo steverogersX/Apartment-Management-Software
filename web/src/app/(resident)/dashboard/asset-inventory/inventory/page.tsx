@@ -1,24 +1,14 @@
 "use client";
 
-import Link from "next/link";
-
 import { InventoryTable } from "@/components/inventoryTable";
 import { useAuth } from "@/hooks/useAuth";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function InventoryPage() {
   const { has } = useAuth();
 
   if (!has("InventoryView")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view inventory.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view inventory." />;
   }
 
   return (

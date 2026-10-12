@@ -13,6 +13,7 @@ import { complaints } from "@/lib/mockData";
 import { users } from "@/lib/usersMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials } from "@/lib/utils";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 function formatHours(hours: number): string {
   if (hours < 24) return `${Math.round(hours)}h`;
@@ -26,17 +27,11 @@ export default function AssigneeDetailPage() {
 
   if (!has("ComplaintsViewAll")) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view assignee history.
-        </p>
-        <Link
-          href="/dashboard/helpdesk-reports"
-          className="text-sm font-medium text-foreground underline"
-        >
-          Back to reports
-        </Link>
-      </div>
+      <PermissionDenied
+        message="You do not have permission to view assignee history."
+        backHref="/dashboard/helpdesk-reports"
+        backLabel="Back to reports"
+      />
     );
   }
 

@@ -1,22 +1,14 @@
 "use client";
 
-import Link from "next/link";
-
 import { AssetsTable } from "@/components/assetsTable";
 import { useAuth } from "@/hooks/useAuth";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function AssetsPage() {
   const { has } = useAuth();
 
   if (!has("AssetsView")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">You do not have permission to view assets.</p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view assets." />;
   }
 
   return (

@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { Check, Plus, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -22,21 +21,13 @@ import type {
   HelpdeskNotificationSettings,
   SlaRule,
 } from "@/lib/helpdeskSettingsMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function HelpdeskSettingsPage() {
   const { has } = useAuth();
 
   if (!has("SocietySettingsUpdate")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to manage helpdesk settings.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to manage helpdesk settings." />;
   }
 
   // Categories section

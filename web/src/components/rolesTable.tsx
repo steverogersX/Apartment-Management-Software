@@ -27,14 +27,7 @@ import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { roles, type RoleRecord } from "@/lib/rolesMockData";
-
-function formatDate(iso: string | Date) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatDate } from "@/lib/utils";
 
 export function RolesTable() {
   const { has } = useAuth();

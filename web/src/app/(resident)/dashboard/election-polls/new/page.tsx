@@ -8,6 +8,7 @@ import { ElectionForm } from "@/components/elections/electionForm";
 import { elections } from "@/lib/electionsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { ElectionFormInput } from "@/lib/electionsMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function NewElectionPage() {
   const router = useRouter();
@@ -16,17 +17,11 @@ export default function NewElectionPage() {
 
   if (!canCreate) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to create elections.
-        </p>
-        <Link
-          href="/dashboard/election-polls"
-          className="text-sm font-medium text-foreground underline"
-        >
-          Back to elections
-        </Link>
-      </div>
+      <PermissionDenied
+        message="You do not have permission to create elections."
+        backHref="/dashboard/election-polls"
+        backLabel="Back to elections"
+      />
     );
   }
 

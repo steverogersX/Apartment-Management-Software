@@ -26,7 +26,7 @@ import {
 } from "@/lib/noticesMockData";
 import { flats } from "@/lib/flatsMockData";
 import { TagInput } from "@/components/tagInput";
-import { AttachmentDropzone, CoverImageDropzone } from "@/components/notices/fileDropzone";
+import { AttachmentDropzone, CoverImageDropzone } from "@/components/fileDropzone";
 import { MultiSelectDropdown } from "@/components/notices/multiSelectDropdown";
 import { DateTimePicker } from "@/components/dateTimePicker";
 

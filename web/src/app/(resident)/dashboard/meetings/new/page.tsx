@@ -9,6 +9,7 @@ import { meetings, type Meeting } from "@/lib/meetingsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { MeetingFormInput } from "@/lib/meetingsMockData";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 export default function NewMeetingPage() {
   const router = useRouter();
@@ -17,14 +18,11 @@ export default function NewMeetingPage() {
 
   if (!canCreate) {
     return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to schedule meetings.
-        </p>
-        <Link href="/dashboard/meetings" className="text-sm font-medium text-foreground underline">
-          Back to meetings
-        </Link>
-      </div>
+      <PermissionDenied
+        message="You do not have permission to schedule meetings."
+        backHref="/dashboard/meetings"
+        backLabel="Back to meetings"
+      />
     );
   }
 

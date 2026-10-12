@@ -30,6 +30,8 @@ import { EditAssetForm } from "@/components/assets/editAssetForm";
 import { AssetServiceTimeline } from "@/components/assetServiceTimeline";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
+import { PermissionDenied } from "@/components/permissionDenied";
+import { formatCurrency } from "@/lib/utils";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -38,10 +40,6 @@ function formatDate(iso: string | null) {
     month: "short",
     year: "numeric",
   });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 function expiryStatus(iso: string | null) {
@@ -89,14 +87,7 @@ export default function AssetDetailPage() {
   useBreadcrumbTitle(asset?.name ?? null);
 
   if (!has("AssetsView")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">You do not have permission to view assets.</p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view assets." />;
   }
 
   if (!asset) {

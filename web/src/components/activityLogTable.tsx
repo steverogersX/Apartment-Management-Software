@@ -7,16 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { auditLog, type AuditAction, type AuditLogEntry } from "@/lib/auditLog";
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatDateTime } from "@/lib/utils";
 
 function actionVariant(action: AuditAction) {
   if (action === "Approve" || action === "Payment Recorded" || action === "Goods Received")
@@ -25,7 +16,7 @@ function actionVariant(action: AuditAction) {
   return "outline";
 }
 
-const MODULES = ["Assets", "Inventory", "Invoicing", "Purchasing", "Accounts", "Dues & Receipts"];
+const MODULES = ["Assets", "Inventory", "Invoicing", "Purchasing", "Accounts", "Dues and Receipts"];
 const ACTIONS: AuditAction[] = [
   "Create",
   "Update",

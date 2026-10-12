@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { elections, getElectionStatus } from "@/lib/electionsMockData";
+import { flats } from "@/lib/flatsMockData";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function ElectionPollsPage() {
@@ -40,7 +41,7 @@ export default function ElectionPollsPage() {
         {elections.map((election) => {
           const status = getElectionStatus(election);
           const turnout = election.votedFlats.length;
-          const totalFlats = 60;
+          const totalFlats = flats.length;
           return (
             <ElectionCard
               key={election.id}

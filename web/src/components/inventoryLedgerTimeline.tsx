@@ -4,16 +4,7 @@ import { ArrowDown, ArrowUp, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { StockTransaction } from "@/lib/inventoryMockData";
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatDateTime } from "@/lib/utils";
 
 function formatRelativeTime(iso: string) {
   const now = new Date();

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Plus } from "lucide-react";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,14 +42,6 @@ const STATUS_LABEL: Record<ServiceProviderStatus, string> = {
   active: "Active",
   blocked: "Blocked",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function flatsForProvider(providerId: string) {
   return providerFlatLinks

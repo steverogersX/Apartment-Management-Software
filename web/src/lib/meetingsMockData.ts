@@ -31,21 +31,9 @@ function flatFor(name: string): string {
   return r ? `${r.tower}-${r.flatNumber}` : "A-301";
 }
 
-export function isMeetingCancelled(meeting: Meeting): boolean {
-  return meeting.cancelled;
-}
-
-export function isMeetingUpcoming(meeting: Meeting): boolean {
-  return !meeting.cancelled && new Date(meeting.scheduledAt).getTime() >= Date.now();
-}
-
-export function isMeetingPast(meeting: Meeting): boolean {
-  return !meeting.cancelled && new Date(meeting.scheduledAt).getTime() < Date.now();
-}
-
 export function getMeetingStatus(meeting: Meeting): "upcoming" | "past" | "cancelled" {
   if (meeting.cancelled) return "cancelled";
-  return isMeetingPast(meeting) ? "past" : "upcoming";
+  return new Date(meeting.scheduledAt).getTime() < Date.now() ? "past" : "upcoming";
 }
 
 export const meetingFormSchema = z.object({

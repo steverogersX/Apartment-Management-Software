@@ -10,14 +10,7 @@ import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { flats, flatOccupancyHistory, flatVehicleHistory } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatDate } from "@/lib/utils";
 
 type HistoryEntry =
   | {

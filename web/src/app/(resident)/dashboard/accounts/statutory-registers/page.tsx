@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 import { FileText } from "lucide-react";
@@ -17,14 +16,8 @@ import { getMeetingStatus, meetings, type Meeting } from "@/lib/meetingsMockData
 import { ShareCertificatesTable } from "@/components/statutory/shareCertificatesTable";
 import { NominationsTable } from "@/components/statutory/nominationsTable";
 import { InvestmentsTable } from "@/components/statutory/investmentsTable";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatDate } from "@/lib/utils";
+import { PermissionDenied } from "@/components/permissionDenied";
 
 function meetingTypeLabel(meeting: Meeting) {
   if (meeting.audience.scope === "All") return "General Body";
@@ -189,16 +182,7 @@ export default function StatutoryRegistersPage() {
   const router = useRouter();
 
   if (!has("StatutoryRegistersView")) {
-    return (
-      <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
-        <p className="text-sm text-muted-foreground">
-          You do not have permission to view statutory registers.
-        </p>
-        <Link href="/dashboard" className="text-sm font-medium text-foreground underline">
-          Back to dashboard
-        </Link>
-      </div>
-    );
+    return <PermissionDenied message="You do not have permission to view statutory registers." />;
   }
 
   return (

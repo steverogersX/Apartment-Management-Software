@@ -10,9 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency } from "@/components/budget/budgetKpi";
 import { ledgerAccounts } from "@/lib/chartOfAccountsMockData";
 import { MONTHS_FY, type BudgetPlanningMode } from "@/lib/budgetMockData";
+import { formatCurrency } from "@/lib/utils";
 
 export function fieldError(errors: unknown[]): string | undefined {
   if (errors.length === 0) return undefined;

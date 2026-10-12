@@ -30,6 +30,7 @@ import {
 import { AddAssetForm } from "./assets/addAssetForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
+import { formatCurrency } from "@/lib/utils";
 
 const STATUS_DOT: Record<AssetStatus, string> = {
   Active: "bg-emerald-500",
@@ -50,10 +51,6 @@ function formatDate(iso: string | null) {
     month: "short",
     year: "numeric",
   });
-}
-
-function formatCurrency(amount: number) {
-  return `₹${amount.toLocaleString("en-IN")}`;
 }
 
 export function AssetsTable() {

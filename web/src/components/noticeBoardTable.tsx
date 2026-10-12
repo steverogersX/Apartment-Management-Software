@@ -14,7 +14,7 @@ import { boardNotices, NOTICE_CATEGORIES, type BoardNotice } from "@/lib/notices
 import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 const CATEGORY_VARIANT: Record<string, "secondary" | "outline" | "default"> = {
   Maintenance: "secondary",
@@ -25,14 +25,6 @@ const CATEGORY_VARIANT: Record<string, "secondary" | "outline" | "default"> = {
   AGM: "secondary",
   Billing: "outline",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 export function NoticeBoardTable() {
   const router = useRouter();

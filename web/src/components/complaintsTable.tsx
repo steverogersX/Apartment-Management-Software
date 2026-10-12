@@ -228,6 +228,21 @@ export function ComplaintsTable({
   const filters = React.useMemo<DataTableFilterConfig<ComplaintRow>[]>(() => {
     const base: DataTableFilterConfig<ComplaintRow>[] = [
       {
+        id: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Search ticket, issue, or flat",
+        predicate: (row, query) => {
+          const q = query.toLowerCase();
+          return (
+            row.ticketNumber.toLowerCase().includes(q) ||
+            row.title.toLowerCase().includes(q) ||
+            (row.flatLabel ?? "").toLowerCase().includes(q) ||
+            (row.raisedBy ?? "").toLowerCase().includes(q)
+          );
+        },
+      },
+      {
         id: "status",
         label: "Status",
         type: "select",
