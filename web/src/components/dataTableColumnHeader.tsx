@@ -36,7 +36,7 @@ export function DataTableColumnHeader({
     return (
       <button
         onClick={onClick}
-        className="-ml-1 flex items-center gap-1.5 rounded px-1 py-0.5 font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="-ml-1 flex cursor-pointer items-center gap-1.5 rounded px-1 py-0.5 font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         {content}
       </button>

@@ -30,9 +30,10 @@ import {
   type VisibilityState,
 } from "@tanstack/react-table";
 import {
-  Check,
+  ChevronDown,
   ChevronRight,
   GripVertical,
+  Home,
   Plus,
   Search,
   SlidersHorizontal,
@@ -127,9 +128,10 @@ function SortableHeaderCell({
         {draggable && (
           <button
             type="button"
+            aria-label="Reorder column"
             {...attributes}
             {...listeners}
-            className="-ml-1 cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing"
+            className="-ml-1 cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >
             <GripVertical className="size-3.5" />
           </button>
@@ -172,9 +174,10 @@ function SortableFilterChip({
       {draggable && (
         <button
           type="button"
+          aria-label="Reorder filter"
           {...attributes}
           {...listeners}
-          className="cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing"
+          className="cursor-grab touch-none text-muted-foreground/40 transition-colors hover:text-muted-foreground active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
         >
           <GripVertical className="size-3.5" />
         </button>
@@ -182,6 +185,7 @@ function SortableFilterChip({
       {children}
       <button
         type="button"
+        aria-label="Remove filter"
         onClick={onRemove}
         className="text-muted-foreground/50 transition-colors hover:text-foreground"
       >
@@ -205,9 +209,11 @@ type DataTableBaseProps<TData> = {
   pageSize?: number;
   itemLabel?: string;
   emptyMessage?: string;
+  emptyAction?: React.ReactNode;
   onRowClick?: (row: TData) => void;
   initialSorting?: SortingState;
   onBulkDelete?: (rows: TData[]) => void;
+  defaultFilterValues?: Record<string, string>;
 };
 
 type DataTableExpandableProps<TData> =
@@ -234,9 +240,11 @@ export function DataTable<TData>({
   pageSize = 10,
   itemLabel = "item",
   emptyMessage = "No results.",
+  emptyAction,
   onRowClick,
   initialSorting,
   onBulkDelete,
+  defaultFilterValues,
   renderSubRow,
   getRowId,
 }: DataTableBaseProps<TData> & DataTableExpandableProps<TData>) {
@@ -322,7 +330,14 @@ export function DataTable<TData>({
   }, [columns]);
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
   const [activeFilterIds, setActiveFilterIds] = React.useState<string[]>(filters.map((f) => f.id));
-  const [filterValues, setFilterValues] = React.useState<Record<string, string>>({});
+  const [filterValues, setFilterValues] = React.useState<Record<string, string>>(
+    () => defaultFilterValues ?? {},
+  );
+  const [selectFilterQuery, setSelectFilterQuery] = React.useState<Record<string, string>>({});
+
+  React.useEffect(() => {
+    if (defaultFilterValues) setFilterValues(defaultFilterValues);
+  }, [defaultFilterValues]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -421,20 +436,23 @@ export function DataTable<TData>({
         <div className="flex items-center justify-between gap-3">
           {enableRowSelection && selectedCount > 0 ? (
             <div className="flex items-center gap-2">
+              {title && <h3 className="text-sm font-semibold text-muted-foreground">{title} ·</h3>}
               <span className="text-sm font-medium text-foreground">{selectedCount} selected</span>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="gap-1.5"
-                onClick={() => {
-                  const rows = table.getFilteredSelectedRowModel().rows.map((r) => r.original);
-                  onBulkDelete?.(rows);
-                  if (onBulkDelete) setRowSelection({});
-                }}
-              >
-                <Trash2 className="size-3.5" />
-                Delete
-              </Button>
+              {onBulkDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    const rows = table.getFilteredSelectedRowModel().rows.map((r) => r.original);
+                    onBulkDelete(rows);
+                    setRowSelection({});
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                  Delete
+                </Button>
+              )}
             </div>
           ) : (
             title && <h3 className="text-sm font-semibold text-foreground">{title}</h3>
@@ -509,42 +527,78 @@ export function DataTable<TData>({
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           render={
-                            <button type="button" className="px-0.5 text-sm text-foreground" />
+                            <button
+                              type="button"
+                              className="inline-flex cursor-pointer items-center gap-1 rounded-sm px-1 py-0.5 text-xs font-medium whitespace-nowrap text-foreground outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring/50"
+                            />
                           }
                         >
-                          {filter.label}:{" "}
-                          {filter.type === "groupBy"
-                            ? (filter.options.find(
-                                (o) => o.value === (filterValues[filter.id] ?? "none"),
-                              )?.label ?? "None")
-                            : (filter.options.find((o) => o.value === filterValues[filter.id])
-                                ?.label ?? "All")}
+                          <span>
+                            {filter.label}:{" "}
+                            {filter.type === "groupBy"
+                              ? (filter.options.find(
+                                  (o) => o.value === (filterValues[filter.id] ?? "none"),
+                                )?.label ?? "None")
+                              : (filter.options.find((o) => o.value === filterValues[filter.id])
+                                  ?.label ?? `All ${filter.label}`)}
+                          </span>
+                          <ChevronDown className="size-3 shrink-0 text-muted-foreground" />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-40">
-                          {(filter.type === "groupBy"
-                            ? filter.options
-                            : [
-                                { label: `All ${filter.label.toLowerCase()}`, value: "all" },
-                                ...filter.options,
-                              ]
-                          ).map((opt) => {
-                            const current =
-                              filterValues[filter.id] ||
-                              (filter.type === "groupBy" ? "none" : "all");
-                            const isSelected = current === opt.value;
-                            return (
-                              <DropdownMenuItem
-                                key={opt.value}
-                                onClick={() =>
-                                  setFilterValues((v) => ({ ...v, [filter.id]: opt.value }))
-                                }
-                                className="justify-between"
-                              >
-                                {opt.label}
-                                {isSelected && <Check className="size-4 shrink-0" />}
-                              </DropdownMenuItem>
-                            );
-                          })}
+                        <DropdownMenuContent align="start" className="w-56 p-1.5">
+                          {filter.id === "flat" && (
+                            <div className="p-1 pb-1.5">
+                              <div className="flex items-center gap-1.5 rounded-md border border-input bg-background px-2 py-1.5">
+                                <Search className="size-3.5 shrink-0 text-muted-foreground" />
+                                <input
+                                  value={selectFilterQuery[filter.id] ?? ""}
+                                  onChange={(e) =>
+                                    setSelectFilterQuery((v) => ({
+                                      ...v,
+                                      [filter.id]: e.target.value,
+                                    }))
+                                  }
+                                  onKeyDown={(e) => e.stopPropagation()}
+                                  placeholder="Search flats…"
+                                  className="w-full bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                                />
+                              </div>
+                            </div>
+                          )}
+                          <div className={cn(filter.id === "flat" && "max-h-56 overflow-y-auto")}>
+                            {(filter.type === "groupBy"
+                              ? filter.options
+                              : [{ label: `All ${filter.label}`, value: "all" }, ...filter.options]
+                            )
+                              .filter((opt) => {
+                                const q = selectFilterQuery[filter.id];
+                                if (!q || filter.id !== "flat") return true;
+                                return opt.label.toLowerCase().includes(q.toLowerCase());
+                              })
+                              .map((opt) => {
+                                const current =
+                                  filterValues[filter.id] ||
+                                  (filter.type === "groupBy" ? "none" : "all");
+                                const isSelected = current === opt.value;
+                                return (
+                                  <DropdownMenuItem
+                                    key={opt.value}
+                                    onClick={() => {
+                                      setFilterValues((v) => ({ ...v, [filter.id]: opt.value }));
+                                      setSelectFilterQuery((v) => ({ ...v, [filter.id]: "" }));
+                                    }}
+                                    className={cn(
+                                      "px-2 py-1.5",
+                                      isSelected && "bg-accent/60 text-accent-foreground",
+                                    )}
+                                  >
+                                    {filter.id === "flat" && opt.value !== "all" && (
+                                      <Home className="size-3.5 text-muted-foreground" />
+                                    )}
+                                    {opt.label}
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                          </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}
@@ -641,6 +695,7 @@ export function DataTable<TData>({
                   }
                 }
                 const isExpanded = isExpandable && expandedRowId === row.id;
+                const isInteractiveRow = isExpandable || !!onRowClick;
                 const handleRowClick = () => {
                   if (isExpandable) {
                     setExpandedRowId((prev) => (prev === row.id ? null : row.id));
@@ -652,10 +707,23 @@ export function DataTable<TData>({
                   <TableRow
                     key={row.id}
                     aria-expanded={isExpandable ? isExpanded : undefined}
-                    onClick={isExpandable || onRowClick ? handleRowClick : undefined}
+                    tabIndex={isInteractiveRow ? 0 : undefined}
+                    onClick={isInteractiveRow ? handleRowClick : undefined}
+                    onKeyDown={
+                      isInteractiveRow
+                        ? (e) => {
+                            if (e.target !== e.currentTarget) return;
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              handleRowClick();
+                            }
+                          }
+                        : undefined
+                    }
                     className={cn(
                       "border-border hover:bg-muted/50 animate-rise",
-                      (isExpandable || onRowClick) && "cursor-pointer",
+                      isInteractiveRow &&
+                        "cursor-pointer focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
                     )}
                   >
                     {row.getVisibleCells().map((cell) => {
@@ -701,7 +769,10 @@ export function DataTable<TData>({
                 colSpan={table.getVisibleLeafColumns().length}
                 className="h-24 text-center text-sm text-muted-foreground"
               >
-                {emptyMessage}
+                <div className="flex flex-col items-center justify-center gap-2.5">
+                  <span>{emptyMessage}</span>
+                  {emptyAction}
+                </div>
               </TableCell>
             </TableRow>
           )}

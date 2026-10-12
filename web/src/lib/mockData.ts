@@ -12,6 +12,8 @@ export type Complaint = {
   createdAt: string;
   resolvedAt: string | null;
   raisedBy: string;
+  tower: string;
+  flatNumber: string;
   assignedTo: { name: string; initials: string } | null;
 };
 
@@ -35,7 +37,8 @@ export type Flat = {
   tenantName: string | null;
 };
 
-export type VisitorStatus = "expected" | "entered" | "completed" | "denied" | "expired";
+export type VisitorStatus =
+  "expected" | "pending_approval" | "entered" | "completed" | "denied" | "expired";
 
 export type Visitor = {
   id: string;
@@ -185,6 +188,8 @@ export const complaints: Complaint[] = [
     createdAt: "2026-06-15T09:30:00+05:30",
     resolvedAt: null,
     raisedBy: "Padma Konkonapala",
+    tower: "B",
+    flatNumber: "304",
     assignedTo: { name: "Ravi Kumar", initials: "RK" },
   },
   {
@@ -198,6 +203,8 @@ export const complaints: Complaint[] = [
     createdAt: "2026-06-12T14:05:00+05:30",
     resolvedAt: null,
     raisedBy: "Padma Konkonapala",
+    tower: "B",
+    flatNumber: "304",
     assignedTo: null,
   },
   {
@@ -211,6 +218,8 @@ export const complaints: Complaint[] = [
     createdAt: "2026-06-10T18:20:00+05:30",
     resolvedAt: null,
     raisedBy: "Padma Konkonapala",
+    tower: "B",
+    flatNumber: "304",
     assignedTo: null,
   },
   {
@@ -224,6 +233,8 @@ export const complaints: Complaint[] = [
     createdAt: "2026-05-28T11:00:00+05:30",
     resolvedAt: "2026-05-30T16:40:00+05:30",
     raisedBy: "Padma Konkonapala",
+    tower: "B",
+    flatNumber: "304",
     assignedTo: { name: "Suresh Babu", initials: "SB" },
   },
   {
@@ -237,6 +248,8 @@ export const complaints: Complaint[] = [
     createdAt: "2026-05-18T08:15:00+05:30",
     resolvedAt: "2026-05-22T10:00:00+05:30",
     raisedBy: "Padma Konkonapala",
+    tower: "B",
+    flatNumber: "304",
     assignedTo: { name: "Ravi Kumar", initials: "RK" },
   },
   {
@@ -250,9 +263,130 @@ export const complaints: Complaint[] = [
     createdAt: "2026-06-16T07:45:00+05:30",
     resolvedAt: null,
     raisedBy: "Padma Konkonapala",
+    tower: "B",
+    flatNumber: "304",
     assignedTo: null,
   },
 ];
+
+export type ComplaintStatusEvent = {
+  id: string;
+  complaintId: string;
+  status: ComplaintStatus;
+  note: string;
+  at: string;
+  by: string;
+};
+
+export const complaintStatusEvents: ComplaintStatusEvent[] = [
+  {
+    id: "cse-1-1",
+    complaintId: "1",
+    status: "open",
+    note: "Ticket raised",
+    at: "2026-06-15T09:30:00+05:30",
+    by: "Padma Konkonapala",
+  },
+  {
+    id: "cse-1-2",
+    complaintId: "1",
+    status: "in_progress",
+    note: "Assigned to plumber",
+    at: "2026-06-15T13:10:00+05:30",
+    by: "Ravi Kumar",
+  },
+
+  {
+    id: "cse-2-1",
+    complaintId: "2",
+    status: "open",
+    note: "Ticket raised",
+    at: "2026-06-12T14:05:00+05:30",
+    by: "Padma Konkonapala",
+  },
+  {
+    id: "cse-2-2",
+    complaintId: "2",
+    status: "escalated",
+    note: "No response after 3 days — escalated to facilities vendor",
+    at: "2026-06-15T10:00:00+05:30",
+    by: "Society Admin",
+  },
+
+  {
+    id: "cse-3-1",
+    complaintId: "3",
+    status: "open",
+    note: "Ticket raised",
+    at: "2026-06-10T18:20:00+05:30",
+    by: "Padma Konkonapala",
+  },
+
+  {
+    id: "cse-4-1",
+    complaintId: "4",
+    status: "open",
+    note: "Ticket raised",
+    at: "2026-05-28T11:00:00+05:30",
+    by: "Padma Konkonapala",
+  },
+  {
+    id: "cse-4-2",
+    complaintId: "4",
+    status: "in_progress",
+    note: "Technician visit scheduled",
+    at: "2026-05-29T09:15:00+05:30",
+    by: "Suresh Babu",
+  },
+  {
+    id: "cse-4-3",
+    complaintId: "4",
+    status: "resolved",
+    note: "AC serviced and tested",
+    at: "2026-05-30T16:40:00+05:30",
+    by: "Suresh Babu",
+  },
+
+  {
+    id: "cse-5-1",
+    complaintId: "5",
+    status: "open",
+    note: "Ticket raised",
+    at: "2026-05-18T08:15:00+05:30",
+    by: "Padma Konkonapala",
+  },
+  {
+    id: "cse-5-2",
+    complaintId: "5",
+    status: "in_progress",
+    note: "Plumber inspected the ceiling",
+    at: "2026-05-19T11:00:00+05:30",
+    by: "Ravi Kumar",
+  },
+  {
+    id: "cse-5-3",
+    complaintId: "5",
+    status: "resolved",
+    note: "Leak sealed and area cleaned",
+    at: "2026-05-22T10:00:00+05:30",
+    by: "Ravi Kumar",
+  },
+
+  {
+    id: "cse-6-1",
+    complaintId: "6",
+    status: "open",
+    note: "Ticket raised",
+    at: "2026-06-16T07:45:00+05:30",
+    by: "Padma Konkonapala",
+  },
+];
+
+export function getComplaintTimeline(complaintId: string): ComplaintStatusEvent[] {
+  return complaintStatusEvents
+    .filter((e) => e.complaintId === complaintId)
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
+}
 
 export const vehicles: Vehicle[] = [
   {

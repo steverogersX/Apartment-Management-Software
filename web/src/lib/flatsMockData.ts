@@ -1,6 +1,17 @@
+import { z } from "zod";
+
 export type FlatType = "1BHK" | "2BHK" | "3BHK" | "4BHK";
 export type FlatOccupancyStatus = "occupied" | "vacant";
 export type FlatMaintenanceStatus = "paid" | "due";
+
+// The registered legal owner of a flat, for when the current resident is a tenant
+// and the owner doesn't live there — not a ResidentRecord, since an absentee owner
+// isn't a current occupant and has no entry in `residents`.
+export type FlatOwnerContact = {
+  name: string;
+  phone: string;
+  email: string;
+};
 
 /**
  * UI-only mock data for the Flats feature — no backing table or API yet.
@@ -17,6 +28,8 @@ export type FlatRecord = {
   occupancyStatus: FlatOccupancyStatus;
   maintenanceStatus: FlatMaintenanceStatus;
   currentResidentIds: string[];
+  // Set only when the flat is tenant-occupied and the owner is not a current resident.
+  owner: FlatOwnerContact | null;
 };
 
 export type FlatOccupancyHistoryEntry = {
@@ -40,6 +53,18 @@ export type FlatVehicleEntry = {
   isCurrent: boolean;
 };
 
+export const addVehicleSchema = z.object({
+  flatId: z.string().min(1, "Flat is required"),
+  residentId: z.string().min(1, "Owner is required"),
+  registrationNumber: z.string().min(1, "Registration number is required"),
+  type: z.enum(["car", "two_wheeler"]),
+  make: z.string().min(1, "Make is required"),
+  model: z.string().min(1, "Model is required"),
+  color: z.string().min(1, "Color is required"),
+});
+
+export type AddVehicleInput = z.infer<typeof addVehicleSchema>;
+
 export const flats: FlatRecord[] = [
   {
     id: "flat-a301",
@@ -49,8 +74,9 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1450,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
+    maintenanceStatus: "due",
     currentResidentIds: ["1", "3"],
+    owner: null,
   },
   {
     id: "flat-b204",
@@ -62,6 +88,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "occupied",
     maintenanceStatus: "due",
     currentResidentIds: ["2"],
+    owner: null,
   },
   {
     id: "flat-a502",
@@ -71,8 +98,9 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1500,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
+    maintenanceStatus: "due",
     currentResidentIds: ["3"],
+    owner: { name: "Sanjay Mehta", phone: "+91 98220 11223", email: "sanjay.mehta@gmail.com" },
   },
   {
     id: "flat-c103",
@@ -82,8 +110,9 @@ export const flats: FlatRecord[] = [
     type: "1BHK",
     areaSqft: 750,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
+    maintenanceStatus: "due",
     currentResidentIds: ["4"],
+    owner: { name: "Ramesh Iyer", phone: "+91 98450 22110", email: "ramesh.iyer@gmail.com" },
   },
   {
     id: "flat-b405",
@@ -93,8 +122,9 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1650,
     occupancyStatus: "occupied",
-    maintenanceStatus: "due",
+    maintenanceStatus: "paid",
     currentResidentIds: ["5"],
+    owner: null,
   },
   {
     id: "flat-c208",
@@ -106,6 +136,8 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
+    // Neha Kulkarni moved out 2025-11-20 (see flatOccupancyHistory) but still owns this flat.
+    owner: { name: "Neha Kulkarni", phone: "+91 93456 78901", email: "neha.kulkarni@gmail.com" },
   },
   {
     id: "flat-a601",
@@ -117,6 +149,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "occupied",
     maintenanceStatus: "paid",
     currentResidentIds: ["7"],
+    owner: null,
   },
   {
     id: "flat-b110",
@@ -128,6 +161,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "occupied",
     maintenanceStatus: "due",
     currentResidentIds: ["8"],
+    owner: { name: "Deepak Shah", phone: "+91 98670 33445", email: "deepak.shah@gmail.com" },
   },
   {
     id: "flat-c307",
@@ -139,6 +173,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "occupied",
     maintenanceStatus: "paid",
     currentResidentIds: ["9"],
+    owner: null,
   },
   {
     id: "flat-a402",
@@ -150,6 +185,11 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "occupied",
     maintenanceStatus: "paid",
     currentResidentIds: ["10"],
+    owner: {
+      name: "Vikas Choudhary",
+      phone: "+91 98120 55667",
+      email: "vikas.choudhary@gmail.com",
+    },
   },
   {
     id: "flat-c506",
@@ -161,6 +201,13 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
+    // Harish Krishnan moved out (see flatOccupancyHistory / residentsMockData) but still owns
+    // this flat — vacant just means nobody lives here right now, not that it's unowned.
+    owner: {
+      name: "Harish Krishnan",
+      phone: "+91 91919 20202",
+      email: "harish.krishnan@gmail.com",
+    },
   },
   {
     id: "flat-b201",
@@ -172,6 +219,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "occupied",
     maintenanceStatus: "paid",
     currentResidentIds: ["12"],
+    owner: null,
   },
   {
     id: "flat-a202",
@@ -183,6 +231,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
+    owner: { name: "Rajesh Kumar", phone: "+91 99001 22334", email: "rajesh.kumar@gmail.com" },
   },
   {
     id: "flat-b305",
@@ -194,6 +243,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "due",
     currentResidentIds: [],
+    owner: { name: "Sneha Joshi", phone: "+91 99112 33445", email: "sneha.joshi@gmail.com" },
   },
   {
     id: "flat-c410",
@@ -205,6 +255,7 @@ export const flats: FlatRecord[] = [
     occupancyStatus: "vacant",
     maintenanceStatus: "paid",
     currentResidentIds: [],
+    owner: { name: "Manoj Verma", phone: "+91 99223 44556", email: "manoj.verma@gmail.com" },
   },
 ];
 

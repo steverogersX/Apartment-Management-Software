@@ -1,9 +1,15 @@
 import type { ComponentType } from "react";
-import { Boxes, Landmark, Megaphone, Sofa, Ticket, Users, Wrench } from "lucide-react";
+import { Boxes, HardHat, Landmark, Megaphone, Ticket, Users, Wrench } from "lucide-react";
+
+import { Permission, type PermissionDefinition } from "@shared/index";
 
 export type AdminNavGroupItem = {
   label: string;
   href?: string;
+  /** Omit for items every admin viewing this group should see; set to gate via the typed `Permission.*` accessor. */
+  permission?: PermissionDefinition;
+  /** Any-of gate: visible when the user holds at least one of these. Takes precedence when set. */
+  permissions?: PermissionDefinition[];
 };
 
 export type AdminNavGroup = {
@@ -22,65 +28,202 @@ export const adminNavGroups: AdminNavGroup[] = [
     label: "People Hub",
     icon: Users,
     items: [
-      { label: "Flats", href: "/dashboard/people-hub/flats" },
-      { label: "History", href: "/dashboard/people-hub/history" },
-      { label: "Management Committee" },
-      { label: "Service Providers" },
-      { label: "Visitors" },
-      { label: "Non-Members" },
-      { label: "Vendors" },
-      { label: "Emergency Contacts" },
-      { label: "Key Personnel" },
+      { label: "Flats", href: "/dashboard/people-hub/flats", permission: Permission.ResidentsView },
+      {
+        label: "History",
+        href: "/dashboard/people-hub/history",
+        permission: Permission.ResidentsView,
+      },
+      {
+        label: "Management Committee",
+        href: "/dashboard/people-hub/committee",
+        permission: Permission.ResidentsView,
+      },
+      {
+        label: "Service Providers",
+        href: "/dashboard/people-hub/service-providers",
+        permission: Permission.ResidentsView,
+      },
+      {
+        label: "Vehicles",
+        href: "/dashboard/people-hub/vehicles",
+        permission: Permission.ResidentsView,
+      },
+      {
+        label: "Parking",
+        href: "/dashboard/people-hub/parking",
+        permission: Permission.ResidentsView,
+      },
+      {
+        label: "Visitor Log",
+        href: "/dashboard/people-hub/visitors",
+        permissions: [
+          Permission.VisitorApprove,
+          Permission.VisitorDeny,
+          Permission.VisitorLogEntry,
+          Permission.VisitorViewHistory,
+          Permission.VisitorOverstayAlert,
+        ],
+      },
+      { label: "Users", href: "/dashboard/users", permission: Permission.RolesView },
+      { label: "Roles", href: "/dashboard/roles", permission: Permission.RolesView },
     ],
   },
   {
     label: "Communication",
     icon: Megaphone,
     items: [
-      { label: "Notice Board" },
-      { label: "Discussion Forum" },
-      { label: "Opinion Polls" },
-      { label: "Meetings" },
-      { label: "Documents" },
-      { label: "Groups" },
-      { label: "Group Email/SMS" },
-      { label: "Delivery Reports" },
-      { label: "Election Polls" },
+      // Notice Board is read access for the whole society — intentionally ungated.
+      { label: "Notice Board", href: "/dashboard/notices" },
+      {
+        label: "Discussion Forum",
+        href: "/dashboard/discussion-forum",
+        permission: Permission.ForumPost,
+      },
+      // Any resident can view and vote in opinion polls — the page itself only gates the
+      // "New Poll" button on PollsCreate, so the nav entry stays ungated like Notice Board.
+      { label: "Opinion Polls", href: "/dashboard/opinion-polls" },
+      // Meetings/Documents are readable by every resident — each page only gates its own
+      // "Schedule"/"Upload" button on MeetingsSchedule/DocumentsUpload, so the nav stays ungated.
+      { label: "Meetings", href: "/dashboard/meetings" },
+      { label: "Documents", href: "/dashboard/documents" },
+      // Any resident can view elections and vote — the page itself only gates the
+      // "New Election" button on ElectionsManage, so the nav entry stays ungated.
+      { label: "Election Polls", href: "/dashboard/election-polls" },
     ],
   },
   {
     label: "Help Desk",
     icon: Ticket,
-    items: [{ label: "Complaints" }, { label: "Helpdesk Settings" }, { label: "Reports" }],
-  },
-  {
-    label: "Amenities",
-    icon: Sofa,
-    items: [{ label: "Bookings & History" }],
+    items: [
+      {
+        label: "Manage Complaints",
+        href: "/dashboard/complaints/manage",
+        permissions: [
+          Permission.ComplaintsViewAll,
+          Permission.ComplaintsAssign,
+          Permission.ComplaintsResolve,
+          Permission.ComplaintsEscalate,
+        ],
+      },
+      {
+        label: "Helpdesk Settings",
+        href: "/dashboard/helpdesk-settings",
+        permission: Permission.SocietySettingsUpdate,
+      },
+      {
+        label: "Reports",
+        href: "/dashboard/helpdesk-reports",
+        permission: Permission.ComplaintsViewAll,
+      },
+    ],
   },
   {
     label: "Maintenance",
     icon: Wrench,
-    items: [{ label: "History", href: "/dashboard/maintenance/history" }],
+    items: [
+      {
+        label: "Dues & Payments",
+        href: "/dashboard/maintenance/dues",
+        permission: Permission.MaintenanceViewAll,
+      },
+      {
+        label: "Society Maintenance",
+        href: "/dashboard/maintenance/society",
+        permission: Permission.MaintenanceViewAll,
+      },
+    ],
+  },
+  {
+    label: "Staff",
+    icon: HardHat,
+    items: [
+      {
+        label: "Directory",
+        href: "/dashboard/staff",
+        permissions: [Permission.StaffManage, Permission.StaffViewAttendance],
+      },
+      {
+        label: "Attendance",
+        href: "/dashboard/staff/attendance",
+        permissions: [
+          Permission.StaffCheckin,
+          Permission.StaffCheckout,
+          Permission.StaffViewAttendance,
+        ],
+      },
+    ],
   },
   {
     label: "Asset & Inventory",
     icon: Boxes,
-    items: [{ label: "Assets" }, { label: "Asset Category" }, { label: "Inventory" }],
+    items: [
+      {
+        label: "Assets",
+        href: "/dashboard/asset-inventory/assets",
+        permissions: [Permission.AssetsView],
+      },
+      {
+        label: "Inventory",
+        href: "/dashboard/asset-inventory/inventory",
+        permissions: [Permission.InventoryView],
+      },
+    ],
   },
   {
     label: "Accounts",
     icon: Landmark,
     items: [
-      { label: "Budget" },
-      { label: "Invoicing" },
-      { label: "Billing Details" },
-      { label: "Dues and Receipts" },
-      { label: "Purchasing" },
-      { label: "Vouchers" },
-      { label: "Bank Accounts" },
-      { label: "Chart of Accounts" },
-      { label: "Statutory Registers" },
+      {
+        label: "Budget",
+        href: "/dashboard/accounts/budget",
+        permissions: [Permission.BudgetViewAll],
+      },
+      {
+        label: "Invoicing",
+        href: "/dashboard/accounts/invoicing",
+        permissions: [Permission.InvoicingViewAll],
+      },
+      {
+        label: "Chart of Accounts",
+        href: "/dashboard/accounts/chart-of-accounts",
+        permissions: [Permission.ChartOfAccountsView],
+      },
+      {
+        label: "Billing Details",
+        href: "/dashboard/accounts/billing-details",
+        permissions: [Permission.BillingSettingsView],
+      },
+      {
+        label: "Dues and Receipts",
+        href: "/dashboard/accounts/dues-and-receipts",
+        permissions: [Permission.DuesReceiptsViewAll],
+      },
+      {
+        label: "Purchasing",
+        href: "/dashboard/accounts/purchasing",
+        permissions: [Permission.PurchasingView],
+      },
+      {
+        label: "Vouchers",
+        href: "/dashboard/accounts/vouchers",
+        permissions: [Permission.VouchersView],
+      },
+      {
+        label: "Bank Accounts",
+        href: "/dashboard/accounts/bank-accounts",
+        permissions: [Permission.BankAccountsView],
+      },
+      {
+        label: "Statutory Registers",
+        href: "/dashboard/accounts/statutory-registers",
+        permissions: [Permission.StatutoryRegistersView],
+      },
+      {
+        label: "Activity Log",
+        href: "/dashboard/accounts/activity-log",
+        permissions: [Permission.ActivityLogView],
+      },
     ],
   },
 ];

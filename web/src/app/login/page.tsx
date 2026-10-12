@@ -1,25 +1,112 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
   Bird,
+  CheckCircle2,
   Eye,
   EyeOff,
   Loader2,
+  Mail,
   Receipt,
   ShieldCheck,
   Users,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiClientError } from "@/lib/apiClient";
+
+function ForgotPasswordDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [email, setEmail] = React.useState("");
+  const [sent, setSent] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setEmail("");
+      setSent(false);
+    }
+  }, [open]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-sm">
+        {sent ? (
+          <div className="flex flex-col items-center gap-3 py-4 text-center">
+            <span className="flex size-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+              <CheckCircle2 className="size-5" />
+            </span>
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium text-foreground">Check your email</p>
+              <p className="text-sm text-muted-foreground">
+                If an account exists for {email}, a reset link is on its way.
+              </p>
+            </div>
+            <Button size="sm" className="mt-2" onClick={() => onOpenChange(false)}>
+              Done
+            </Button>
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSent(true);
+            }}
+            className="flex flex-col gap-4"
+          >
+            <DialogHeader>
+              <DialogTitle>Reset your password</DialogTitle>
+              <DialogDescription>
+                Enter the email on your account and we&apos;ll send a reset link.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="forgot-email">Email</Label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-8"
+                  autoFocus
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Send reset link</Button>
+            </DialogFooter>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const FEATURES = [
   { icon: Users, label: "Residents — visitors, bills & complaints" },
@@ -46,6 +133,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [forgotOpen, setForgotOpen] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,12 +221,13 @@ export default function LoginPage() {
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link
-                  href="#"
-                  className="text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(true)}
+                  className="cursor-pointer text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Forgot password?
-                </Link>
+                </button>
               </div>
               <div className="relative">
                 <Input
@@ -153,7 +242,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-0 top-0 flex h-8 w-8 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+                  className="absolute right-0 top-0 flex h-8 w-8 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
@@ -178,6 +267,8 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} />
     </div>
   );
 }

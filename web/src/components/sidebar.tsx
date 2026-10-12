@@ -4,24 +4,21 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Check,
   ChevronDown,
   ChevronRight,
   LayoutDashboard,
-  Receipt,
+  Loader2,
   Ticket,
+  Wrench,
   Car,
   UserCheck,
-  Users,
-  ShieldCheck,
   Sofa,
-  Megaphone,
   HandHelping,
-  MessagesSquare,
   MessageCircle,
   Siren,
   PanelLeftClose,
   PanelLeftOpen,
+  PartyPopper,
   Feather,
 } from "lucide-react";
 
@@ -51,32 +48,79 @@ type NavItem = {
   soon?: boolean;
   /** Omit for items everyone with access to this dashboard should see; set to gate via the typed `Permission.*` accessor. */
   permission?: PermissionDefinition;
+  /** Any-of gate: visible when the user holds at least one of these. Takes precedence when set. */
+  permissions?: PermissionDefinition[];
 };
 
 export type { NavItem };
 
+/**
+ * Personal, "my flat"-scoped pages — only shown to accounts that hold a resident's own-flat
+ * permissions (Resident Owner today). Staff-only roles (Treasurer, Secretary, Committee, Guard,
+ * Society Admin) don't have a flat of their own, so these must never show for them by default.
+ */
+const RESIDENT_SELF_SERVICE = [Permission.AmenitiesBook, Permission.ComplaintsRaise];
+
 const defaultNavItems: NavItem[] = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My Flat", href: "/dashboard/flat", icon: DoodleHouse },
-  { label: "Bills & Payments", href: "/dashboard/billing", icon: Receipt },
-  { label: "Complaints", href: "/dashboard/complaints", icon: Ticket },
-  { label: "Vehicles & Parking", href: "/dashboard/vehicles", icon: Car },
-  { label: "Visitors", href: "/dashboard/visitors", icon: UserCheck },
-  { label: "Amenities", href: "/dashboard/amenities", icon: Sofa },
-  { label: "Notices", href: "/dashboard/notices", icon: Megaphone },
-  { label: "Users", href: "/dashboard/users", icon: Users, permission: Permission.RolesView },
-  { label: "Roles", href: "/dashboard/roles", icon: ShieldCheck },
-];
-
-export const adminNavItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  {
+    label: "My Flat",
+    href: "/dashboard/flat",
+    icon: DoodleHouse,
+    permissions: RESIDENT_SELF_SERVICE,
+  },
+  {
+    label: "My Complaints",
+    href: "/dashboard/complaints",
+    icon: Ticket,
+    permission: Permission.ComplaintsRaise,
+  },
+  {
+    label: "My Maintenance",
+    href: "/dashboard/maintenance",
+    icon: Wrench,
+    permissions: RESIDENT_SELF_SERVICE,
+  },
+  {
+    label: "Vehicles & Parking",
+    href: "/dashboard/vehicles",
+    icon: Car,
+    permissions: RESIDENT_SELF_SERVICE,
+  },
+  {
+    label: "My Visitors",
+    href: "/dashboard/visitors",
+    icon: UserCheck,
+    permissions: RESIDENT_SELF_SERVICE,
+  },
+  // Events are community content — read access for the whole society, intentionally ungated
+  // like Notice Board. Recording contributions and managing events stay permission-gated
+  // on the page itself (EventsManage).
+  { label: "Events", href: "/dashboard/accounts/events", icon: PartyPopper },
+  // Notice Board (Communication group) already covers reading notices for every role — no duplicate entry here.
+  // The old Bills & Payments stub was removed because it read disconnected mock numbers;
+  // Accounts as a whole is permission-gated, so residents have no billing path here.
 ];
 
 const defaultSoonItems: NavItem[] = [
+  {
+    label: "Amenities",
+    href: "/dashboard/amenities",
+    icon: Sofa,
+    permission: Permission.AmenitiesBook,
+  },
+  {
+    label: "Amenities Management",
+    icon: Sofa,
+    permission: Permission.AmenitiesManage,
+    soon: true,
+  },
   { label: "Domestic Staff", icon: HandHelping, soon: true },
-  { label: "Forum", icon: MessagesSquare, soon: true },
   { label: "Chat", icon: MessageCircle, soon: true },
   { label: "Safety / SOS", icon: Siren, soon: true },
+  // Forum was listed here as "Soon" but Discussion Forum has shipped and already appears
+  // under the Communication group (gated by ForumPost, which every resident holds) — this
+  // was a stale duplicate pointing nowhere.
 ];
 
 function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
@@ -90,10 +134,10 @@ function NavLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
         "group relative flex h-9 cursor-pointer items-center rounded-md text-sm transition-colors",
         collapsed ? "w-9 justify-center" : "w-full gap-3 px-3",
         item.soon
-          ? "cursor-default text-muted-foreground/60"
+          ? "cursor-default font-medium text-muted-foreground/60"
           : active
-            ? "bg-muted font-medium text-foreground"
-            : "font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+            ? "bg-muted font-semibold text-foreground"
+            : "font-semibold text-muted-foreground hover:bg-muted/60 hover:text-foreground",
       )}
     >
       <Icon className={cn("size-[18px] shrink-0", !item.soon && active ? "text-foreground" : "")} />
@@ -138,7 +182,7 @@ function NavGroupItem({ group, collapsed }: { group: AdminNavGroup; collapsed: b
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger
         className={cn(
-          "flex h-9 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors",
+          "flex h-9 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-sm font-semibold transition-colors",
           "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
         )}
       >
@@ -176,16 +220,16 @@ function NavGroupItem({ group, collapsed }: { group: AdminNavGroup; collapsed: b
                   <Link
                     href={item.href}
                     className={cn(
-                      "relative flex h-8 cursor-pointer items-center truncate rounded-md px-2 text-[13px] transition-colors",
+                      "relative flex h-8 cursor-pointer items-center truncate rounded-md px-2 text-[13px] font-medium transition-colors",
                       active
                         ? "font-semibold text-foreground before:absolute before:-left-1 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:content-['']"
-                        : "text-muted-foreground/70 hover:bg-muted/60 hover:text-foreground",
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
                     {item.label}
                   </Link>
                 ) : (
-                  <span className="flex h-8 cursor-default items-center truncate rounded-md px-2 text-[13px] text-muted-foreground/70">
+                  <span className="flex h-8 cursor-default items-center truncate rounded-md px-2 text-[13px] font-medium text-muted-foreground">
                     {item.label}
                   </span>
                 )}
@@ -228,11 +272,19 @@ export function SidebarContent({
   moreLabel?: string;
   brand?: React.ReactNode;
 }) {
-  const { has, societies, activeSociety, switchSociety } = useAuth();
-  const isVisible = (item: NavItem) => {
-    if (!item.permission) return true;
-    const key = permissionKeyFromName(item.permission.name);
-    return key ? has(key) : false;
+  const { has, societies, activeSociety, switchSociety, isSwitchingSociety, isSwitchingPreview } =
+    useAuth();
+  const navIsSettling = isSwitchingSociety || isSwitchingPreview;
+  const isVisible = (item: {
+    permission?: PermissionDefinition;
+    permissions?: PermissionDefinition[];
+  }) => {
+    const defs = item.permissions ?? (item.permission ? [item.permission] : []);
+    if (defs.length === 0) return true;
+    return defs.some((d) => {
+      const key = permissionKeyFromName(d.name);
+      return key ? has(key) : false;
+    });
   };
   const visibleNavItems = navItems.filter(isVisible);
   const visibleSoonItems = soonItems.filter(isVisible);
@@ -251,6 +303,7 @@ export function SidebarContent({
               render={
                 <Button
                   variant="ghost"
+                  disabled={isSwitchingSociety}
                   className={cn(
                     "h-9 gap-2 font-semibold",
                     collapsed ? "w-9 justify-center px-0" : "w-full justify-start px-2",
@@ -258,15 +311,21 @@ export function SidebarContent({
                 />
               }
             >
-              <SocietyLogo
-                name={activeSociety.societyName}
-                initials={getInitials(activeSociety.societyName)}
-                className="size-7 shrink-0 text-xs"
-              />
+              {isSwitchingSociety ? (
+                <span className="flex size-7 shrink-0 items-center justify-center">
+                  <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                </span>
+              ) : (
+                <SocietyLogo
+                  name={activeSociety.societyName}
+                  initials={getInitials(activeSociety.societyName)}
+                  className="size-7 shrink-0 text-xs"
+                />
+              )}
               {!collapsed && (
                 <>
                   <span className="min-w-0 flex-1 truncate text-left text-[13px]">
-                    {activeSociety.societyName}
+                    {isSwitchingSociety ? "Switching…" : activeSociety.societyName}
                   </span>
                   <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
                 </>
@@ -281,7 +340,8 @@ export function SidebarContent({
                   return (
                     <DropdownMenuItem
                       key={s.societyId}
-                      className="gap-2.5 py-1.5"
+                      disabled={isSwitchingSociety}
+                      className={cn("gap-2.5 py-1.5", active && "bg-muted/70")}
                       onClick={() => switchSociety(s.societyId)}
                     >
                       <SocietyLogo
@@ -297,7 +357,6 @@ export function SidebarContent({
                           {s.roles.join(", ")}
                         </span>
                       </span>
-                      {active && <Check className="ml-auto size-4 shrink-0 text-foreground" />}
                     </DropdownMenuItem>
                   );
                 })}
@@ -320,17 +379,26 @@ export function SidebarContent({
 
       <nav
         className={cn(
-          "flex flex-1 flex-col gap-0.5 overflow-y-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          "flex flex-1 flex-col gap-0.5 overflow-y-auto py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden transition-[opacity,filter] duration-300 ease-out",
           collapsed ? "items-center px-2" : "px-3",
+          navIsSettling && "pointer-events-none opacity-40 blur-[1px]",
         )}
       >
         <SectionLabel collapsed={collapsed}>{menuLabel}</SectionLabel>
         {visibleNavItems.map((item) => (
           <NavLink key={item.label} item={item} collapsed={collapsed} />
         ))}
-        {groups?.map((group) => (
-          <NavGroupItem key={group.label} group={group} collapsed={collapsed} />
-        ))}
+        {groups?.map((group) => {
+          const visibleItems = group.items.filter(isVisible);
+          if (visibleItems.length === 0) return null;
+          return (
+            <NavGroupItem
+              key={group.label}
+              group={{ ...group, items: visibleItems }}
+              collapsed={collapsed}
+            />
+          );
+        })}
 
         {visibleSoonItems.length > 0 && (
           <>
@@ -351,7 +419,7 @@ export function SidebarContent({
               onClick={onToggle}
               aria-label="Expand sidebar"
               title="Expand"
-              className="group/collapse relative flex size-9 items-center justify-center overflow-hidden rounded-full border bg-card shadow-sm transition-all hover:border-foreground/20 hover:bg-muted"
+              className="group/collapse relative flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-full border bg-card shadow-sm transition-all hover:border-foreground/20 hover:bg-muted"
             >
               <Feather className="absolute size-4 transition-all duration-200 group-hover/collapse:scale-75 group-hover/collapse:opacity-0" />
               <PanelLeftOpen className="absolute size-4 scale-75 opacity-0 transition-all duration-200 group-hover/collapse:scale-100 group-hover/collapse:opacity-100" />
@@ -372,7 +440,7 @@ export function SidebarContent({
                 onClick={onToggle}
                 aria-label="Collapse sidebar"
                 title="Collapse"
-                className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
+                className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 transition-all hover:bg-muted hover:text-foreground group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <PanelLeftClose className="size-4" />
               </button>

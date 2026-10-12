@@ -30,8 +30,37 @@ export function gradientForName(name: string) {
   return AVATAR_PALETTE[hashString(name) % AVATAR_PALETTE.length];
 }
 
+// Deterministic hand-drawn mascot avatar per name — same generator DiceBear's
+// "notionists" style is designed to echo (Notion's own persona illustrations).
+// Seeded by name so it's stable across renders without storing anything.
+export function avatarUrlForName(name: string) {
+  return `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(name)}`;
+}
+
 export function getInitials(name: string) {
   const words = name.trim().split(/\s+/);
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+export function formatCurrency(amount: number) {
+  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
+}
+
+export function formatDate(date: Date | string) {
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function formatDateTime(date: Date | string) {
+  return new Date(date).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }

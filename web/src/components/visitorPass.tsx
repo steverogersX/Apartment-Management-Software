@@ -4,12 +4,13 @@ import * as React from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, Copy, CalendarDays, Clock, Home, Ticket, UserCheck, UserRound } from "lucide-react";
 
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { SocietyLogo } from "@/components/societyLogo";
 import { currentFlat, society, type VisitorStatus } from "@/lib/mockData";
 
 const STATUS_DOT: Record<VisitorStatus, string> = {
   expected: "bg-blue-400",
+  pending_approval: "bg-amber-400",
   entered: "bg-amber-400",
   completed: "bg-emerald-400",
   denied: "bg-red-400",
@@ -18,19 +19,12 @@ const STATUS_DOT: Record<VisitorStatus, string> = {
 
 const STATUS_LABEL: Record<VisitorStatus, string> = {
   expected: "Expected",
+  pending_approval: "Pending approval",
   entered: "Inside",
   completed: "Completed",
   denied: "Denied",
   expired: "Expired",
 };
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function formatTime(time: string) {
   const [h, m] = time.split(":").map(Number);
@@ -148,7 +142,7 @@ export function VisitorPass({
           <button
             type="button"
             onClick={handleCopy}
-            className="flex items-center gap-1.5 rounded-full bg-background/15 px-2 py-1 font-mono text-[11px] font-medium tracking-tight transition-colors hover:bg-background/25"
+            className="flex cursor-pointer items-center gap-1.5 rounded-full bg-background/15 px-2 py-1 font-mono text-[11px] font-medium tracking-tight transition-colors hover:bg-background/25"
           >
             {code}
             {copied ? <Check className="size-3" /> : <Copy className="size-3" />}

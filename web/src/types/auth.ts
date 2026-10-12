@@ -25,5 +25,10 @@ export interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<AuthUser>;
   logout: () => Promise<void>;
   switchSociety: (societyId: string) => void;
+  isSwitchingSociety: boolean;
+  /** Demo-only override: view the UI as if holding a different role's permissions, without re-authenticating. Never used for real authorization. */
+  previewRole: string | null;
+  setPreviewRole: (role: string | null) => void;
+  isSwitchingPreview: boolean;
   refreshMe: () => Promise<void>;
 }

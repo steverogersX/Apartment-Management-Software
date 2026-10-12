@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DoodleHouse } from "@/components/icons/doodleHouse";
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/table";
 import { flats, type FlatOccupancyStatus, type FlatRecord } from "@/lib/flatsMockData";
 import {
+  isUnassignedResident,
   residents,
   type ResidentOccupancyType,
   type ResidentStatus,
@@ -54,14 +55,6 @@ const FLAT_OCCUPANCY_LABEL: Record<FlatOccupancyStatus, string> = {
   occupied: "Occupied",
   vacant: "Vacant",
 };
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
 
 function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
@@ -259,7 +252,8 @@ export function AllResidentsTable() {
       },
       {
         id: "flat",
-        accessorFn: (row) => `${row.tower}-${row.flatNumber}`,
+        accessorFn: (row) =>
+          isUnassignedResident(row) ? "Unassigned" : `${row.tower}-${row.flatNumber}`,
         header: ({ column }) => (
           <DataTableColumnHeader
             label="Flat"
@@ -267,15 +261,18 @@ export function AllResidentsTable() {
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           />
         ),
-        cell: ({ row }) => (
-          <Link
-            href={`/dashboard/people-hub/flats/${row.original.flatId}`}
-            onClick={(e) => e.stopPropagation()}
-            className="whitespace-nowrap text-sm font-medium text-foreground underline-offset-2 hover:underline"
-          >
-            {row.original.tower}-{row.original.flatNumber}
-          </Link>
-        ),
+        cell: ({ row }) =>
+          isUnassignedResident(row.original) ? (
+            <span className="whitespace-nowrap text-sm text-muted-foreground">Unassigned</span>
+          ) : (
+            <Link
+              href={`/dashboard/people-hub/flats/${row.original.flatId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="whitespace-nowrap text-sm font-medium text-foreground underline-offset-2 hover:underline"
+            >
+              {row.original.tower}-{row.original.flatNumber}
+            </Link>
+          ),
       },
       {
         id: "occupancyType",
@@ -373,6 +370,17 @@ export function AllResidentsTable() {
           value: v,
         })),
         predicate: (row, value) => row.status === value,
+      },
+      {
+        id: "flatStatus",
+        label: "Flat",
+        type: "select",
+        options: [
+          { label: "Assigned", value: "assigned" },
+          { label: "Unassigned", value: "unassigned" },
+        ],
+        predicate: (row, value) =>
+          value === "unassigned" ? isUnassignedResident(row) : !isUnassignedResident(row),
       },
       {
         id: "groupBy",

@@ -22,10 +22,13 @@ const SECTION_ROOTS: Record<string, { href: string; label: string }> = {
 
 const ROUTE_LABELS: Record<string, string> = {
   "/dashboard/amenities": "Amenities",
-  "/dashboard/billing": "Bills & Payments",
   "/dashboard/complaints": "Complaints",
   "/dashboard/flat": "My Flat",
   "/dashboard/notices": "Notices",
+  "/dashboard/discussion-forum": "Discussion Forum",
+  "/dashboard/discussion-forum/new": "New thread",
+  "/dashboard/opinion-polls": "Opinion Polls",
+  "/dashboard/opinion-polls/new": "New poll",
   "/dashboard/profile": "Profile",
   "/dashboard/roles": "Roles",
   "/dashboard/roles/new": "New role",
@@ -44,7 +47,10 @@ const DYNAMIC_SEGMENT_FALLBACKS: Record<string, string> = {
 };
 
 /** Group segments that have no page of their own (only child routes) — render as plain text, not a link. */
-const NON_NAVIGABLE_PATHS = new Set<string>(["/dashboard/people-hub"]);
+const NON_NAVIGABLE_PATHS = new Set<string>([
+  "/dashboard/people-hub",
+  "/dashboard/people-hub/residents",
+]);
 
 function humanize(segment: string) {
   return segment

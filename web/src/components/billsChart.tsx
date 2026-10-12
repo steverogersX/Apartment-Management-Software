@@ -113,7 +113,7 @@ export function BillsChart() {
                       setOpen(false);
                     }}
                     className={cn(
-                      "rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
+                      "cursor-pointer rounded-md px-2.5 py-1.5 text-left text-sm transition-colors",
                       active
                         ? "bg-muted font-medium text-foreground"
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",

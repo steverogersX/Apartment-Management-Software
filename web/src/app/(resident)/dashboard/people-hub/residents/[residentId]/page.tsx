@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Calendar, Car, History, Mail, Phone } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Calendar, Car, History, KeyRound, Mail, Phone } from "lucide-react";
 
 import { DoodleHouse } from "@/components/icons/doodleHouse";
 
@@ -10,10 +10,10 @@ import { useBreadcrumbTitle } from "@/components/breadcrumbs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flats, flatVehicleHistory } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName } from "@/lib/utils";
 
 const OCCUPANCY_LABEL: Record<string, string> = {
   owner: "Owner",
@@ -32,16 +32,9 @@ const STATUS_LABEL: Record<string, string> = {
   pending: "Pending",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export default function ResidentDetailPage() {
   const params = useParams<{ residentId: string }>();
+  const router = useRouter();
   const resident = residents.find((r) => r.id === params.residentId);
 
   useBreadcrumbTitle(resident?.name ?? null);
@@ -50,12 +43,14 @@ export default function ResidentDetailPage() {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Resident not found.</p>
-        <Link
-          href="/dashboard/people-hub/flats"
-          className="text-sm font-medium text-foreground underline"
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-medium text-foreground underline"
         >
-          Back to flats
-        </Link>
+          <ArrowLeft className="size-3.5" />
+          Back
+        </button>
       </div>
     );
   }
@@ -67,13 +62,14 @@ export default function ResidentDetailPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
-      <Link
-        href="/dashboard/people-hub/flats"
-        className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+      <button
+        type="button"
+        onClick={() => router.back()}
+        className="inline-flex w-fit cursor-pointer items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" />
-        Back to flats
-      </Link>
+        Back
+      </button>
 
       <Card>
         <CardContent className="flex gap-5 p-6">
@@ -114,10 +110,12 @@ export default function ResidentDetailPage() {
                   >
                     {flat.tower}-{flat.flatNumber}
                   </Link>
-                ) : (
+                ) : resident.flatId ? (
                   <span className="font-medium text-foreground">
                     {resident.tower}-{resident.flatNumber}
                   </span>
+                ) : (
+                  <span className="font-medium text-muted-foreground">Unassigned</span>
                 )}
               </span>
               <span className="text-muted-foreground/40">·</span>
@@ -139,6 +137,35 @@ export default function ResidentDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {resident.occupancyType === "tenant" && flat?.owner && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <KeyRound className="size-4 text-muted-foreground" />
+              Owner details
+            </CardTitle>
+            <CardDescription>
+              {resident.name} is a tenant — this flat is owned by someone who doesn&apos;t live
+              here.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap items-center gap-4 rounded-md border border-border p-3 text-sm">
+              <span className="font-medium text-foreground">{flat.owner.name}</span>
+              <Badge variant="outline">Owner</Badge>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Phone className="size-3.5 shrink-0" />
+                {flat.owner.phone}
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Mail className="size-3.5 shrink-0" />
+                {flat.owner.email}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

@@ -3,11 +3,19 @@
 import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { RoleResponse } from "@shared/index";
-import { Copy, MoreHorizontal, Pencil, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { MoreHorizontal, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,49 +24,30 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
+import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
-import { deleteRoleRequest, listRolesRequest } from "@/lib/roleApi";
-import { ApiClientError } from "@/lib/apiClient";
-
-function formatDate(iso: string | Date) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { roles, type RoleRecord } from "@/lib/rolesMockData";
+import { formatDate } from "@/lib/utils";
 
 export function RolesTable() {
-  const { has, token, activeSociety } = useAuth();
-  const [data, setData] = React.useState<RoleResponse[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const { has } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [version, setVersion] = React.useState(0);
+  const [deleteTarget, setDeleteTarget] = React.useState<RoleRecord | null>(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `version` forces a re-read after roles is mutated in place
+  const data = React.useMemo(() => [...roles], [version]);
 
-  React.useEffect(() => {
-    if (!token || !activeSociety) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    listRolesRequest(token, activeSociety.societyToken, activeSociety.societyId)
-      .then(setData)
-      .catch((err) =>
-        setError(err instanceof ApiClientError ? err.message : "Failed to load roles"),
-      )
-      .finally(() => setLoading(false));
-  }, [token, activeSociety]);
-
-  async function removeRole(id: string) {
-    if (!token || !activeSociety) return;
-    try {
-      await deleteRoleRequest(token, activeSociety.societyToken, activeSociety.societyId, id);
-      setData((rows) => rows.filter((r) => r.id !== id));
-    } catch (err) {
-      setError(err instanceof ApiClientError ? err.message : "Failed to delete role");
-    }
+  function handleDelete() {
+    if (!deleteTarget) return;
+    const idx = roles.findIndex((r) => r.id === deleteTarget.id);
+    if (idx !== -1) roles.splice(idx, 1);
+    setVersion((v) => v + 1);
+    toast({ title: `"${deleteTarget.name}" deleted`, variant: "success" });
+    setDeleteTarget(null);
   }
 
-  const columns = React.useMemo<ColumnDef<RoleResponse>[]>(
+  const columns = React.useMemo<ColumnDef<RoleRecord>[]>(
     () => [
       {
         id: "name",
@@ -142,34 +131,25 @@ export function RolesTable() {
         cell: ({ row }) => {
           const role = row.original;
           return (
-            <DropdownMenu>
-              <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
-                <MoreHorizontal className="size-4" />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem
-                  className="gap-2"
-                  render={<Link href={`/dashboard/roles/${role.id}`} />}
-                >
-                  <Pencil className="size-4 text-muted-foreground" />
-                  {role.isSystem ? "View role" : "Edit role"}
-                </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2" disabled>
-                  <Copy className="size-4 text-muted-foreground" />
-                  Duplicate
-                </DropdownMenuItem>
-                {has("RolesDelete") && !role.isSystem && (
-                  <DropdownMenuItem
-                    variant="destructive"
-                    className="gap-2"
-                    onClick={() => removeRole(role.id)}
-                  >
-                    <Trash2 className="size-4" />
-                    Delete role
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" />}>
+                  <MoreHorizontal className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {has("RolesDelete") && !role.isSystem && (
+                    <DropdownMenuItem
+                      variant="destructive"
+                      className="gap-2"
+                      onClick={() => setDeleteTarget(role)}
+                    >
+                      <Trash2 className="size-4" />
+                      Delete role
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           );
         },
       },
@@ -177,7 +157,7 @@ export function RolesTable() {
     [has],
   );
 
-  const filters = React.useMemo<DataTableFilterConfig<RoleResponse>[]>(
+  const filters = React.useMemo<DataTableFilterConfig<RoleRecord>[]>(
     () => [
       {
         id: "search",
@@ -210,29 +190,52 @@ export function RolesTable() {
     [],
   );
 
-  if (error) {
-    return <p className="text-sm text-destructive">{error}</p>;
-  }
-
   return (
-    <DataTable
-      data={data}
-      columns={columns}
-      title="All roles"
-      filters={filters}
-      enableColumnReorder
-      enableColumnVisibility
-      enableFilterCustomization
-      showPageSize
-      pageSize={8}
-      itemLabel="role"
-      emptyMessage={loading ? "Loading roles…" : "No roles match these filters."}
-      toolbarActions={
-        <Button size="sm" className="gap-1.5" render={<Link href="/dashboard/roles/new" />}>
-          <Plus className="size-3.5" />
-          Create role
-        </Button>
-      }
-    />
+    <>
+      <DataTable
+        data={data}
+        columns={columns}
+        title="All roles"
+        filters={filters}
+        enableColumnReorder
+        enableColumnVisibility
+        enableFilterCustomization
+        showPageSize
+        pageSize={8}
+        itemLabel="role"
+        emptyMessage="No roles match these filters."
+        onRowClick={(role) => router.push(`/dashboard/roles/${role.id}`)}
+        toolbarActions={
+          <Button size="sm" className="gap-1.5" render={<Link href="/dashboard/roles/new" />}>
+            <Plus className="size-3.5" />
+            Create role
+          </Button>
+        }
+      />
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete role</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-foreground">{deleteTarget?.name}</span>?{" "}
+              {deleteTarget && deleteTarget.memberCount > 0
+                ? `${deleteTarget.memberCount} member${deleteTarget.memberCount === 1 ? "" : "s"} will lose this role immediately. `
+                : ""}
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
