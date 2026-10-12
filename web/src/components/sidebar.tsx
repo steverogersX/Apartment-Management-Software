@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Loader2,
   Ticket,
+  Wrench,
   Car,
   UserCheck,
   Sofa,
@@ -69,10 +70,16 @@ const defaultNavItems: NavItem[] = [
     permissions: RESIDENT_SELF_SERVICE,
   },
   {
-    label: "Complaints",
+    label: "My Complaints",
     href: "/dashboard/complaints",
     icon: Ticket,
     permission: Permission.ComplaintsRaise,
+  },
+  {
+    label: "My Maintenance",
+    href: "/dashboard/maintenance",
+    icon: Wrench,
+    permissions: RESIDENT_SELF_SERVICE,
   },
   {
     label: "Vehicles & Parking",

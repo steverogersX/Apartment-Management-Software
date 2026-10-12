@@ -1,5 +1,5 @@
 import type { ComponentType } from "react";
-import { Boxes, Landmark, Megaphone, Ticket, Users } from "lucide-react";
+import { Boxes, HardHat, Landmark, Megaphone, Ticket, Users, Wrench } from "lucide-react";
 
 import { Permission, type PermissionDefinition } from "@shared/index";
 
@@ -97,7 +97,7 @@ export const adminNavGroups: AdminNavGroup[] = [
     icon: Ticket,
     items: [
       {
-        label: "Complaints",
+        label: "Manage Complaints",
         href: "/dashboard/complaints/manage",
         permissions: [
           Permission.ComplaintsViewAll,
@@ -115,6 +115,42 @@ export const adminNavGroups: AdminNavGroup[] = [
         label: "Reports",
         href: "/dashboard/helpdesk-reports",
         permission: Permission.ComplaintsViewAll,
+      },
+    ],
+  },
+  {
+    label: "Maintenance",
+    icon: Wrench,
+    items: [
+      {
+        label: "Dues & Payments",
+        href: "/dashboard/maintenance/dues",
+        permission: Permission.MaintenanceViewAll,
+      },
+      {
+        label: "Society Maintenance",
+        href: "/dashboard/maintenance/society",
+        permission: Permission.MaintenanceViewAll,
+      },
+    ],
+  },
+  {
+    label: "Staff",
+    icon: HardHat,
+    items: [
+      {
+        label: "Directory",
+        href: "/dashboard/staff",
+        permissions: [Permission.StaffManage, Permission.StaffViewAttendance],
+      },
+      {
+        label: "Attendance",
+        href: "/dashboard/staff/attendance",
+        permissions: [
+          Permission.StaffCheckin,
+          Permission.StaffCheckout,
+          Permission.StaffViewAttendance,
+        ],
       },
     ],
   },
