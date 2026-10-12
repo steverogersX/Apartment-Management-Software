@@ -6,13 +6,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/datePicker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { FlatSelect } from "@/components/flats/flatSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { flats } from "@/lib/flatsMockData";
 import { addNominationSchema, type AddNominationInput } from "@/lib/nominationRegisterMockData";
@@ -55,18 +49,11 @@ export function NominationForm({
           {(field: any) => (
             <div className="flex flex-col gap-1.5">
               <Label>Flat</Label>
-              <Select value={field.state.value} onValueChange={(v) => field.handleChange(v)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select flat" />
-                </SelectTrigger>
-                <SelectContent>
-                  {flats.map((f) => (
-                    <SelectItem key={f.id} value={f.id}>
-                      {f.tower}-{f.flatNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FlatSelect
+                flats={flats}
+                value={field.state.value}
+                onValueChange={(v) => field.handleChange(v)}
+              />
               {fieldError(field.state.meta.errors) && (
                 <p className="text-xs text-destructive">{fieldError(field.state.meta.errors)}</p>
               )}

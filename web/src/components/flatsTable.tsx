@@ -3,10 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ChevronRight, Home, Plus, UserPlus } from "lucide-react";
+import { Bike, Car, ChevronRight, Home, Plus, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   Table,
   TableBody,
@@ -24,11 +25,15 @@ import {
 } from "@/components/ui/table";
 import {
   flats,
+  flatVehicleHistory,
   type FlatMaintenanceStatus,
   type FlatOccupancyStatus,
   type FlatRecord,
+  type FlatVehicleEntry,
 } from "@/lib/flatsMockData";
+import { duesForFlat, maintenanceStatusForFlat } from "@/lib/maintenanceMockData";
 import { residents } from "@/lib/residentsMockData";
+import { useAuth } from "@/hooks/useAuth";
 
 const OCCUPANCY_DOT: Record<FlatOccupancyStatus, string> = {
   occupied: "bg-emerald-500",
@@ -52,6 +57,95 @@ const MAINTENANCE_LABEL: Record<FlatMaintenanceStatus, string> = {
 
 const residentMap = new Map(residents.map((r) => [r.id, r]));
 const residentNameMap = new Map(residents.map((r) => [r.id, r.name.toLowerCase()]));
+
+const vehiclesByFlat = new Map<string, FlatVehicleEntry[]>();
+for (const v of flatVehicleHistory) {
+  if (!v.isCurrent) continue;
+  vehiclesByFlat.set(v.flatId, [...(vehiclesByFlat.get(v.flatId) ?? []), v]);
+}
+
+function FlatMaintenanceCell({ flat }: { flat: FlatRecord }) {
+  const { has } = useAuth();
+  const status = maintenanceStatusForFlat(flat.tower, flat.flatNumber);
+  const content = (
+    <>
+      <span className={cn("size-1.5 shrink-0 rounded-full", MAINTENANCE_DOT[status])} />
+      <span className="whitespace-nowrap text-foreground">{MAINTENANCE_LABEL[status]}</span>
+    </>
+  );
+  if (!has("MaintenanceViewAll") || duesForFlat(flat.tower, flat.flatNumber).length === 0) {
+    return <div className="flex items-center gap-2">{content}</div>;
+  }
+  return (
+    <Link
+      href={`/dashboard/maintenance/dues/${flat.tower}-${flat.flatNumber}`}
+      onClick={(e) => e.stopPropagation()}
+      className="inline-flex items-center gap-2 rounded-md px-1 py-0.5 underline-offset-2 hover:bg-muted hover:underline"
+    >
+      {content}
+    </Link>
+  );
+}
+
+function FlatVehiclesCell({ vehicles }: { vehicles: FlatVehicleEntry[] }) {
+  if (vehicles.length === 0) return <span className="text-muted-foreground">—</span>;
+  const [first, ...rest] = vehicles;
+  const FirstIcon = first.type === "car" ? Car : Bike;
+  return (
+    <div onClick={(e) => e.stopPropagation()}>
+      <HoverCard>
+        <HoverCardTrigger
+          delay={150}
+          closeDelay={100}
+          className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 whitespace-nowrap hover:bg-muted"
+        >
+          <FirstIcon className="size-3.5 shrink-0 text-muted-foreground" />
+          <span className="font-mono text-xs font-medium tabular-nums text-foreground">
+            {first.registrationNumber}
+          </span>
+          {rest.length > 0 && (
+            <Badge variant="secondary" className="px-1.5 py-0 text-[11px]">
+              +{rest.length}
+            </Badge>
+          )}
+        </HoverCardTrigger>
+        <HoverCardContent className="w-72 p-2" side="bottom" align="start">
+          <div className="mb-1 px-1 text-[11px] font-medium tracking-widest text-muted-foreground">
+            {vehicles.length} {vehicles.length === 1 ? "VEHICLE" : "VEHICLES"}
+          </div>
+          <div className="flex max-h-56 flex-col overflow-y-auto">
+            {vehicles.map((v) => {
+              const Icon = v.type === "car" ? Car : Bike;
+              return (
+                <div key={v.registrationNumber} className="flex items-center gap-2.5 px-1 py-1.5">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Icon className="size-3.5" />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-sm font-medium text-foreground">
+                      {v.make} {v.model}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {v.color} · {v.ownerName}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 flex-col items-end gap-0.5">
+                    <span className="font-mono text-xs font-medium tabular-nums text-foreground">
+                      {v.registrationNumber}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {v.parkingSlot ? `Slot ${v.parkingSlot}` : "No slot"}
+                    </span>
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    </div>
+  );
+}
 
 const towerOptions = Array.from(new Set(flats.map((f) => f.tower))).sort();
 
@@ -245,14 +339,6 @@ const STATUS_LABEL: Record<string, string> = {
   moved_out: "Moved out",
 };
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 export function FlatsTable() {
   const columns = React.useMemo<ColumnDef<FlatRecord>[]>(
     () => [
@@ -305,18 +391,10 @@ export function FlatsTable() {
       },
       {
         id: "maintenanceStatus",
-        accessorKey: "maintenanceStatus",
+        accessorFn: (row) => maintenanceStatusForFlat(row.tower, row.flatNumber),
         meta: { label: "Maintenance" },
         header: () => <DataTableColumnHeader label="Maintenance" />,
-        cell: ({ row }) => {
-          const status = row.original.maintenanceStatus;
-          return (
-            <div className="flex items-center gap-2">
-              <span className={cn("size-1.5 shrink-0 rounded-full", MAINTENANCE_DOT[status])} />
-              <span className="whitespace-nowrap text-foreground">{MAINTENANCE_LABEL[status]}</span>
-            </div>
-          );
-        },
+        cell: ({ row }) => <FlatMaintenanceCell flat={row.original} />,
       },
       {
         id: "occupancyStatus",
@@ -356,6 +434,15 @@ export function FlatsTable() {
         },
       },
       {
+        id: "vehicles",
+        accessorFn: (row) => vehiclesByFlat.get(row.id)?.length ?? 0,
+        meta: { label: "Vehicles" },
+        header: () => <DataTableColumnHeader icon={Car} label="Vehicles" />,
+        cell: ({ row }) => (
+          <FlatVehiclesCell vehicles={vehiclesByFlat.get(row.original.id) ?? []} />
+        ),
+      },
+      {
         id: "actions",
         enableHiding: false,
         header: () => null,
@@ -383,7 +470,7 @@ export function FlatsTable() {
         id: "search",
         label: "Search",
         type: "search",
-        placeholder: "Search flat, tower or resident",
+        placeholder: "Search flat, tower, resident or vehicle",
         predicate: (row, query) => {
           const q = query.toLowerCase();
           if (
@@ -392,7 +479,11 @@ export function FlatsTable() {
             `${row.tower}-${row.flatNumber}`.toLowerCase().includes(q)
           )
             return true;
-          return row.currentResidentIds.some((id) => (residentNameMap.get(id) ?? "").includes(q));
+          if (row.currentResidentIds.some((id) => (residentNameMap.get(id) ?? "").includes(q)))
+            return true;
+          return (vehiclesByFlat.get(row.id) ?? []).some((v) =>
+            `${v.registrationNumber} ${v.make} ${v.model}`.toLowerCase().includes(q),
+          );
         },
       },
       {

@@ -33,6 +33,7 @@ import {
   ChevronDown,
   ChevronRight,
   GripVertical,
+  Home,
   Plus,
   Search,
   SlidersHorizontal,
@@ -563,36 +564,41 @@ export function DataTable<TData>({
                               </div>
                             </div>
                           )}
-                          {(filter.type === "groupBy"
-                            ? filter.options
-                            : [{ label: `All ${filter.label}`, value: "all" }, ...filter.options]
-                          )
-                            .filter((opt) => {
-                              const q = selectFilterQuery[filter.id];
-                              if (!q || filter.id !== "flat") return true;
-                              return opt.label.toLowerCase().includes(q.toLowerCase());
-                            })
-                            .map((opt) => {
-                              const current =
-                                filterValues[filter.id] ||
-                                (filter.type === "groupBy" ? "none" : "all");
-                              const isSelected = current === opt.value;
-                              return (
-                                <DropdownMenuItem
-                                  key={opt.value}
-                                  onClick={() => {
-                                    setFilterValues((v) => ({ ...v, [filter.id]: opt.value }));
-                                    setSelectFilterQuery((v) => ({ ...v, [filter.id]: "" }));
-                                  }}
-                                  className={cn(
-                                    "px-2 py-1.5",
-                                    isSelected && "bg-accent/60 text-accent-foreground",
-                                  )}
-                                >
-                                  {opt.label}
-                                </DropdownMenuItem>
-                              );
-                            })}
+                          <div className={cn(filter.id === "flat" && "max-h-56 overflow-y-auto")}>
+                            {(filter.type === "groupBy"
+                              ? filter.options
+                              : [{ label: `All ${filter.label}`, value: "all" }, ...filter.options]
+                            )
+                              .filter((opt) => {
+                                const q = selectFilterQuery[filter.id];
+                                if (!q || filter.id !== "flat") return true;
+                                return opt.label.toLowerCase().includes(q.toLowerCase());
+                              })
+                              .map((opt) => {
+                                const current =
+                                  filterValues[filter.id] ||
+                                  (filter.type === "groupBy" ? "none" : "all");
+                                const isSelected = current === opt.value;
+                                return (
+                                  <DropdownMenuItem
+                                    key={opt.value}
+                                    onClick={() => {
+                                      setFilterValues((v) => ({ ...v, [filter.id]: opt.value }));
+                                      setSelectFilterQuery((v) => ({ ...v, [filter.id]: "" }));
+                                    }}
+                                    className={cn(
+                                      "px-2 py-1.5",
+                                      isSelected && "bg-accent/60 text-accent-foreground",
+                                    )}
+                                  >
+                                    {filter.id === "flat" && opt.value !== "all" && (
+                                      <Home className="size-3.5 text-muted-foreground" />
+                                    )}
+                                    {opt.label}
+                                  </DropdownMenuItem>
+                                );
+                              })}
+                          </div>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     )}

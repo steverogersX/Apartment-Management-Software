@@ -5,6 +5,7 @@ import { useForm } from "@tanstack/react-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FlatSelect } from "@/components/flats/flatSelect";
 import {
   Select,
   SelectContent,
@@ -76,29 +77,14 @@ export function CreateVehicleForm({
         {(field) => (
           <div className="flex flex-col gap-1.5">
             <Label>Flat</Label>
-            <Select
+            <FlatSelect
+              flats={flats}
               value={field.state.value}
               onValueChange={(v) => {
-                field.handleChange(v ?? "");
+                field.handleChange(v);
                 form.setFieldValue("residentId", "");
               }}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a flat">
-                  {(value: string) => {
-                    const flat = flats.find((f) => f.id === value);
-                    return flat ? `${flat.tower}-${flat.flatNumber}` : "Select a flat";
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {flats.map((flat) => (
-                  <SelectItem key={flat.id} value={flat.id}>
-                    {flat.tower}-{flat.flatNumber}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            />
             {fieldError(field.state.meta.errors) && (
               <p className="text-xs text-destructive">{fieldError(field.state.meta.errors)}</p>
             )}

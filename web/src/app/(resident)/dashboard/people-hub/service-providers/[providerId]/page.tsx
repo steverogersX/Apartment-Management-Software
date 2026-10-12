@@ -21,14 +21,8 @@ import {
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { FlatSelect } from "@/components/flats/flatSelect";
+import { formatDate, formatDateTime, getInitials, gradientForName } from "@/lib/utils";
 import { flats } from "@/lib/flatsMockData";
 import {
   providerActivityLogs,
@@ -44,24 +38,6 @@ import { EditProviderForm } from "@/components/providers/editProviderForm";
 import { ProviderActivityTimeline } from "@/components/providerActivityTimeline";
 import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function isWithinDays(iso: string, days: number) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -487,21 +463,12 @@ export default function ProviderDetailPage() {
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
               <Label>Flat</Label>
-              <Select value={selectedFlat} onValueChange={(v) => setSelectedFlat(v ?? "")}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select a flat" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableFlats.map((f) => {
-                    const flatLabel = `${f.tower}-${f.flatNumber}`;
-                    return (
-                      <SelectItem key={f.id} value={flatLabel}>
-                        {flatLabel}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
+              <FlatSelect
+                flats={availableFlats}
+                valueKey="label"
+                value={selectedFlat}
+                onValueChange={setSelectedFlat}
+              />
               {availableFlats.length === 0 && (
                 <p className="text-xs text-muted-foreground">All flats are already linked.</p>
               )}
