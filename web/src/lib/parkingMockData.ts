@@ -1,12 +1,21 @@
 import { z } from "zod";
 
-export type ParkingVehicleType = "car" | "two_wheeler";
-export type ParkingSlotAction = "assigned" | "deassigned";
+/**
+ * A parking slot can hold more than one vehicle — a standard slot often fits a car plus a
+ * two-wheeler or cycle tucked beside it, and an oversized slot can fit two small cars. `capacity`
+ * is the number of vehicles the slot physically fits; `assignments` is the list currently parked
+ * there (capped at `capacity` in the UI, not enforced by vehicle-type combination rules — societies
+ * mix these however the physical space allows).
+ */
+
+export type ParkingVehicleType = "car" | "two_wheeler" | "cycle";
 
 export type ParkingSlotAssignment = {
+  id: string;
   flatId: string;
   flatLabel: string;
-  vehicleReg: string;
+  vehicleType: ParkingVehicleType;
+  vehicleReg: string | null;
   residentName: string;
 };
 
@@ -14,15 +23,18 @@ export type ParkingSlotRecord = {
   id: string;
   slotNumber: string;
   zone: string;
-  vehicleType: ParkingVehicleType;
-  assignment: ParkingSlotAssignment | null;
+  capacity: number;
+  assignments: ParkingSlotAssignment[];
 };
+
+export type ParkingSlotAction = "assigned" | "deassigned";
 
 export type ParkingSlotEvent = {
   id: string;
   slotId: string;
   action: ParkingSlotAction;
   flatLabel: string;
+  vehicleType?: ParkingVehicleType;
   vehicleReg: string;
   residentName: string;
   actorName: string;
@@ -32,7 +44,7 @@ export type ParkingSlotEvent = {
 export const addParkingSlotSchema = z.object({
   slotNumber: z.string().min(1, "Slot number is required"),
   zone: z.string().min(1, "Zone is required"),
-  vehicleType: z.enum(["car", "two_wheeler"]),
+  capacity: z.coerce.number().int().min(1, "Capacity must be at least 1").max(4, "Max 4 vehicles"),
 });
 
 export type AddParkingSlotInput = z.infer<typeof addParkingSlotSchema>;
@@ -42,139 +54,195 @@ export const parkingSlots: ParkingSlotRecord[] = [
     id: "slot-a12",
     slotNumber: "A-12",
     zone: "Basement A",
-    vehicleType: "car",
-    assignment: {
-      flatId: "flat-a301",
-      flatLabel: "A-301",
-      vehicleReg: "MH12 AB 1234",
-      residentName: "Arvind Deshmukh",
-    },
+    capacity: 1,
+    assignments: [
+      {
+        id: "asn-a12-1",
+        flatId: "flat-a301",
+        flatLabel: "A-301",
+        vehicleType: "car",
+        vehicleReg: "MH12 AB 1234",
+        residentName: "Arvind Deshmukh",
+      },
+    ],
   },
   {
     id: "slot-a14",
     slotNumber: "A-14",
     zone: "Basement A",
-    vehicleType: "car",
-    assignment: null,
+    capacity: 2,
+    assignments: [],
   },
   {
     id: "slot-a16",
     slotNumber: "A-16",
     zone: "Basement A",
-    vehicleType: "two_wheeler",
-    assignment: {
-      flatId: "flat-a301",
-      flatLabel: "A-301",
-      vehicleReg: "MH12 XY 9988",
-      residentName: "Meena Deshmukh",
-    },
+    capacity: 1,
+    assignments: [
+      {
+        id: "asn-a16-1",
+        flatId: "flat-a301",
+        flatLabel: "A-301",
+        vehicleType: "two_wheeler",
+        vehicleReg: "MH12 XY 9988",
+        residentName: "Meena Deshmukh",
+      },
+    ],
   },
   {
     id: "slot-a28",
     slotNumber: "A-28",
     zone: "Basement A",
-    vehicleType: "car",
-    assignment: {
-      flatId: "flat-a601",
-      flatLabel: "A-601",
-      vehicleReg: "MH48 KL 9012",
-      residentName: "Vikram Singh Rathore",
-    },
+    capacity: 2,
+    assignments: [
+      {
+        id: "asn-a28-1",
+        flatId: "flat-a601",
+        flatLabel: "A-601",
+        vehicleType: "car",
+        vehicleReg: "MH48 KL 9012",
+        residentName: "Vikram Singh Rathore",
+      },
+      {
+        id: "asn-a28-2",
+        flatId: "flat-a601",
+        flatLabel: "A-601",
+        vehicleType: "car",
+        vehicleReg: "MH48 KL 9013",
+        residentName: "Vikram Singh Rathore",
+      },
+    ],
   },
   {
     id: "slot-a30",
     slotNumber: "A-30",
     zone: "Basement A",
-    vehicleType: "car",
-    assignment: null,
+    capacity: 1,
+    assignments: [],
   },
   {
     id: "slot-b04",
     slotNumber: "B-04",
     zone: "Basement B",
-    vehicleType: "car",
-    assignment: {
-      flatId: "flat-b204",
-      flatLabel: "B-204",
-      vehicleReg: "MH14 CD 5678",
-      residentName: "Sunita Patil",
-    },
+    capacity: 1,
+    assignments: [
+      {
+        id: "asn-b04-1",
+        flatId: "flat-b204",
+        flatLabel: "B-204",
+        vehicleType: "car",
+        vehicleReg: "MH14 CD 5678",
+        residentName: "Sunita Patil",
+      },
+    ],
   },
   {
     id: "slot-b05",
     slotNumber: "B-05",
     zone: "Basement B",
-    vehicleType: "car",
-    assignment: {
-      flatId: "flat-b204",
-      flatLabel: "B-204",
-      vehicleReg: "MH14 CD 5679",
-      residentName: "Sunita Patil",
-    },
+    capacity: 1,
+    assignments: [
+      {
+        id: "asn-b05-1",
+        flatId: "flat-b204",
+        flatLabel: "B-204",
+        vehicleType: "car",
+        vehicleReg: "MH14 CD 5679",
+        residentName: "Sunita Patil",
+      },
+    ],
   },
   {
     id: "slot-b08",
     slotNumber: "B-08",
     zone: "Basement B",
-    vehicleType: "two_wheeler",
-    assignment: {
-      flatId: "flat-c307",
-      flatLabel: "C-307",
-      vehicleReg: "MH03 OP 7788",
-      residentName: "Suresh Iyer",
-    },
+    capacity: 2,
+    assignments: [
+      {
+        id: "asn-b08-1",
+        flatId: "flat-c307",
+        flatLabel: "C-307",
+        vehicleType: "two_wheeler",
+        vehicleReg: "MH03 OP 7788",
+        residentName: "Suresh Iyer",
+      },
+    ],
   },
   {
     id: "slot-b11",
     slotNumber: "B-11",
     zone: "Basement B",
-    vehicleType: "car",
-    assignment: null,
+    capacity: 1,
+    assignments: [],
   },
   {
     id: "slot-b20",
     slotNumber: "B-20",
     zone: "Basement B",
-    vehicleType: "car",
-    assignment: null,
+    capacity: 2,
+    assignments: [],
   },
   {
     id: "slot-c09",
     slotNumber: "C-09",
     zone: "Basement C",
-    vehicleType: "car",
-    assignment: {
-      flatId: "flat-c307",
-      flatLabel: "C-307",
-      vehicleReg: "MH03 MN 4455",
-      residentName: "Suresh Iyer",
-    },
+    capacity: 1,
+    assignments: [
+      {
+        id: "asn-c09-1",
+        flatId: "flat-c307",
+        flatLabel: "C-307",
+        vehicleType: "car",
+        vehicleReg: "MH03 MN 4455",
+        residentName: "Suresh Iyer",
+      },
+    ],
   },
   {
     id: "slot-c10",
     slotNumber: "C-10",
     zone: "Basement C",
-    vehicleType: "car",
-    assignment: {
-      flatId: "flat-c307",
-      flatLabel: "C-307",
-      vehicleReg: "MH03 MN 4456",
-      residentName: "Suresh Iyer",
-    },
+    capacity: 3,
+    assignments: [
+      {
+        id: "asn-c10-1",
+        flatId: "flat-c307",
+        flatLabel: "C-307",
+        vehicleType: "car",
+        vehicleReg: "MH03 MN 4456",
+        residentName: "Suresh Iyer",
+      },
+      {
+        id: "asn-c10-2",
+        flatId: "flat-c307",
+        flatLabel: "C-307",
+        vehicleType: "two_wheeler",
+        vehicleReg: "MH03 MN 7001",
+        residentName: "Suresh Iyer",
+      },
+      {
+        id: "asn-c10-3",
+        flatId: "flat-c307",
+        flatLabel: "C-307",
+        vehicleType: "cycle",
+        vehicleReg: null,
+        residentName: "Suresh Iyer",
+      },
+    ],
   },
   {
     id: "slot-c12",
     slotNumber: "C-12",
     zone: "Basement C",
-    vehicleType: "two_wheeler",
-    assignment: null,
+    capacity: 1,
+    assignments: [],
   },
   {
     id: "slot-c14",
     slotNumber: "C-14",
     zone: "Basement C",
-    vehicleType: "car",
-    assignment: null,
+    capacity: 1,
+    assignments: [],
   },
 ];
 
@@ -184,6 +252,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a12",
     action: "assigned",
     flatLabel: "B-204",
+    vehicleType: "car",
     vehicleReg: "MH14 EF 1122",
     residentName: "Prakash Kulkarni",
     actorName: "Security Desk",
@@ -194,6 +263,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a12",
     action: "deassigned",
     flatLabel: "B-204",
+    vehicleType: "car",
     vehicleReg: "MH14 EF 1122",
     residentName: "Prakash Kulkarni",
     actorName: "Security Desk",
@@ -204,6 +274,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a12",
     action: "assigned",
     flatLabel: "A-301",
+    vehicleType: "car",
     vehicleReg: "MH12 AB 1234",
     residentName: "Arvind Deshmukh",
     actorName: "Society Manager",
@@ -214,6 +285,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a14",
     action: "assigned",
     flatLabel: "C-208",
+    vehicleType: "car",
     vehicleReg: "MH13 GH 3344",
     residentName: "Neha Kulkarni",
     actorName: "Security Desk",
@@ -224,6 +296,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a14",
     action: "deassigned",
     flatLabel: "C-208",
+    vehicleType: "car",
     vehicleReg: "MH13 GH 3344",
     residentName: "Neha Kulkarni",
     actorName: "Society Manager",
@@ -234,6 +307,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a14",
     action: "assigned",
     flatLabel: "A-502",
+    vehicleType: "car",
     vehicleReg: "MH11 QR 2201",
     residentName: "Rohan Mehta",
     actorName: "Security Desk",
@@ -244,6 +318,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a14",
     action: "deassigned",
     flatLabel: "A-502",
+    vehicleType: "car",
     vehicleReg: "MH11 QR 2201",
     residentName: "Rohan Mehta",
     actorName: "Society Manager",
@@ -254,6 +329,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a16",
     action: "assigned",
     flatLabel: "B-204",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH14 EF 1122",
     residentName: "Prakash Kulkarni",
     actorName: "Security Desk",
@@ -264,6 +340,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a16",
     action: "deassigned",
     flatLabel: "B-204",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH14 EF 1122",
     residentName: "Prakash Kulkarni",
     actorName: "Security Desk",
@@ -274,6 +351,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a16",
     action: "assigned",
     flatLabel: "A-301",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH12 XY 9988",
     residentName: "Meena Deshmukh",
     actorName: "Society Manager",
@@ -284,6 +362,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a28",
     action: "assigned",
     flatLabel: "A-202",
+    vehicleType: "car",
     vehicleReg: "MH12 ST 4410",
     residentName: "Deepak Joshi",
     actorName: "Security Desk",
@@ -294,6 +373,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a28",
     action: "deassigned",
     flatLabel: "A-202",
+    vehicleType: "car",
     vehicleReg: "MH12 ST 4410",
     residentName: "Deepak Joshi",
     actorName: "Society Manager",
@@ -304,16 +384,29 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a28",
     action: "assigned",
     flatLabel: "A-601",
+    vehicleType: "car",
     vehicleReg: "MH48 KL 9012",
     residentName: "Vikram Singh Rathore",
     actorName: "Society Manager",
     timestamp: "2024-03-04T11:20:00+05:30",
   },
   {
+    id: "evt-a28-4",
+    slotId: "slot-a28",
+    action: "assigned",
+    flatLabel: "A-601",
+    vehicleType: "car",
+    vehicleReg: "MH48 KL 9013",
+    residentName: "Vikram Singh Rathore",
+    actorName: "Society Manager",
+    timestamp: "2026-01-20T09:30:00+05:30",
+  },
+  {
     id: "evt-a30-1",
     slotId: "slot-a30",
     action: "assigned",
     flatLabel: "Visitor",
+    vehicleType: "car",
     vehicleReg: "MH02 VV 7788",
     residentName: "Guest of A-301",
     actorName: "Security Desk",
@@ -324,6 +417,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-a30",
     action: "deassigned",
     flatLabel: "Visitor",
+    vehicleType: "car",
     vehicleReg: "MH02 VV 7788",
     residentName: "Guest of A-301",
     actorName: "Security Desk",
@@ -334,6 +428,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b04",
     action: "assigned",
     flatLabel: "B-204",
+    vehicleType: "car",
     vehicleReg: "MH14 EF 1122",
     residentName: "Prakash Kulkarni",
     actorName: "Security Desk",
@@ -344,6 +439,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b04",
     action: "deassigned",
     flatLabel: "B-204",
+    vehicleType: "car",
     vehicleReg: "MH14 EF 1122",
     residentName: "Prakash Kulkarni",
     actorName: "Society Manager",
@@ -354,6 +450,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b04",
     action: "assigned",
     flatLabel: "B-204",
+    vehicleType: "car",
     vehicleReg: "MH14 CD 5678",
     residentName: "Sunita Patil",
     actorName: "Society Manager",
@@ -364,6 +461,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b05",
     action: "assigned",
     flatLabel: "B-405",
+    vehicleType: "car",
     vehicleReg: "MH14 GH 9021",
     residentName: "Anil Pawar",
     actorName: "Security Desk",
@@ -374,6 +472,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b05",
     action: "deassigned",
     flatLabel: "B-405",
+    vehicleType: "car",
     vehicleReg: "MH14 GH 9021",
     residentName: "Anil Pawar",
     actorName: "Society Manager",
@@ -384,6 +483,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b05",
     action: "assigned",
     flatLabel: "B-204",
+    vehicleType: "car",
     vehicleReg: "MH14 CD 5679",
     residentName: "Sunita Patil",
     actorName: "Society Manager",
@@ -394,6 +494,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b08",
     action: "assigned",
     flatLabel: "B-110",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH14 TW 3310",
     residentName: "Farhan Sheikh",
     actorName: "Security Desk",
@@ -404,6 +505,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b08",
     action: "deassigned",
     flatLabel: "B-110",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH14 TW 3310",
     residentName: "Farhan Sheikh",
     actorName: "Security Desk",
@@ -414,6 +516,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b08",
     action: "assigned",
     flatLabel: "C-307",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH03 OP 7788",
     residentName: "Suresh Iyer",
     actorName: "Society Manager",
@@ -424,6 +527,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b11",
     action: "assigned",
     flatLabel: "B-305",
+    vehicleType: "car",
     vehicleReg: "MH14 JK 5502",
     residentName: "Priya Nair",
     actorName: "Security Desk",
@@ -434,6 +538,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b11",
     action: "deassigned",
     flatLabel: "B-305",
+    vehicleType: "car",
     vehicleReg: "MH14 JK 5502",
     residentName: "Priya Nair",
     actorName: "Society Manager",
@@ -444,6 +549,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b20",
     action: "assigned",
     flatLabel: "Visitor",
+    vehicleType: "car",
     vehicleReg: "MH14 VV 1204",
     residentName: "Guest of B-204",
     actorName: "Security Desk",
@@ -454,6 +560,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-b20",
     action: "deassigned",
     flatLabel: "Visitor",
+    vehicleType: "car",
     vehicleReg: "MH14 VV 1204",
     residentName: "Guest of B-204",
     actorName: "Security Desk",
@@ -464,6 +571,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c09",
     action: "assigned",
     flatLabel: "C-103",
+    vehicleType: "car",
     vehicleReg: "MH03 AB 2091",
     residentName: "Kavya Nair",
     actorName: "Security Desk",
@@ -474,6 +582,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c09",
     action: "deassigned",
     flatLabel: "C-103",
+    vehicleType: "car",
     vehicleReg: "MH03 AB 2091",
     residentName: "Kavya Nair",
     actorName: "Society Manager",
@@ -484,6 +593,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c09",
     action: "assigned",
     flatLabel: "C-307",
+    vehicleType: "car",
     vehicleReg: "MH03 MN 4455",
     residentName: "Suresh Iyer",
     actorName: "Society Manager",
@@ -494,6 +604,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c10",
     action: "assigned",
     flatLabel: "C-506",
+    vehicleType: "car",
     vehicleReg: "MH03 HS 8811",
     residentName: "Harish Krishnan",
     actorName: "Security Desk",
@@ -504,6 +615,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c10",
     action: "deassigned",
     flatLabel: "C-506",
+    vehicleType: "car",
     vehicleReg: "MH03 HS 8811",
     residentName: "Harish Krishnan",
     actorName: "Society Manager",
@@ -514,16 +626,40 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c10",
     action: "assigned",
     flatLabel: "C-307",
+    vehicleType: "car",
     vehicleReg: "MH03 MN 4456",
     residentName: "Suresh Iyer",
     actorName: "Society Manager",
     timestamp: "2025-08-28T10:30:00+05:30",
   },
   {
+    id: "evt-c10-4",
+    slotId: "slot-c10",
+    action: "assigned",
+    flatLabel: "C-307",
+    vehicleType: "two_wheeler",
+    vehicleReg: "MH03 MN 7001",
+    residentName: "Suresh Iyer",
+    actorName: "Society Manager",
+    timestamp: "2026-02-01T09:00:00+05:30",
+  },
+  {
+    id: "evt-c10-5",
+    slotId: "slot-c10",
+    action: "assigned",
+    flatLabel: "C-307",
+    vehicleType: "cycle",
+    vehicleReg: "—",
+    residentName: "Suresh Iyer",
+    actorName: "Society Manager",
+    timestamp: "2026-02-10T09:00:00+05:30",
+  },
+  {
     id: "evt-c12-1",
     slotId: "slot-c12",
     action: "assigned",
     flatLabel: "C-208",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH13 TW 7712",
     residentName: "Neha Kulkarni",
     actorName: "Security Desk",
@@ -534,6 +670,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c12",
     action: "deassigned",
     flatLabel: "C-208",
+    vehicleType: "two_wheeler",
     vehicleReg: "MH13 TW 7712",
     residentName: "Neha Kulkarni",
     actorName: "Society Manager",
@@ -544,6 +681,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c14",
     action: "assigned",
     flatLabel: "C-410",
+    vehicleType: "car",
     vehicleReg: "MH03 ZX 6090",
     residentName: "Manoj Tiwari",
     actorName: "Security Desk",
@@ -554,6 +692,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c14",
     action: "deassigned",
     flatLabel: "C-410",
+    vehicleType: "car",
     vehicleReg: "MH03 ZX 6090",
     residentName: "Manoj Tiwari",
     actorName: "Society Manager",
@@ -564,6 +703,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c14",
     action: "assigned",
     flatLabel: "B-201",
+    vehicleType: "car",
     vehicleReg: "MH14 LM 3030",
     residentName: "Divya Reddy",
     actorName: "Security Desk",
@@ -574,6 +714,7 @@ export const parkingSlotEvents: ParkingSlotEvent[] = [
     slotId: "slot-c14",
     action: "deassigned",
     flatLabel: "B-201",
+    vehicleType: "car",
     vehicleReg: "MH14 LM 3030",
     residentName: "Divya Reddy",
     actorName: "Society Manager",

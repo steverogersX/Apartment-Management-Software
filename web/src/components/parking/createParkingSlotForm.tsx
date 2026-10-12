@@ -62,7 +62,7 @@ export function CreateParkingSlotForm({
     defaultValues: {
       slotNumber: "",
       zone: existingZones[0] ?? "",
-      vehicleType: "car",
+      capacity: 1,
     } as AddParkingSlotInput,
     validators: { onChange: schema },
     onSubmit: async ({ value }) => {
@@ -141,24 +141,27 @@ export function CreateParkingSlotForm({
         )}
       </form.Field>
 
-      <form.Field name="vehicleType">
+      <form.Field name="capacity">
         {(field) => (
           <div className="flex flex-col gap-1.5">
-            <Label>Vehicle type</Label>
+            <Label htmlFor="slot-capacity">Capacity (vehicles)</Label>
             <Select
-              value={field.state.value}
-              onValueChange={(v) =>
-                field.handleChange((v ?? "car") as AddParkingSlotInput["vehicleType"])
-              }
+              value={String(field.state.value)}
+              onValueChange={(v) => field.handleChange(Number(v ?? 1))}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id="slot-capacity" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="car">Car</SelectItem>
-                <SelectItem value="two_wheeler">Two-wheeler</SelectItem>
+                <SelectItem value="1">1 — standard slot</SelectItem>
+                <SelectItem value="2">2 — fits a car + bike/cycle, or two small cars</SelectItem>
+                <SelectItem value="3">3 — large slot</SelectItem>
+                <SelectItem value="4">4 — oversized slot</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              How many vehicles physically fit — any mix of car, two-wheeler, or cycle.
+            </p>
             {fieldError(field.state.meta.errors) && (
               <p className="text-xs text-destructive">{fieldError(field.state.meta.errors)}</p>
             )}
