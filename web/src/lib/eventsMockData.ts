@@ -47,6 +47,36 @@ export type EventTopUp = {
   recordedBy: string;
 };
 
+export type EventExpenseCategory =
+  | "Pooja / Rituals"
+  | "Decorations"
+  | "Catering / Prasad"
+  | "Pandal / Tent"
+  | "Sound & Lighting"
+  | "Immersion / Logistics"
+  | "Other";
+
+export const EVENT_EXPENSE_CATEGORIES: EventExpenseCategory[] = [
+  "Pooja / Rituals",
+  "Decorations",
+  "Catering / Prasad",
+  "Pandal / Tent",
+  "Sound & Lighting",
+  "Immersion / Logistics",
+  "Other",
+];
+
+export type EventExpense = {
+  id: string;
+  eventId: string;
+  category: EventExpenseCategory;
+  description: string;
+  amount: number;
+  paidTo: string;
+  date: string;
+  recordedBy: string;
+};
+
 export const addEventSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   description: z.string().optional(),
@@ -74,6 +104,24 @@ export const recordTopUpSchema = z.object({
 });
 
 export type RecordTopUpInput = z.infer<typeof recordTopUpSchema>;
+
+export const recordExpenseSchema = z.object({
+  category: z.enum([
+    "Pooja / Rituals",
+    "Decorations",
+    "Catering / Prasad",
+    "Pandal / Tent",
+    "Sound & Lighting",
+    "Immersion / Logistics",
+    "Other",
+  ]),
+  description: z.string().min(2, "Description is required"),
+  amount: z.coerce.number().min(1, "Amount must be at least 1"),
+  paidTo: z.string().min(2, "Paid to is required"),
+  date: z.string().min(1, "Date is required"),
+});
+
+export type RecordExpenseInput = z.infer<typeof recordExpenseSchema>;
 
 export const communityEvents: CommunityEvent[] = [
   {
@@ -296,6 +344,79 @@ export const eventTopUps: EventTopUp[] = [
   },
 ];
 
+export const eventExpenses: EventExpense[] = [
+  {
+    id: "ee-1",
+    eventId: "evt-vinayaka-2026",
+    category: "Pooja / Rituals",
+    description: "Pooja charges — priest fees and ritual items for the main ceremony",
+    amount: 5000,
+    paidTo: "Pandit Raghunath Sharma",
+    date: "2026-09-10T10:00:00+05:30",
+    recordedBy: "Suresh Iyer",
+  },
+  {
+    id: "ee-2",
+    eventId: "evt-vinayaka-2026",
+    category: "Decorations",
+    description: "Pandal decoration, flowers and lighting for the idol mandap",
+    amount: 6500,
+    paidTo: "Ganesh Decorators",
+    date: "2026-09-11T14:00:00+05:30",
+    recordedBy: "Suresh Iyer",
+  },
+  {
+    id: "ee-3",
+    eventId: "evt-vinayaka-2026",
+    category: "Catering / Prasad",
+    description: "Modak and prasad distribution for all flats",
+    amount: 4200,
+    paidTo: "Annapurna Caterers",
+    date: "2026-09-13T09:00:00+05:30",
+    recordedBy: "Suresh Iyer",
+  },
+  {
+    id: "ee-4",
+    eventId: "evt-vinayaka-2026",
+    category: "Immersion / Logistics",
+    description: "Transport and crew for idol immersion",
+    amount: 3000,
+    paidTo: "Local transport vendor",
+    date: "2026-09-14T18:00:00+05:30",
+    recordedBy: "Suresh Iyer",
+  },
+  {
+    id: "ee-5",
+    eventId: "evt-diwali-2025",
+    category: "Decorations",
+    description: "Society-wide diya and rangoli decoration supplies",
+    amount: 5500,
+    paidTo: "Ganesh Decorators",
+    date: "2025-10-15T11:00:00+05:30",
+    recordedBy: "Suresh Iyer",
+  },
+  {
+    id: "ee-6",
+    eventId: "evt-diwali-2025",
+    category: "Catering / Prasad",
+    description: "Sweets distribution for every flat",
+    amount: 8000,
+    paidTo: "Annapurna Caterers",
+    date: "2025-10-19T10:00:00+05:30",
+    recordedBy: "Suresh Iyer",
+  },
+  {
+    id: "ee-7",
+    eventId: "evt-diwali-2025",
+    category: "Sound & Lighting",
+    description: "Clubhouse lighting and sound system for the evening event",
+    amount: 7500,
+    paidTo: "SoundWave Events",
+    date: "2025-10-20T12:00:00+05:30",
+    recordedBy: "Suresh Iyer",
+  },
+];
+
 export function contributionsFor(eventId: string): EventContribution[] {
   return eventContributions.filter((c) => c.eventId === eventId);
 }
@@ -304,11 +425,17 @@ export function topUpsFor(eventId: string): EventTopUp[] {
   return eventTopUps.filter((t) => t.eventId === eventId);
 }
 
+export function expensesFor(eventId: string): EventExpense[] {
+  return eventExpenses.filter((e) => e.eventId === eventId);
+}
+
 export function fundingSummary(event: CommunityEvent) {
   const contributed = contributionsFor(event.id).reduce((sum, c) => sum + c.amount, 0);
   const toppedUp = topUpsFor(event.id).reduce((sum, t) => sum + t.amount, 0);
   const funded = contributed + toppedUp;
   const pending = Math.max(0, event.targetAmount - funded);
   const fundedPct = event.targetAmount > 0 ? Math.min(100, (funded / event.targetAmount) * 100) : 0;
-  return { contributed, toppedUp, funded, pending, fundedPct };
+  const spent = expensesFor(event.id).reduce((sum, e) => sum + e.amount, 0);
+  const balance = funded - spent;
+  return { contributed, toppedUp, funded, pending, fundedPct, spent, balance };
 }

@@ -22,18 +22,7 @@ import {
   type AddEventInput,
   type CommunityEvent,
 } from "@/lib/eventsMockData";
-
-function formatCurrency(amount: number) {
-  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 type StatusFilter = "Open" | "Closed" | "All";
 

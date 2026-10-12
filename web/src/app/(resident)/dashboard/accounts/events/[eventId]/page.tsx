@@ -11,6 +11,7 @@ import {
   CirclePlus,
   Landmark,
   Lock,
+  Receipt,
 } from "lucide-react";
 
 import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
@@ -25,45 +26,29 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RecordContributionForm } from "@/components/events/recordContributionForm";
+import { RecordExpenseForm } from "@/components/events/recordExpenseForm";
 import { RecordTopUpForm } from "@/components/events/recordTopUpForm";
 import { useAuth } from "@/hooks/useAuth";
 import {
   communityEvents,
   contributionsFor,
   eventContributions,
+  eventExpenses,
   eventTopUps,
+  expensesFor,
   fundingSummary,
   topUpsFor,
   type EventContribution,
   type EventTopUp,
   type RecordContributionInput,
+  type RecordExpenseInput,
   type RecordTopUpInput,
 } from "@/lib/eventsMockData";
 import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
-
-function formatCurrency(amount: number) {
-  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
-}
-
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
+import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 
 type TimelineEntry =
   | { kind: "contribution"; id: string; date: string; data: EventContribution }
@@ -149,6 +134,7 @@ export default function EventDetailPage() {
   const [version, setVersion] = React.useState(0);
   const [contributeOpen, setContributeOpen] = React.useState(false);
   const [topUpOpen, setTopUpOpen] = React.useState(false);
+  const [expenseOpen, setExpenseOpen] = React.useState(false);
   const [closeOpen, setCloseOpen] = React.useState(false);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -173,7 +159,8 @@ export default function EventDetailPage() {
     );
   }
 
-  const { contributed, toppedUp, pending, fundedPct } = fundingSummary(event);
+  const { contributed, toppedUp, pending, fundedPct, spent, balance } = fundingSummary(event);
+  const expenses = expensesFor(event.id);
 
   const timeline: TimelineEntry[] = [
     ...contributionsFor(event.id).map((c) => ({
@@ -222,6 +209,22 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setTopUpOpen(false);
+  }
+
+  function handleRecordExpense(values: RecordExpenseInput) {
+    if (!event) return;
+    eventExpenses.push({
+      id: crypto.randomUUID(),
+      eventId: event.id,
+      category: values.category,
+      description: values.description,
+      amount: values.amount,
+      paidTo: values.paidTo,
+      date: new Date(values.date).toISOString(),
+      recordedBy: "You",
+    });
+    setVersion((v) => v + 1);
+    setExpenseOpen(false);
   }
 
   function handleClose() {
@@ -290,6 +293,15 @@ export default function EventDetailPage() {
             <Button
               size="sm"
               variant="outline"
+              className="gap-1.5"
+              onClick={() => setExpenseOpen(true)}
+            >
+              <Receipt className="size-3.5" />
+              Record expense
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               className="gap-1.5 text-muted-foreground"
               onClick={() => setCloseOpen(true)}
             >
@@ -338,39 +350,113 @@ export default function EventDetailPage() {
         </Card>
       </div>
 
-      <Card>
-        <CardContent className="flex flex-col gap-2 pt-6">
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
-              style={{ width: `${fundedPct}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{fundedPct.toFixed(0)}% funded</span>
-            {pending === 0 && (
-              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                <CircleCheck className="size-3.5" />
-                Fully funded
-              </span>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="funding">
+        <TabsList>
+          <TabsTrigger value="funding">Funding</TabsTrigger>
+          <TabsTrigger value="expenses">Expenses</TabsTrigger>
+        </TabsList>
 
-      <div className="flex flex-col gap-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm">
-              <Banknote className="size-4 text-muted-foreground" />
-              History · {timeline.length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <EventTimeline entries={timeline} />
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="funding" className="animate-rise mt-4 flex flex-col gap-3">
+          <Card>
+            <CardContent className="flex flex-col gap-2 pt-6">
+              <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-emerald-500 transition-all"
+                  style={{ width: `${fundedPct}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>{fundedPct.toFixed(0)}% funded</span>
+                {pending === 0 && (
+                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                    <CircleCheck className="size-3.5" />
+                    Fully funded
+                  </span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Banknote className="size-4 text-muted-foreground" />
+                History · {timeline.length}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EventTimeline entries={timeline} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="expenses" className="animate-rise mt-4 flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2">
+            <Card>
+              <CardHeader className="pb-2">
+                <p className="text-xs text-muted-foreground">Total spent</p>
+                <CardTitle className="text-xl tabular-nums">{formatCurrency(spent)}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <p className="text-xs text-muted-foreground">Balance remaining</p>
+                <CardTitle
+                  className={cn(
+                    "text-xl tabular-nums",
+                    balance < 0
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-emerald-600 dark:text-emerald-400",
+                  )}
+                >
+                  {formatCurrency(balance)}
+                </CardTitle>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Receipt className="size-4 text-muted-foreground" />
+                Expenses · {expenses.length}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {expenses.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                  No expenses recorded yet.
+                </p>
+              ) : (
+                <div className="flex flex-col divide-y divide-border">
+                  {[...expenses]
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .map((e) => (
+                      <div key={e.id} className="flex items-center justify-between gap-3 py-3">
+                        <div className="flex min-w-0 flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-[11px]">
+                              {e.category}
+                            </Badge>
+                            <span className="truncate text-sm font-medium text-foreground">
+                              {e.description}
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            Paid to {e.paidTo} · {formatDate(e.date)}
+                          </span>
+                        </div>
+                        <span className="shrink-0 text-sm font-medium tabular-nums text-foreground">
+                          {formatCurrency(e.amount)}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={contributeOpen} onOpenChange={setContributeOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -400,6 +486,16 @@ export default function EventDetailPage() {
             onSave={handleTopUp}
             onCancel={() => setTopUpOpen(false)}
           />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={expenseOpen} onOpenChange={setExpenseOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Record expense</DialogTitle>
+            <DialogDescription>Log money spent on {event.name}.</DialogDescription>
+          </DialogHeader>
+          <RecordExpenseForm onSave={handleRecordExpense} onCancel={() => setExpenseOpen(false)} />
         </DialogContent>
       </Dialog>
 
