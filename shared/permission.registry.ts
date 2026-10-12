@@ -104,6 +104,16 @@ export const Permission = Object.freeze({
   EventsViewAll: def('events.view_all', 'events', 'View all community events'),
   EventsViewOwn: def('events.view_own', 'events', 'View community events'),
   EventsManage: def('events.manage', 'events', 'Create and manage community events'),
+  MaintenanceViewAll: def(
+    'maintenance.view_all',
+    'maintenance',
+    'View the maintenance log across every flat and the society',
+  ),
+  MaintenanceManage: def(
+    'maintenance.manage',
+    'maintenance',
+    'Record a maintenance log entry for a flat or the society',
+  ),
 });
 
 export type PermissionKey = keyof typeof Permission;
