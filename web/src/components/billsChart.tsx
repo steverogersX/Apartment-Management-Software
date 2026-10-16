@@ -16,7 +16,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { billHistory, type BillMonth } from "@/lib/mockData";
+import { getBillHistory, type BillMonth } from "@/lib/mockData";
 
 const chartConfig: ChartConfig = {
   paid: { label: "Paid", color: "#10b981" },
@@ -42,7 +42,7 @@ function filterByRange(range: DateRange): BillMonth[] {
   if (!range.from) return [];
   const from = startOfMonth(range.from);
   const to = endOfMonth(range.to ?? range.from);
-  return billHistory.filter((m) => {
+  return getBillHistory().filter((m) => {
     const d = new Date(m.date);
     return d >= from && d <= to;
   });
@@ -54,7 +54,7 @@ export function BillsChart() {
 
   const data =
     selection.mode === "preset"
-      ? billHistory.slice(-selection.months)
+      ? getBillHistory().slice(-selection.months)
       : filterByRange(selection.range);
 
   const label =

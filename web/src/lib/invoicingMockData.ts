@@ -547,3 +547,56 @@ export const invoices: Invoice[] = [
     cancelledBy: null,
   },
 ];
+
+const JUNE_PAID_FLAT_IDS = new Set([
+  "flat-b405",
+  "flat-a601",
+  "flat-c307",
+  "flat-a402",
+  "flat-b201",
+  "flat-c410",
+]);
+
+function seededInvoice(
+  sequence: number,
+  seededFlatId: string,
+  month: "04" | "05" | "06",
+  monthName: string,
+  paid: boolean,
+): Invoice {
+  const lineItems: InvoiceLineItem[] = [
+    {
+      type: "Maintenance",
+      description: `Monthly maintenance - ${monthName} 2026`,
+      amount: 3500,
+      taxable: true,
+    },
+  ];
+  const draft: Invoice = {
+    id: `inv-2026-${month}-${seededFlatId}`,
+    invoiceNumber: `INV-2026-${month}-${String(sequence).padStart(3, "0")}`,
+    flatId: seededFlatId,
+    billingPeriod: `${monthName} 2026`,
+    issueDate: `2026-${month}-01T00:00:00+05:30`,
+    dueDate: `2026-${month}-10T00:00:00+05:30`,
+    lineItems,
+    gstRate: 0.18,
+    status: paid ? "Paid" : "Issued",
+    amountPaid: 0,
+    paidOn: paid ? `2026-${month}-06T10:00:00+05:30` : null,
+    remindersSent: 0,
+    lastReminderAt: null,
+    cancelledReason: null,
+    issuedBy: "Arvind Deshmukh",
+    cancelledBy: null,
+  };
+  return paid ? { ...draft, amountPaid: computeInvoiceTotals(draft).total } : draft;
+}
+
+flats.forEach((flat, index) => {
+  invoices.push(seededInvoice(index + 1, flat.id, "06", "June", JUNE_PAID_FLAT_IDS.has(flat.id)));
+});
+invoices.push(
+  seededInvoice(101, "flat-b304", "04", "April", true),
+  seededInvoice(102, "flat-b304", "05", "May", true),
+);

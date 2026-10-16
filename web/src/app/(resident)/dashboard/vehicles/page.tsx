@@ -35,8 +35,9 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  myParkingSlots,
-  myVehicles,
+  addMyVehicle,
+  getMyParkingSlots,
+  getMyVehicles,
   parkingRequests,
   parkingRules,
   type MyVehicle,
@@ -226,7 +227,7 @@ function RequestSlotDialog() {
                     <SelectValue placeholder="Select vehicle" />
                   </SelectTrigger>
                   <SelectContent>
-                    {myVehicles
+                    {getMyVehicles()
                       .filter((v) => !v.parkingSlot)
                       .map((v) => (
                         <SelectItem key={v.id} value={v.registrationNumber}>
@@ -276,7 +277,8 @@ function RequestSlotDialog() {
 }
 
 export default function VehiclesPage() {
-  const [vehicles, setVehicles] = React.useState<MyVehicle[]>(myVehicles);
+  const [vehicles, setVehicles] = React.useState<MyVehicle[]>(getMyVehicles);
+  const myParkingSlots = getMyParkingSlots();
   const allotted = myParkingSlots.filter((s) => s.status === "allotted").length;
 
   return (
@@ -293,7 +295,12 @@ export default function VehiclesPage() {
         </div>
         <div className="flex items-center gap-2">
           <RequestSlotDialog />
-          <AddVehicleDialog onAdd={(v) => setVehicles((prev) => [...prev, v])} />
+          <AddVehicleDialog
+            onAdd={(v) => {
+              addMyVehicle(v);
+              setVehicles(getMyVehicles());
+            }}
+          />
         </div>
       </div>
 

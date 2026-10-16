@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 import { MaintenanceDuesTable, type DuesRow } from "@/components/maintenanceDuesTable";
 import {
-  flatMaintenanceDues as flatMaintenanceDuesSource,
+  getFlatMaintenanceDues,
   societyCollectionSummary,
   type FlatMaintenanceDue,
 } from "@/lib/maintenanceMockData";
@@ -21,7 +21,7 @@ import { CountUp } from "@/components/countUp";
 export default function MaintenanceDuesPage() {
   const router = useRouter();
   const { has } = useAuth();
-  const [dues] = React.useState<FlatMaintenanceDue[]>(() => [...flatMaintenanceDuesSource]);
+  const [dues] = React.useState<FlatMaintenanceDue[]>(getFlatMaintenanceDues);
 
   const summary = React.useMemo(() => societyCollectionSummary(dues), [dues]);
 

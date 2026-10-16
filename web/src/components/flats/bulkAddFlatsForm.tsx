@@ -114,7 +114,6 @@ export function BulkAddFlatsForm() {
           type: row.type as FlatType,
           areaSqft: Number(row.areaSqft),
           occupancyStatus: "vacant",
-          maintenanceStatus: "due",
           currentResidentIds: [],
           owner: null,
         });

@@ -41,11 +41,11 @@ import {
   type Invoice,
 } from "@/lib/invoicingMockData";
 import { receipts, type RecordPaymentInput } from "@/lib/duesMockData";
-import { createVoucher } from "@/lib/vouchersMockData";
 import { RecordPaymentForm } from "@/components/dues/recordPaymentForm";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
+import { recordInvoicePayment } from "@/lib/billing";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
 
@@ -119,65 +119,9 @@ export default function InvoiceDetailPage() {
 
   function handleRecordPayment(values: RecordPaymentInput) {
     if (!invoice) return;
-    const total = computeInvoiceTotals(invoice).total;
-    const newAmountPaid = Math.min(total, invoice.amountPaid + values.amount);
-    const isFullyPaid = newAmountPaid >= total;
-    const next: Invoice = {
-      ...invoice,
-      amountPaid: newAmountPaid,
-      status: isFullyPaid ? ("Paid" as const) : ("Partially Paid" as const),
-      paidOn: isFullyPaid ? values.paymentDate : null,
-    };
-    const receipt = {
-      id: crypto.randomUUID(),
-      receiptNumber: `RCP-${new Date(values.paymentDate).getFullYear()}-${String(receipts.length + 1).padStart(4, "0")}`,
-      invoiceId: invoice.id,
-      flatId: invoice.flatId,
-      amount: values.amount,
-      paymentMode: values.paymentMode,
-      paymentDate: values.paymentDate,
-      remarks: values.remarks || null,
-      recordedBy: actor,
-    };
-    receipts.push(receipt as any);
-    setInvoiceReceipts((prev) => [...prev, receipt as any]);
-    syncState(next);
-    recordAudit({
-      module: "Invoicing",
-      entityType: "Invoice",
-      entityId: invoice.id,
-      entityLabel: invoice.invoiceNumber,
-      action: "Payment Recorded",
-      performedBy: actor,
-      details: `${formatCurrency(values.amount)} via ${values.paymentMode} → ${next.status}`,
-    });
-    const voucher = createVoucher({
-      type: "Receipt",
-      date: values.paymentDate,
-      narration: `Payment received for ${invoice.invoiceNumber}`,
-      debitAccountId: values.paymentMode === "Cash" ? "la-cash" : "la-bank",
-      creditAccountId: "la-maint-inc",
-      amount: values.amount,
-      status: "Posted",
-      sourceModule: "Dues and Receipts",
-      sourceRefId: receipt.id,
-      createdBy: actor,
-      postedBy: actor,
-      postedAt: values.paymentDate,
-    });
-    recordAudit({
-      module: "Vouchers",
-      entityType: "Voucher",
-      entityId: voucher.id,
-      entityLabel: voucher.voucherNumber,
-      action: "Create",
-      performedBy: actor,
-      details: `Auto-generated from receipt ${receipt.receiptNumber}`,
-    });
-    if (isFullyPaid && flat) {
-      const fIdx = flats.findIndex((f) => f.id === flat.id);
-      if (fIdx !== -1) flats[fIdx].maintenanceStatus = "paid";
-    }
+    const result = recordInvoicePayment(invoice, values, actor);
+    setInvoiceReceipts((prev) => [...prev, result.receipt]);
+    setInvoice({ ...result.invoice });
     setPaymentOpen(false);
     toast({ title: "Payment recorded" });
   }

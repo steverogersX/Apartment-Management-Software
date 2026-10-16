@@ -126,3 +126,15 @@ export const receipts: Receipt[] = [
     recordedBy: "Suresh Iyer",
   },
 ];
+
+for (const invoice of invoices) {
+  if (invoice.status !== "Paid" || receipts.some((r) => r.invoiceId === invoice.id)) continue;
+  receipts.push(
+    receiptFor(
+      invoice.id,
+      computeInvoiceTotals(invoice).total,
+      "UPI",
+      invoice.paidOn ?? invoice.dueDate,
+    ),
+  );
+}
