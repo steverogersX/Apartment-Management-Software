@@ -24,7 +24,7 @@ import { Label } from "@/components/ui/label";
 import { SocietyLogo } from "@/components/societyLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useNow } from "@/hooks/useNow";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { currentFlat } from "@/lib/mockData";
 import { sessions as initialSessions } from "@/lib/sessionsMockData";
 import { useToast } from "@/components/ui/toast";
@@ -123,10 +123,7 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <Avatar size="lg">
-            <AvatarImage
-              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(user?.id ?? name)}`}
-              alt={name}
-            />
+            <AvatarImage src={avatarUrlForName(user?.id ?? name)} alt={name} />
             <AvatarFallback
               className="text-base font-semibold text-white"
               style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

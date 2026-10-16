@@ -6,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Bike, Car, ChevronRight, Home, Plus, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,6 +30,7 @@ import {
   type FlatOccupancyStatus,
   type FlatRecord,
   type FlatVehicleEntry,
+  getTowers,
 } from "@/lib/flatsMockData";
 import { duesForFlat, maintenanceStatusForFlat } from "@/lib/maintenanceMockData";
 import { residents } from "@/lib/residentsMockData";
@@ -138,7 +139,7 @@ function FlatVehiclesCell({ vehicles }: { vehicles: FlatVehicleEntry[] }) {
   );
 }
 
-const towerOptions = Array.from(new Set(flats.map((f) => f.tower))).sort();
+const towerOptions = getTowers();
 
 function FlatSubRow({ flat }: { flat: FlatRecord }) {
   const router = useRouter();
@@ -266,10 +267,7 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
                   <TableCell className="px-4 py-2">
                     <div className="flex items-center gap-2.5">
                       <Avatar size="sm">
-                        <AvatarImage
-                          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(r.id)}`}
-                          alt={r.name}
-                        />
+                        <AvatarImage src={avatarUrlForName(r.id)} alt={r.name} />
                         <AvatarFallback
                           className="text-[10px] font-semibold text-white"
                           style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

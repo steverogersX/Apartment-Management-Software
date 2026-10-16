@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flats, flatVehicleHistory } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
-import { formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { StatusIcon } from "@/components/statusIcon";
 
 const OCCUPANCY_LABEL: Record<string, string> = {
@@ -69,10 +69,7 @@ export default function ResidentDetailPage() {
       <Card>
         <CardContent className="flex gap-5 p-6">
           <Avatar className="size-20 shrink-0 text-lg">
-            <AvatarImage
-              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(resident.id)}`}
-              alt={resident.name}
-            />
+            <AvatarImage src={avatarUrlForName(resident.id)} alt={resident.name} />
             <AvatarFallback
               className="text-lg font-semibold text-white"
               style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

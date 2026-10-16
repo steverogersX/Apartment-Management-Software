@@ -19,20 +19,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { FORUM_CATEGORIES, forumThreads } from "@/lib/forumMockData";
 import { useAuth } from "@/hooks/useAuth";
-import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { avatarUrlForName, getInitials, gradientForName, formatTimeAgo } from "@/lib/utils";
 import { PageIcon } from "@/components/pageIcon";
-
-function formatRelativeTime(iso: string) {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(diffMs / 60000);
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-}
 
 export default function DiscussionForumPage() {
   const router = useRouter();
@@ -192,7 +180,7 @@ export default function DiscussionForumPage() {
                       <MessageCircle className="size-3.5" />
                       {thread.replyCount}
                     </span>
-                    <span>{formatRelativeTime(thread.lastActivityAt)}</span>
+                    <span>{formatTimeAgo(thread.lastActivityAt)}</span>
                   </div>
                   {/* mobile fallback */}
                   <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground sm:hidden">

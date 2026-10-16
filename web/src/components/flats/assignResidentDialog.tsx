@@ -28,10 +28,10 @@ import {
   residents,
   type ResidentOccupancyType,
 } from "@/lib/residentsMockData";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 
 function mascotUrl(seed: string) {
-  return `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
+  return avatarUrlForName(seed);
 }
 
 function ResidentAvatar({ name, seed }: { name: string; seed: string }) {

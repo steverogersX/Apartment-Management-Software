@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DoodleHouse } from "@/components/icons/doodleHouse";
@@ -217,10 +217,7 @@ export function AllResidentsTable() {
               className="flex items-center gap-2.5 rounded-md px-1 py-0.5 -mx-1 hover:bg-muted/50 transition-colors"
             >
               <Avatar size="sm">
-                <AvatarImage
-                  src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`}
-                  alt={row.original.name}
-                />
+                <AvatarImage src={avatarUrlForName(row.original.id)} alt={row.original.name} />
                 <AvatarFallback
                   className="text-[10px] font-semibold text-white"
                   style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

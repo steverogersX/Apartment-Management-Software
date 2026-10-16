@@ -21,7 +21,7 @@ import {
   filesToAttachments,
   imageFilesFromClipboard,
 } from "@/components/fileDropzone";
-import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { avatarUrlForName, getInitials, gradientForName, formatTimeAgo } from "@/lib/utils";
 import type { Attachment } from "@/lib/attachmentTypes";
 import type { ForumReply } from "@/lib/forumMockData";
 
@@ -50,18 +50,6 @@ export function buildReplyTree(replies: ForumReply[]): ReplyNode[] {
 
 function countDescendants(node: ReplyNode): number {
   return node.children.reduce((sum, c) => sum + 1 + countDescendants(c), 0);
-}
-
-function formatRelativeTime(iso: string) {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(diffMs / 60000);
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
 function iconForAttachment(type: Attachment["type"]) {
@@ -236,9 +224,7 @@ function ReplyNodeItem({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-foreground">{node.authorName}</span>
           <span className="text-xs text-muted-foreground">· {node.authorFlat}</span>
-          <span className="text-xs text-muted-foreground">
-            · {formatRelativeTime(node.postedAt)}
-          </span>
+          <span className="text-xs text-muted-foreground">· {formatTimeAgo(node.postedAt)}</span>
           {hasChildren && collapsed && (
             <button
               type="button"

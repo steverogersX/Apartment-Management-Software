@@ -64,3 +64,43 @@ export function formatDateTime(date: Date | string) {
     minute: "2-digit",
   });
 }
+
+/** "5 minutes ago" / "Yesterday, 4:10 pm" / full date-time — used by the activity timelines. */
+export function formatRelativeTime(iso: string) {
+  const now = new Date();
+  const date = new Date(iso);
+  const diff = now.getTime() - date.getTime();
+  if (diff < 60 * 1000) return "Just now";
+  if (diff < 60 * 60 * 1000) {
+    const m = Math.floor(diff / (60 * 1000));
+    return `${m} minute${m === 1 ? "" : "s"} ago`;
+  }
+  if (diff < 24 * 60 * 60 * 1000) {
+    const h = Math.floor(diff / (60 * 60 * 1000));
+    return `${h} hour${h === 1 ? "" : "s"} ago`;
+  }
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday =
+    date.getDate() === yesterday.getDate() &&
+    date.getMonth() === yesterday.getMonth() &&
+    date.getFullYear() === yesterday.getFullYear();
+  if (isYesterday) {
+    const time = date.toLocaleString("en-IN", { hour: "numeric", minute: "2-digit" });
+    return `Yesterday, ${time}`;
+  }
+  return formatDateTime(iso);
+}
+
+/** Compact "5m ago" / "3h ago" / "12d ago" / "4 Jun" — used by the forum. */
+export function formatTimeAgo(iso: string) {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(diffMs / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+}

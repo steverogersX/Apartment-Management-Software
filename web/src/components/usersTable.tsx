@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import {
   roleOptions,
   users as initialUsers,
@@ -67,10 +67,7 @@ export function UsersTable() {
           return (
             <div className="flex items-center gap-2.5">
               <Avatar size="default">
-                <AvatarImage
-                  src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`}
-                  alt={row.original.name}
-                />
+                <AvatarImage src={avatarUrlForName(row.original.id)} alt={row.original.name} />
                 <AvatarFallback
                   className="text-xs font-semibold text-white"
                   style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

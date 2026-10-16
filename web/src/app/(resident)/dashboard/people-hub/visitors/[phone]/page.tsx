@@ -3,17 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import {
-  ArrowLeft,
-  Ban,
-  CalendarDays,
-  Check,
-  Clock,
-  Home,
-  Phone,
-  ShieldCheck,
-  X,
-} from "lucide-react";
+import { ArrowLeft, Ban, CalendarDays, Check, Home, Phone, ShieldCheck, X } from "lucide-react";
 
 import { useBreadcrumbTitle } from "@/components/breadcrumbs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { VisitorPass } from "@/components/visitorPass";
@@ -39,7 +28,7 @@ import {
   type SocietyVisitor,
   type VisitorProfile,
 } from "@/lib/visitorsMockData";
-import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { cn, formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 
 function elapsedSince(iso: string) {
@@ -239,10 +228,7 @@ export default function VisitorDetailPage() {
             <CardContent className="flex flex-col gap-4 p-6">
               <div className="flex gap-4">
                 <Avatar className="size-16 shrink-0">
-                  <AvatarImage
-                    src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(profile.phone)}`}
-                    alt={profile.name}
-                  />
+                  <AvatarImage src={avatarUrlForName(profile.phone)} alt={profile.name} />
                   <AvatarFallback
                     className="text-sm font-semibold text-white"
                     style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -9,7 +8,7 @@ import { RolePermissionForm } from "@/components/roles/rolePermissionForm";
 import { useBreadcrumbTitle } from "@/components/breadcrumbs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { roles } from "@/lib/rolesMockData";
 import { users } from "@/lib/usersMockData";
 import type { UserAccountStatus } from "@/lib/usersMockData";
@@ -83,10 +82,7 @@ export default function EditRolePage() {
                   return (
                     <div key={user.id} className="flex items-center gap-3">
                       <Avatar size="sm">
-                        <AvatarImage
-                          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(user.id)}`}
-                          alt={user.name}
-                        />
+                        <AvatarImage src={avatarUrlForName(user.id)} alt={user.name} />
                         <AvatarFallback
                           className="text-[10px] font-semibold text-white"
                           style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

@@ -1,6 +1,6 @@
 "use client";
 
-import { House, UploadCloud } from "lucide-react";
+import { Home, UploadCloud } from "lucide-react";
 
 import { CreateFlatForm } from "@/components/flats/createFlatForm";
 import { BulkAddFlatsForm } from "@/components/flats/bulkAddFlatsForm";
@@ -19,7 +19,7 @@ export default function NewFlatPage() {
       <Tabs defaultValue="single">
         <TabsList>
           <TabsTrigger value="single" className="gap-1.5">
-            <House className="size-3.5" />
+            <Home className="size-3.5" />
             Single flat
           </TabsTrigger>
           <TabsTrigger value="bulk" className="gap-1.5">
