@@ -21,7 +21,6 @@ import {
   ChartColumn,
   CalendarDays,
   FolderOpen,
-  Vote,
   ClipboardList,
   Settings,
   ChartPie,
@@ -142,14 +141,11 @@ export const adminNavGroups: AdminNavGroup[] = [
       },
       // Any resident can view and vote in opinion polls — the page itself only gates the
       // "New Poll" button on PollsCreate, so the nav entry stays ungated like Notice Board.
-      { label: "Opinion Polls", icon: ChartColumn, href: "/dashboard/opinion-polls" },
+      { label: "Polls & Elections", icon: ChartColumn, href: "/dashboard/opinion-polls" },
       // Meetings/Documents are readable by every resident — each page only gates its own
       // "Schedule"/"Upload" button on MeetingsSchedule/DocumentsUpload, so the nav stays ungated.
       { label: "Meetings", icon: CalendarDays, href: "/dashboard/meetings" },
       { label: "Documents", icon: FolderOpen, href: "/dashboard/documents" },
-      // Any resident can view elections and vote — the page itself only gates the
-      // "New Election" button on ElectionsManage, so the nav entry stays ungated.
-      { label: "Election Polls", icon: Vote, href: "/dashboard/election-polls" },
     ],
   },
   {

@@ -11,6 +11,7 @@ import { elections, getElectionStatus } from "@/lib/electionsMockData";
 import { flats } from "@/lib/flatsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { PageIcon } from "@/components/pageIcon";
+import { PollsSwitcher } from "@/components/polls/pollsSwitcher";
 
 export default function ElectionPollsPage() {
   const { has } = useAuth();
@@ -18,6 +19,7 @@ export default function ElectionPollsPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
+      <PollsSwitcher />
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">

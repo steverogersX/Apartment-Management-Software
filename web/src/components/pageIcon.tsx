@@ -11,6 +11,7 @@ import {
   Ticket,
   UserCheck,
   UserRound,
+  Vote,
   Wrench,
 } from "lucide-react";
 
@@ -26,6 +27,7 @@ const RESIDENT_PAGE_ICONS: Record<string, ComponentType<{ className?: string }>>
   "/dashboard/accounts/events": PartyPopper,
   "/dashboard/amenities": Sofa,
   "/dashboard/profile": UserRound,
+  "/dashboard/election-polls": Vote,
 };
 
 const PAGE_ICONS: Record<string, ComponentType<{ className?: string }>> = {
