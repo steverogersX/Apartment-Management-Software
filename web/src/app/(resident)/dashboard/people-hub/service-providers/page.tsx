@@ -12,7 +12,8 @@ export default function ServiceProvidersPage() {
           Service Providers
         </h1>
         <p className="text-sm text-muted-foreground">
-          Trusted vendors and service contacts for the society.
+          Daily help and visiting service providers linked to residents&apos; flats. Society staff
+          are under Staff; purchase vendors are under Accounts → Purchasing.
         </p>
       </div>
       <ServiceProvidersTable />
