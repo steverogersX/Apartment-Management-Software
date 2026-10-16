@@ -31,12 +31,14 @@ export function MaintenanceTable({
   toolbarActions,
   showPageSize = false,
   enableGrouping = false,
+  onRowClick,
 }: {
   data: MaintenanceRow[];
   title?: string;
   toolbarActions?: React.ReactNode;
   showPageSize?: boolean;
   enableGrouping?: boolean;
+  onRowClick?: (row: MaintenanceRow) => void;
 }) {
   const source = React.useMemo(
     () => dataProp.map((row) => ({ ...row, placeLabel: row.placeLabel ?? placeLabelFor(row) })),
@@ -233,6 +235,7 @@ export function MaintenanceTable({
       itemLabel="entry"
       emptyMessage="No maintenance recorded yet."
       initialSorting={[{ id: "performedOn", desc: true }]}
+      onRowClick={onRowClick}
     />
   );
 }
