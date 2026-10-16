@@ -13,19 +13,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { addParkingSlotSchema, type AddParkingSlotInput } from "@/lib/parkingMockData";
+import {
+  addParkingSlotSchema,
+  PARKING_BAY_TYPES,
+  PARKING_BAYS,
+  type AddParkingSlotInput,
+  type ParkingBayType,
+} from "@/lib/parkingMockData";
+import { fieldError } from "@/lib/fieldError";
 
 const NEW_ZONE = "__new__";
-
-function fieldError(errors: unknown[]): string | undefined {
-  if (errors.length === 0) return undefined;
-  const issue = errors[0];
-  if (typeof issue === "string") return issue;
-  if (issue && typeof issue === "object" && "message" in issue) {
-    return String((issue as { message: unknown }).message);
-  }
-  return String(issue);
-}
 
 export function CreateParkingSlotForm({
   onSave,
@@ -62,7 +59,7 @@ export function CreateParkingSlotForm({
     defaultValues: {
       slotNumber: "",
       zone: existingZones[0] ?? "",
-      capacity: 1,
+      bay: "car",
     } as AddParkingSlotInput,
     validators: { onChange: schema },
     onSubmit: async ({ value }) => {
@@ -141,26 +138,27 @@ export function CreateParkingSlotForm({
         )}
       </form.Field>
 
-      <form.Field name="capacity">
+      <form.Field name="bay">
         {(field) => (
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="slot-capacity">Capacity (vehicles)</Label>
+            <Label htmlFor="slot-bay">Bay type</Label>
             <Select
-              value={String(field.state.value)}
-              onValueChange={(v) => field.handleChange(Number(v ?? 1))}
+              value={field.state.value}
+              onValueChange={(v) => field.handleChange((v ?? "car") as ParkingBayType)}
             >
-              <SelectTrigger id="slot-capacity" className="w-full">
-                <SelectValue />
+              <SelectTrigger id="slot-bay" className="w-full">
+                <SelectValue>{(value: ParkingBayType) => PARKING_BAYS[value].label}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">1 — standard slot</SelectItem>
-                <SelectItem value="2">2 — fits a car + bike/cycle, or two small cars</SelectItem>
-                <SelectItem value="3">3 — large slot</SelectItem>
-                <SelectItem value="4">4 — oversized slot</SelectItem>
+                {PARKING_BAY_TYPES.map((bay) => (
+                  <SelectItem key={bay} value={bay}>
+                    {PARKING_BAYS[bay].label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
-              How many vehicles physically fit — any mix of car, two-wheeler, or cycle.
+              Fits {PARKING_BAYS[field.state.value].hint}.
             </p>
             {fieldError(field.state.meta.errors) && (
               <p className="text-xs text-destructive">{fieldError(field.state.meta.errors)}</p>

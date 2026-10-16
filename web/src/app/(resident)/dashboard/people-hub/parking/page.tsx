@@ -1,31 +1,36 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
 import {
+  ArrowRight,
   Bike,
   Car,
   CircleMinus,
   CirclePlus,
+  History,
   Home,
+  KeyRound,
   LayoutGrid,
+  LogOut,
   Motorbike,
   ParkingSquare,
   Plus,
   Search,
   SquareParking,
   Table2,
-  UserRound,
+  TriangleAlert,
   X,
 } from "lucide-react";
 
-import { avatarUrlForName, cn, formatDateTime, getInitials, gradientForName } from "@/lib/utils";
+import { avatarUrlForName, cn, formatDate, formatDateTime, getInitials } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
+import { DataTable } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
   Dialog,
@@ -53,22 +58,27 @@ import {
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { CreateParkingSlotForm } from "@/components/parking/createParkingSlotForm";
-import { flats, flatVehicleHistory } from "@/lib/flatsMockData";
+import { flats, flatVehicleHistory, type FlatVehicleEntry } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import {
+  PARKING_BAYS,
+  PARKING_VEHICLE_TYPES,
   parkingSlotEvents,
   parkingSlots,
+  roomFor,
   type AddParkingSlotInput,
-  type ParkingSlotAssignment,
+  type ParkedVehicle,
+  type ParkingSlotAction,
   type ParkingSlotEvent,
   type ParkingSlotRecord,
   type ParkingVehicleType,
 } from "@/lib/parkingMockData";
 import { useToast } from "@/components/ui/toast";
 import { PageIcon } from "@/components/pageIcon";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
-type OccupancyStatus = "full" | "partial" | "vacant";
-type StatusFilter = "all" | "occupied" | "vacant";
+type StatusFilter = "all" | "allotted" | "available";
 type TypeFilter = "all" | ParkingVehicleType;
 
 const VEHICLE_ICON: Record<ParkingVehicleType, typeof Car> = {
@@ -91,67 +101,97 @@ const VEHICLE_ACCENT: Record<ParkingVehicleType, string> = {
     "border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-900 dark:bg-teal-950/50 dark:text-teal-300",
 };
 
-function occupancyOf(slot: ParkingSlotRecord): OccupancyStatus {
-  if (slot.assignments.length === 0) return "vacant";
-  if (slot.assignments.length >= slot.capacity) return "full";
-  return "partial";
-}
-
-type HubSlotRow = {
-  id: string;
-  slotNumber: string;
-  zone: string;
-  capacity: number;
-  occupancy: OccupancyStatus;
-  vehicleTypes: ParkingVehicleType[];
-  vehicles: { type: ParkingVehicleType; reg: string | null }[];
-  flatLabel: string;
+const EVENT_META: Record<ParkingSlotAction, { icon: typeof Car; label: string; tone: string }> = {
+  allotted: {
+    icon: KeyRound,
+    label: "Allotted to",
+    tone: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400",
+  },
+  released: {
+    icon: LogOut,
+    label: "Released by",
+    tone: "bg-muted text-muted-foreground",
+  },
+  vehicle_added: {
+    icon: CirclePlus,
+    label: "Parked",
+    tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+  },
+  vehicle_removed: {
+    icon: CircleMinus,
+    label: "Removed",
+    tone: "bg-muted text-muted-foreground",
+  },
 };
 
-function toRow(slot: ParkingSlotRecord): HubSlotRow {
-  return {
-    id: slot.id,
-    slotNumber: slot.slotNumber,
-    zone: slot.zone,
-    capacity: slot.capacity,
-    occupancy: occupancyOf(slot),
-    vehicleTypes: slot.assignments.map((a) => a.vehicleType),
-    vehicles: slot.assignments.map((a) => ({ type: a.vehicleType, reg: a.vehicleReg })),
-    flatLabel:
-      slot.assignments.length === 0
-        ? "—"
-        : [...new Set(slot.assignments.map((a) => a.flatLabel))].join(", "),
-  };
-}
+const flatById = new Map(flats.map((f) => [f.id, f]));
 
-const flatLabelById = new Map(flats.map((f) => [f.id, `${f.tower}-${f.flatNumber}`]));
+function flatLabelFor(flatId: string) {
+  const flat = flatById.get(flatId);
+  return flat ? `${flat.tower}-${flat.flatNumber}` : flatId;
+}
 
 function residentNameForFlat(flatId: string): string {
   const resident = residents.find((r) => r.flatId === flatId);
   if (resident) return resident.name;
-  const flat = flats.find((f) => f.id === flatId);
-  return flat?.owner?.name ?? "Resident";
+  return flatById.get(flatId)?.owner?.name ?? "Resident";
 }
 
-function OccupancyBadge({ status }: { status: OccupancyStatus }) {
-  if (status === "full") {
-    return (
-      <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
-        Full
-      </Badge>
-    );
-  }
-  if (status === "partial") {
-    return (
-      <Badge className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-400">
-        Partial
-      </Badge>
-    );
-  }
+function vehicleName(v: Pick<ParkedVehicle, "type" | "reg">) {
+  return v.reg ?? VEHICLE_LABEL[v.type];
+}
+
+function VehicleChip({ vehicle }: { vehicle: Pick<ParkedVehicle, "type" | "reg"> }) {
+  const Icon = VEHICLE_ICON[vehicle.type];
   return (
-    <Badge variant="outline" className="text-muted-foreground">
-      Vacant
+    <span
+      className={cn(
+        "flex w-fit items-center gap-1 rounded-md border px-1.5 py-0.5",
+        VEHICLE_ACCENT[vehicle.type],
+      )}
+    >
+      <Icon className="size-3" />
+      <span className="font-mono text-[11px] font-bold tabular-nums">{vehicleName(vehicle)}</span>
+    </span>
+  );
+}
+
+function StatusBadge({ slot }: { slot: ParkingSlotRecord }) {
+  return slot.allotment ? (
+    <Badge className="border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-400">
+      Allotted
     </Badge>
+  ) : (
+    <Badge className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-400">
+      Available
+    </Badge>
+  );
+}
+
+function SpaceMeter({ slot }: { slot: ParkingSlotRecord }) {
+  const fits = PARKING_BAYS[slot.bay].fits;
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {PARKING_VEHICLE_TYPES.filter((t) => fits[t] > 0).map((t) => {
+        const Icon = VEHICLE_ICON[t];
+        const used = fits[t] - roomFor(slot, t);
+        return (
+          <span
+            key={t}
+            className={cn(
+              "flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs",
+              used > 0 ? VEHICLE_ACCENT[t] : "border-dashed border-border text-muted-foreground",
+            )}
+          >
+            <Icon className="size-3.5" />
+            {VEHICLE_LABEL[t]}
+            <span className="font-semibold tabular-nums">
+              {used}/{fits[t]}
+            </span>
+          </span>
+        );
+      })}
+    </div>
   );
 }
 
@@ -164,63 +204,59 @@ function SlotTile({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const status = occupancyOf(slot);
-  const types = [...new Set(slot.assignments.map((a) => a.vehicleType))];
-  const vehicleTitle = slot.assignments
-    .map((a) => `${VEHICLE_LABEL[a.vehicleType]}: ${a.vehicleReg ?? "no reg"}`)
-    .join(" · ");
+  const allotted = slot.allotment !== null;
   return (
     <button
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      title={vehicleTitle || undefined}
       className={cn(
-        "group relative flex min-h-[5.5rem] cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border px-2 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
-        status === "full" &&
-          "border-emerald-300 bg-emerald-50 hover:border-emerald-400 hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:hover:bg-emerald-950/70",
-        status === "partial" &&
-          "border-amber-300 bg-amber-50 hover:border-amber-400 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950/40 dark:hover:bg-amber-950/70",
-        status === "vacant" &&
-          "border-dashed border-border bg-muted/30 hover:border-foreground/30 hover:bg-muted",
+        "flex min-h-[6.5rem] cursor-pointer flex-col gap-1.5 rounded-lg border p-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+        allotted
+          ? "border-border bg-card hover:border-foreground/30 hover:bg-muted/40"
+          : "border-dashed border-emerald-300 bg-emerald-50/50 hover:border-emerald-400 hover:bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40",
         selected && "ring-2 ring-ring ring-offset-2 ring-offset-background",
       )}
     >
-      <span className="absolute top-1.5 right-1.5 flex items-center gap-1">
-        {types.length === 0 ? (
-          <SquareParking className="size-3 text-muted-foreground/60 group-hover:text-muted-foreground" />
-        ) : (
-          types.map((t) => {
-            const Icon = VEHICLE_ICON[t];
-            return (
-              <span
-                key={t}
-                className={cn(
-                  "flex size-4 items-center justify-center rounded-sm border",
-                  VEHICLE_ACCENT[t],
-                )}
-              >
-                <Icon className="size-2.5" />
-              </span>
-            );
-          })
-        )}
+      <span className="flex items-center justify-between gap-1">
+        <span className="font-mono text-sm font-semibold text-foreground">{slot.slotNumber}</span>
+        <span className="truncate text-[10px] text-muted-foreground">
+          {PARKING_BAYS[slot.bay].label}
+        </span>
       </span>
-      <span className="font-mono text-sm font-semibold text-foreground">{slot.slotNumber}</span>
-      <span
-        className={cn(
-          "max-w-full truncate text-[11px] font-medium",
-          status === "full"
-            ? "text-emerald-700 dark:text-emerald-400"
-            : status === "partial"
-              ? "text-amber-700 dark:text-amber-400"
-              : "text-muted-foreground",
-        )}
-      >
-        {slot.assignments.length === 0
-          ? "Vacant"
-          : `${slot.assignments.length}/${slot.capacity} · ${[...new Set(slot.assignments.map((a) => a.flatLabel))].join(", ")}`}
-      </span>
+      {slot.allotment ? (
+        <>
+          <span className="flex items-center gap-1 text-xs font-medium text-foreground">
+            <Home className="size-3 shrink-0 text-muted-foreground" />
+            {slot.allotment.flatLabel}
+          </span>
+          <span className="mt-auto flex flex-wrap gap-1">
+            {slot.vehicles.length === 0 ? (
+              <span className="text-[11px] text-muted-foreground">No vehicles yet</span>
+            ) : (
+              slot.vehicles.map((v) => {
+                const Icon = VEHICLE_ICON[v.type];
+                return (
+                  <span
+                    key={v.id}
+                    title={`${VEHICLE_LABEL[v.type]} · ${vehicleName(v)}`}
+                    className={cn(
+                      "flex size-5 items-center justify-center rounded border",
+                      VEHICLE_ACCENT[v.type],
+                    )}
+                  >
+                    <Icon className="size-3" />
+                  </span>
+                );
+              })
+            )}
+          </span>
+        </>
+      ) : (
+        <span className="mt-auto text-xs font-medium text-emerald-700 dark:text-emerald-400">
+          Available
+        </span>
+      )}
     </button>
   );
 }
@@ -236,8 +272,8 @@ function SlotTimeline({ events }: { events: ParkingSlotEvent[] }) {
   return (
     <div className="flex flex-col">
       {events.map((event, index) => {
-        const assigned = event.action === "assigned";
-        const Icon = assigned ? CirclePlus : CircleMinus;
+        const meta = EVENT_META[event.action];
+        const Icon = meta.icon;
         const isLast = index === events.length - 1;
         return (
           <div key={event.id} className="flex gap-3">
@@ -245,9 +281,7 @@ function SlotTimeline({ events }: { events: ParkingSlotEvent[] }) {
               <span
                 className={cn(
                   "flex size-6 shrink-0 items-center justify-center rounded-full",
-                  assigned
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                    : "bg-muted text-muted-foreground",
+                  meta.tone,
                 )}
               >
                 <Icon className="size-3.5" />
@@ -256,20 +290,17 @@ function SlotTimeline({ events }: { events: ParkingSlotEvent[] }) {
             </div>
             <div className={cn("flex flex-col gap-0.5", isLast ? "pb-0.5" : "pb-5")}>
               <p className="pt-0.5 text-sm font-medium text-foreground">
-                {assigned ? "Assigned" : "Freed up"}{" "}
+                {meta.label}{" "}
                 <span className="font-normal text-muted-foreground">
-                  {assigned ? "to" : "from"} {event.flatLabel}
+                  {event.vehicle
+                    ? `${vehicleName(event.vehicle)} · ${VEHICLE_LABEL[event.vehicle.type]}`
+                    : event.flatLabel}
                 </span>
-                {event.vehicleType && (
-                  <span className="font-normal text-muted-foreground">
-                    {" "}
-                    · {VEHICLE_LABEL[event.vehicleType]}
-                  </span>
-                )}
               </p>
               <p className="text-xs text-muted-foreground">
-                <span className="font-mono tabular-nums">{event.vehicleReg}</span> ·{" "}
-                {event.residentName}
+                {event.vehicle
+                  ? `${event.vehicle.ownerName} · ${event.flatLabel}`
+                  : event.personName}
               </p>
               <p className="text-[11px] text-muted-foreground/80">
                 {formatDateTime(event.timestamp)} · by {event.actorName}
@@ -282,152 +313,349 @@ function SlotTimeline({ events }: { events: ParkingSlotEvent[] }) {
   );
 }
 
-function AssignForm({
-  slot,
-  assignedRegs,
-  onAssign,
+function AllotForm({
+  slots,
+  onAllot,
+  onSelectSlot,
 }: {
-  slot: ParkingSlotRecord;
-  assignedRegs: Set<string>;
-  onAssign: (
-    flatId: string,
-    flatLabel: string,
-    vehicleType: ParkingVehicleType,
-    vehicleReg: string | null,
-    residentName: string,
-  ) => void;
+  slots: ParkingSlotRecord[];
+  onAllot: (flatId: string) => void;
+  onSelectSlot: (slotId: string) => void;
 }) {
-  const [flatId, setFlatId] = React.useState<string>("");
-  const [vehicleType, setVehicleType] = React.useState<ParkingVehicleType>("car");
-  const [vehicleReg, setVehicleReg] = React.useState<string>("");
-
-  const vehiclesForFlat = React.useMemo(() => {
-    if (!flatId || vehicleType === "cycle") return [];
-    const seen = new Set<string>();
-    return flatVehicleHistory.filter((v) => {
-      if (v.flatId !== flatId || v.type !== vehicleType || seen.has(v.registrationNumber))
-        return false;
-      seen.add(v.registrationNumber);
-      return !assignedRegs.has(v.registrationNumber);
-    });
-  }, [flatId, vehicleType, assignedRegs]);
-
-  const canAssign = vehicleType === "cycle" ? !!flatId : !!flatId && !!vehicleReg;
+  const [flatId, setFlatId] = React.useState("");
+  const existing = flatId ? slots.filter((s) => s.allotment?.flatId === flatId) : [];
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`${slot.id}-flat`} className="text-xs text-muted-foreground">
+        <Label htmlFor="allot-flat" className="text-xs text-muted-foreground">
           Flat
         </Label>
-        <FlatSelect
-          id={`${slot.id}-flat`}
-          flats={flats}
-          value={flatId}
-          onValueChange={(value) => {
-            setFlatId(value);
-            setVehicleReg("");
-          }}
-        />
+        <FlatSelect id="allot-flat" flats={flats} value={flatId} onValueChange={setFlatId} />
       </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-xs text-muted-foreground">Vehicle type</Label>
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-          {(["car", "two_wheeler", "cycle"] as ParkingVehicleType[]).map((t) => (
-            <Button
-              key={t}
+      {existing.length > 0 && (
+        <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+          {flatLabelFor(flatId)} already has
+          {existing.map((s) => (
+            <button
+              key={s.id}
               type="button"
-              variant={vehicleType === t ? "secondary" : "ghost"}
-              size="sm"
-              className="flex-1 gap-1.5"
-              onClick={() => {
-                setVehicleType(t);
-                setVehicleReg("");
-              }}
+              onClick={() => onSelectSlot(s.id)}
+              className="font-mono font-semibold text-foreground underline-offset-2 hover:underline"
             >
-              {VEHICLE_LABEL[t]}
-            </Button>
+              {s.slotNumber}
+            </button>
           ))}
-        </div>
-      </div>
-
-      {vehicleType === "cycle" ? (
-        <p className="text-xs text-muted-foreground">
-          Cycles aren't registered vehicles — this just reserves the space for{" "}
-          {flatId ? residentNameForFlat(flatId) : "the resident"}.
         </p>
-      ) : (
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor={`${slot.id}-vehicle`} className="text-xs text-muted-foreground">
-            Vehicle
-          </Label>
-          <Select
-            value={vehicleReg}
-            onValueChange={(value) => setVehicleReg(value ?? "")}
-            disabled={!flatId || vehiclesForFlat.length === 0}
-          >
-            <SelectTrigger id={`${slot.id}-vehicle`} className="w-full">
-              <SelectValue placeholder={flatId ? "Select a vehicle" : "Select a flat first"}>
-                {(value: string) => {
-                  const v = vehiclesForFlat.find((veh) => veh.registrationNumber === value);
-                  return v ? `${v.registrationNumber} · ${v.make} ${v.model}` : "Select a vehicle";
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {vehiclesForFlat.map((v) => (
-                <SelectItem key={v.registrationNumber} value={v.registrationNumber}>
-                  {v.registrationNumber} · {v.make} {v.model}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {flatId && vehiclesForFlat.length === 0 && (
-            <p className="text-xs text-muted-foreground">
-              Every {VEHICLE_LABEL[vehicleType].toLowerCase()} for this flat is already parked
-              elsewhere, or none are registered.
-            </p>
-          )}
-        </div>
       )}
-
-      <Button
-        size="sm"
-        className="gap-1.5"
-        disabled={!canAssign}
-        onClick={() => {
-          if (vehicleType === "cycle") {
-            onAssign(
-              flatId,
-              flatLabelById.get(flatId) ?? flatId,
-              "cycle",
-              null,
-              residentNameForFlat(flatId),
-            );
-          } else {
-            const vehicle = vehiclesForFlat.find((v) => v.registrationNumber === vehicleReg);
-            if (!vehicle) return;
-            onAssign(
-              vehicle.flatId,
-              flatLabelById.get(vehicle.flatId) ?? vehicle.flatId,
-              vehicleType,
-              vehicle.registrationNumber,
-              vehicle.ownerName,
-            );
-          }
-          setFlatId("");
-          setVehicleReg("");
-        }}
-      >
-        <CirclePlus className="size-3.5" />
-        Park here
+      <Button size="sm" className="gap-1.5" disabled={!flatId} onClick={() => onAllot(flatId)}>
+        <KeyRound className="size-3.5" />
+        Allot to flat
       </Button>
     </div>
   );
 }
 
-const tableColumns: ColumnDef<HubSlotRow>[] = [
+function AddVehicleForm({
+  slot,
+  unparked,
+  onAdd,
+}: {
+  slot: ParkingSlotRecord;
+  unparked: FlatVehicleEntry[];
+  onAdd: (vehicle: Omit<ParkedVehicle, "id">) => void;
+}) {
+  const fits = PARKING_BAYS[slot.bay].fits;
+  const types = PARKING_VEHICLE_TYPES.filter((t) => fits[t] > 0);
+  const [type, setType] = React.useState<ParkingVehicleType>(
+    () => types.find((t) => roomFor(slot, t) > 0) ?? types[0] ?? "car",
+  );
+  const [reg, setReg] = React.useState("");
+
+  const options = unparked.filter((v) => v.type === type);
+  const room = roomFor(slot, type);
+  const residentName = slot.allotment?.residentName ?? "the resident";
+
+  function submit() {
+    if (type === "cycle") {
+      onAdd({ type, reg: null, ownerName: residentName });
+      return;
+    }
+    const vehicle = options.find((v) => v.registrationNumber === reg);
+    if (vehicle) onAdd({ type, reg: vehicle.registrationNumber, ownerName: vehicle.ownerName });
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+        {types.map((t) => {
+          const Icon = VEHICLE_ICON[t];
+          const full = roomFor(slot, t) === 0;
+          return (
+            <Button
+              key={t}
+              type="button"
+              variant={type === t ? "secondary" : "ghost"}
+              size="sm"
+              className="flex-1 gap-1.5"
+              disabled={full}
+              title={full ? `No room left for a ${VEHICLE_LABEL[t].toLowerCase()}` : undefined}
+              onClick={() => {
+                setType(t);
+                setReg("");
+              }}
+            >
+              <Icon className="size-3.5" />
+              {VEHICLE_LABEL[t]}
+            </Button>
+          );
+        })}
+      </div>
+
+      {type === "cycle" ? (
+        <p className="text-xs text-muted-foreground">
+          Cycles aren&apos;t registered — this records a cycle for {residentName}.
+        </p>
+      ) : options.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {slot.allotment?.flatLabel} has no other registered {VEHICLE_LABEL[type].toLowerCase()}{" "}
+          waiting for a spot. Register it under People Hub → Vehicles first.
+        </p>
+      ) : (
+        <Select value={reg} onValueChange={(value) => setReg(value ?? "")}>
+          <SelectTrigger className="w-full" aria-label="Vehicle">
+            <SelectValue placeholder="Select a registered vehicle">
+              {(value: string) => {
+                const v = options.find((o) => o.registrationNumber === value);
+                return v ? `${v.registrationNumber} · ${v.make} ${v.model}` : "Select a vehicle";
+              }}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((v) => (
+              <SelectItem key={v.registrationNumber} value={v.registrationNumber}>
+                {v.registrationNumber} · {v.make} {v.model} · {v.ownerName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+
+      <Button
+        size="sm"
+        className="gap-1.5"
+        disabled={room === 0 || (type !== "cycle" && !reg)}
+        onClick={submit}
+      >
+        <CirclePlus className="size-3.5" />
+        Park {VEHICLE_LABEL[type].toLowerCase()}
+      </Button>
+    </div>
+  );
+}
+
+function SlotSheetBody({
+  slot,
+  slots,
+  events,
+  unparked,
+  onAllot,
+  onRelease,
+  onAddVehicle,
+  onRemoveVehicle,
+  onSelectSlot,
+}: {
+  slot: ParkingSlotRecord;
+  slots: ParkingSlotRecord[];
+  events: ParkingSlotEvent[];
+  unparked: FlatVehicleEntry[];
+  onAllot: (flatId: string) => void;
+  onRelease: () => void;
+  onAddVehicle: (vehicle: Omit<ParkedVehicle, "id">) => void;
+  onRemoveVehicle: (vehicleId: string) => void;
+  onSelectSlot: (slotId: string) => void;
+}) {
+  const [confirmRelease, setConfirmRelease] = React.useState(false);
+  const allotment = slot.allotment;
+  const otherSlots = allotment
+    ? slots.filter((s) => s.id !== slot.id && s.allotment?.flatId === allotment.flatId)
+    : [];
+  const hasRoom = PARKING_VEHICLE_TYPES.some((t) => roomFor(slot, t) > 0);
+
+  return (
+    <div className="flex flex-col gap-5 px-4 pb-4">
+      <div className="flex flex-col gap-2">
+        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          Space in this bay
+        </p>
+        <SpaceMeter slot={slot} />
+      </div>
+
+      {allotment ? (
+        <>
+          <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3.5">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarImage
+                  src={avatarUrlForName(allotment.residentName)}
+                  alt={allotment.residentName}
+                />
+                <AvatarFallback className="text-xs">
+                  {getInitials(allotment.residentName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-sm font-medium text-foreground">
+                  {allotment.residentName}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Allotted since {formatDate(allotment.allottedOn)}
+                </span>
+              </div>
+              <Link
+                href={`/dashboard/people-hub/flats/${allotment.flatId}`}
+                className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+              >
+                <Home className="size-3" />
+                {allotment.flatLabel}
+                <ArrowRight className="size-3" />
+              </Link>
+            </div>
+            {otherSlots.length > 0 && (
+              <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                {allotment.flatLabel} also has
+                {otherSlots.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => onSelectSlot(s.id)}
+                    className="font-mono font-semibold text-foreground underline-offset-2 hover:underline"
+                  >
+                    {s.slotNumber}
+                  </button>
+                ))}
+              </p>
+            )}
+            {confirmRelease ? (
+              <div className="flex flex-col gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2.5">
+                <p className="text-xs text-foreground">
+                  Release {slot.slotNumber} from {allotment.flatLabel}
+                  {slot.vehicles.length > 0
+                    ? ` and remove its ${slot.vehicles.length} vehicle${slot.vehicles.length > 1 ? "s" : ""}`
+                    : ""}
+                  ?
+                </p>
+                <div className="flex justify-end gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setConfirmRelease(false)}>
+                    Cancel
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={onRelease}>
+                    Release slot
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => setConfirmRelease(true)}
+              >
+                <LogOut className="size-3.5" />
+                Release slot
+              </Button>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              Vehicles parked · {slot.vehicles.length}
+            </p>
+            {slot.vehicles.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border p-3 text-center text-sm text-muted-foreground">
+                Nothing parked yet.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {slot.vehicles.map((vehicle) => {
+                  const Icon = VEHICLE_ICON[vehicle.type];
+                  return (
+                    <div
+                      key={vehicle.id}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg border p-2.5",
+                        VEHICLE_ACCENT[vehicle.type],
+                      )}
+                    >
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-background/70">
+                        <Icon className="size-4" />
+                      </span>
+                      <div className="flex min-w-0 flex-1 flex-col">
+                        <span className="truncate font-mono text-sm font-bold tabular-nums">
+                          {vehicleName(vehicle)}
+                        </span>
+                        <span className="truncate text-xs opacity-80">
+                          {VEHICLE_LABEL[vehicle.type]} · {vehicle.ownerName}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        className="shrink-0 hover:bg-background/70"
+                        aria-label={`Remove ${vehicleName(vehicle)}`}
+                        onClick={() => onRemoveVehicle(vehicle.id)}
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {hasRoom ? (
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3.5">
+                <p className="text-xs font-medium text-foreground">Park another vehicle</p>
+                <AddVehicleForm
+                  key={`${slot.id}-${slot.vehicles.length}`}
+                  slot={slot}
+                  unparked={unparked}
+                  onAdd={onAddVehicle}
+                />
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                This bay is full. Remove a vehicle to park another.
+              </p>
+            )}
+          </div>
+        </>
+      ) : (
+        <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3.5">
+          <div>
+            <p className="text-sm font-medium text-foreground">Allot this slot</p>
+            <p className="text-xs text-muted-foreground">
+              Once a flat holds the slot, park its vehicles here.
+            </p>
+          </div>
+          <AllotForm key={slot.id} slots={slots} onAllot={onAllot} onSelectSlot={onSelectSlot} />
+        </div>
+      )}
+
+      <Separator />
+
+      <div className="flex flex-col gap-4">
+        <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          <History className="size-3 shrink-0" />
+          History · {events.length}
+        </p>
+        <SlotTimeline events={events} />
+      </div>
+    </div>
+  );
+}
+
+const tableColumns: ColumnDef<ParkingSlotRecord>[] = [
   {
     id: "slot",
     accessorKey: "slotNumber",
@@ -448,16 +676,40 @@ const tableColumns: ColumnDef<HubSlotRow>[] = [
           <span className="font-mono text-sm font-semibold text-foreground">
             {row.original.slotNumber}
           </span>
-          <span className="text-xs text-muted-foreground">
-            {row.original.zone} · fits {row.original.capacity}
+          <span className="text-xs whitespace-nowrap text-muted-foreground">
+            {row.original.zone} · {PARKING_BAYS[row.original.bay].label}
           </span>
         </span>
       </div>
     ),
   },
   {
-    id: "vehicle",
-    accessorFn: (row) => row.vehicles.map((v) => v.reg ?? v.type).join(", "),
+    id: "flat",
+    accessorFn: (row) => row.allotment?.flatLabel ?? "",
+    meta: { label: "Allotted to" },
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        icon={Home}
+        label="Allotted to"
+        sorted={column.getIsSorted()}
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      />
+    ),
+    cell: ({ row }) =>
+      row.original.allotment ? (
+        <span className="flex flex-col">
+          <span className="font-medium text-foreground">{row.original.allotment.flatLabel}</span>
+          <span className="text-xs whitespace-nowrap text-muted-foreground">
+            {row.original.allotment.residentName}
+          </span>
+        </span>
+      ) : (
+        <span className="text-muted-foreground">—</span>
+      ),
+  },
+  {
+    id: "vehicles",
+    accessorFn: (row) => row.vehicles.map(vehicleName).join(", "),
     meta: { label: "Vehicles" },
     header: () => <DataTableColumnHeader icon={Car} label="Vehicles" />,
     cell: ({ row }) =>
@@ -465,53 +717,27 @@ const tableColumns: ColumnDef<HubSlotRow>[] = [
         <span className="text-sm text-muted-foreground">—</span>
       ) : (
         <div className="flex flex-wrap gap-1">
-          {row.original.vehicles.map((v, i) => {
-            const Icon = VEHICLE_ICON[v.type];
-            return (
-              <span
-                key={i}
-                className={cn(
-                  "flex items-center gap-1 rounded-md border px-1.5 py-0.5",
-                  VEHICLE_ACCENT[v.type],
-                )}
-              >
-                <Icon className="size-3" />
-                <span className="font-mono text-[11px] font-bold tabular-nums">
-                  {v.reg ?? VEHICLE_LABEL[v.type]}
-                </span>
-              </span>
-            );
-          })}
+          {row.original.vehicles.map((v) => (
+            <VehicleChip key={v.id} vehicle={v} />
+          ))}
         </div>
       ),
   },
   {
-    id: "flat",
-    accessorKey: "flatLabel",
-    meta: { label: "Flat" },
-    header: ({ column }) => (
-      <DataTableColumnHeader
-        icon={Home}
-        label="Flat"
-        sorted={column.getIsSorted()}
-        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      />
-    ),
-    cell: ({ row }) => <span className="text-muted-foreground">{row.original.flatLabel}</span>,
-  },
-  {
     id: "status",
-    accessorKey: "occupancy",
+    accessorFn: (row) => (row.allotment ? "allotted" : "available"),
     meta: { label: "Status" },
     header: () => <DataTableColumnHeader icon={SquareParking} label="Status" />,
-    cell: ({ row }) => <OccupancyBadge status={row.original.occupancy} />,
+    cell: ({ row }) => <StatusBadge slot={row.original} />,
   },
 ];
 
 function ParkingPageInner() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const deepLinkedSlot = searchParams.get("slot");
+  const actorName = auditUser?.displayName ?? "Society Manager";
 
   const [slots, setSlots] = React.useState<ParkingSlotRecord[]>(parkingSlots);
   const [events, setEvents] = React.useState<ParkingSlotEvent[]>(parkingSlotEvents);
@@ -535,36 +761,40 @@ function ParkingPageInner() {
     [events, selectedSlotId],
   );
 
-  const assignedRegs = React.useMemo(
+  const unparkedVehicles = React.useMemo(() => {
+    const parked = new Set(slots.flatMap((s) => s.vehicles.map((v) => v.reg).filter(Boolean)));
+    return flatVehicleHistory.filter((v) => v.isCurrent && !parked.has(v.registrationNumber));
+  }, [slots]);
+
+  const unparkedForSelected = React.useMemo(
     () =>
-      new Set(
-        slots
-          .filter((s) => s.id !== selectedSlotId)
-          .flatMap((s) => s.assignments.map((a) => a.vehicleReg ?? "").filter(Boolean)),
-      ),
-    [slots, selectedSlotId],
+      selectedSlot?.allotment
+        ? unparkedVehicles.filter((v) => v.flatId === selectedSlot.allotment?.flatId)
+        : [],
+    [unparkedVehicles, selectedSlot],
   );
 
-  const occupiedSlotCount = slots.filter((s) => s.assignments.length > 0).length;
-  const totalVehicleCount = slots.reduce((sum, s) => sum + s.assignments.length, 0);
+  const allottedCount = slots.filter((s) => s.allotment).length;
+  const parkedByType = PARKING_VEHICLE_TYPES.map((t) => ({
+    type: t,
+    count: slots.reduce((sum, s) => sum + s.vehicles.filter((v) => v.type === t).length, 0),
+  }));
+  const parkedTotal = parkedByType.reduce((sum, p) => sum + p.count, 0);
 
   const filteredSlots = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     return slots.filter((slot) => {
-      const occupied = slot.assignments.length > 0;
-      if (statusFilter === "occupied" && !occupied) return false;
-      if (statusFilter === "vacant" && occupied) return false;
-      if (typeFilter !== "all" && !slot.assignments.some((a) => a.vehicleType === typeFilter))
-        return false;
+      if (statusFilter === "allotted" && !slot.allotment) return false;
+      if (statusFilter === "available" && slot.allotment) return false;
+      if (typeFilter !== "all" && !slot.vehicles.some((v) => v.type === typeFilter)) return false;
       if (!q) return true;
       return (
         slot.slotNumber.toLowerCase().includes(q) ||
         slot.zone.toLowerCase().includes(q) ||
-        slot.assignments.some(
-          (a) =>
-            (a.vehicleReg ?? "").toLowerCase().includes(q) ||
-            a.flatLabel.toLowerCase().includes(q) ||
-            a.residentName.toLowerCase().includes(q),
+        (slot.allotment?.flatLabel.toLowerCase().includes(q) ?? false) ||
+        (slot.allotment?.residentName.toLowerCase().includes(q) ?? false) ||
+        slot.vehicles.some(
+          (v) => (v.reg ?? "").toLowerCase().includes(q) || v.ownerName.toLowerCase().includes(q),
         )
       );
     });
@@ -583,91 +813,105 @@ function ParkingPageInner() {
     }));
   }, [filteredSlots]);
 
-  const tableRows = React.useMemo(() => filteredSlots.map(toRow), [filteredSlots]);
-
-  const tableFilters = React.useMemo<DataTableFilterConfig<HubSlotRow>[]>(
-    () => [
-      {
-        id: "status",
-        label: "Status",
-        type: "select",
-        options: [
-          { label: "Full", value: "full" },
-          { label: "Partial", value: "partial" },
-          { label: "Vacant", value: "vacant" },
-        ],
-        predicate: (row, value) => row.occupancy === value,
-      },
-    ],
-    [],
-  );
-
-  function handleAssign(
-    flatId: string,
-    flatLabel: string,
-    vehicleType: ParkingVehicleType,
-    vehicleReg: string | null,
-    residentName: string,
-  ) {
-    if (!selectedSlot) return;
-    const timestamp = new Date().toISOString();
-    const assignment: ParkingSlotAssignment = {
-      id: `asn-${selectedSlot.id}-${Date.now()}`,
-      flatId,
-      flatLabel,
-      vehicleType,
-      vehicleReg,
-      residentName,
-    };
-    setSlots((prev) =>
-      prev.map((s) =>
-        s.id === selectedSlot.id ? { ...s, assignments: [...s.assignments, assignment] } : s,
-      ),
-    );
-    setEvents((prev) => [
-      ...prev,
-      {
-        id: `evt-${selectedSlot.id}-${Date.now()}`,
-        slotId: selectedSlot.id,
-        action: "assigned",
-        flatLabel,
-        vehicleType,
-        vehicleReg: vehicleReg ?? "—",
-        residentName,
-        actorName: "Society Manager",
-        timestamp,
-      },
-    ]);
-    toast({ title: "Vehicle assigned to slot" });
+  function updateSlot(slotId: string, change: (slot: ParkingSlotRecord) => ParkingSlotRecord) {
+    setSlots((prev) => prev.map((s) => (s.id === slotId ? change(s) : s)));
   }
 
-  function handleDeassign(assignmentId: string) {
-    if (!selectedSlot) return;
-    const assignment = selectedSlot.assignments.find((a) => a.id === assignmentId);
-    if (!assignment) return;
-    const timestamp = new Date().toISOString();
-    setSlots((prev) =>
-      prev.map((s) =>
-        s.id === selectedSlot.id
-          ? { ...s, assignments: s.assignments.filter((a) => a.id !== assignmentId) }
-          : s,
-      ),
-    );
+  function logEvent(slot: ParkingSlotRecord, event: Omit<ParkingSlotEvent, "id" | "slotId">) {
     setEvents((prev) => [
       ...prev,
-      {
-        id: `evt-${selectedSlot.id}-${Date.now()}`,
-        slotId: selectedSlot.id,
-        action: "deassigned",
-        flatLabel: assignment.flatLabel,
-        vehicleType: assignment.vehicleType,
-        vehicleReg: assignment.vehicleReg ?? "—",
-        residentName: assignment.residentName,
-        actorName: "Society Manager",
-        timestamp,
-      },
+      { id: `evt-${slot.id}-${Date.now()}`, slotId: slot.id, ...event },
     ]);
-    toast({ title: "Vehicle removed from slot", variant: "info" });
+  }
+
+  function audit(slot: ParkingSlotRecord, details: string) {
+    recordAudit({
+      module: "Parking",
+      entityType: "Parking Slot",
+      entityId: slot.id,
+      entityLabel: slot.slotNumber,
+      action: "Update",
+      performedBy: actorName,
+      details,
+    });
+  }
+
+  function handleAllot(flatId: string) {
+    if (!selectedSlot) return;
+    const timestamp = new Date().toISOString();
+    const allotment = {
+      flatId,
+      flatLabel: flatLabelFor(flatId),
+      residentName: residentNameForFlat(flatId),
+      allottedOn: timestamp,
+    };
+    updateSlot(selectedSlot.id, (s) => ({ ...s, allotment, vehicles: [] }));
+    logEvent(selectedSlot, {
+      action: "allotted",
+      flatLabel: allotment.flatLabel,
+      personName: allotment.residentName,
+      actorName,
+      timestamp,
+    });
+    audit(selectedSlot, `Allotted to ${allotment.flatLabel}`);
+    toast({ title: `${selectedSlot.slotNumber} allotted to ${allotment.flatLabel}` });
+  }
+
+  function handleRelease() {
+    const allotment = selectedSlot?.allotment;
+    if (!selectedSlot || !allotment) return;
+    updateSlot(selectedSlot.id, (s) => ({ ...s, allotment: null, vehicles: [] }));
+    logEvent(selectedSlot, {
+      action: "released",
+      flatLabel: allotment.flatLabel,
+      personName: allotment.residentName,
+      actorName,
+      timestamp: new Date().toISOString(),
+    });
+    audit(selectedSlot, `Released from ${allotment.flatLabel}`);
+    toast({ title: `${selectedSlot.slotNumber} is available again`, variant: "info" });
+  }
+
+  function handleAddVehicle(vehicle: Omit<ParkedVehicle, "id">) {
+    const allotment = selectedSlot?.allotment;
+    if (!selectedSlot || !allotment) return;
+    updateSlot(selectedSlot.id, (s) => ({
+      ...s,
+      vehicles: [...s.vehicles, { id: `veh-${s.id}-${Date.now()}`, ...vehicle }],
+    }));
+    logEvent(selectedSlot, {
+      action: "vehicle_added",
+      flatLabel: allotment.flatLabel,
+      personName: allotment.residentName,
+      vehicle,
+      actorName,
+      timestamp: new Date().toISOString(),
+    });
+    audit(selectedSlot, `Parked ${vehicleName(vehicle)}`);
+    toast({ title: `${vehicleName(vehicle)} parked in ${selectedSlot.slotNumber}` });
+  }
+
+  function handleRemoveVehicle(vehicleId: string) {
+    const allotment = selectedSlot?.allotment;
+    const vehicle = selectedSlot?.vehicles.find((v) => v.id === vehicleId);
+    if (!selectedSlot || !allotment || !vehicle) return;
+    updateSlot(selectedSlot.id, (s) => ({
+      ...s,
+      vehicles: s.vehicles.filter((v) => v.id !== vehicleId),
+    }));
+    logEvent(selectedSlot, {
+      action: "vehicle_removed",
+      flatLabel: allotment.flatLabel,
+      personName: allotment.residentName,
+      vehicle: { type: vehicle.type, reg: vehicle.reg, ownerName: vehicle.ownerName },
+      actorName,
+      timestamp: new Date().toISOString(),
+    });
+    audit(selectedSlot, `Removed ${vehicleName(vehicle)}`);
+    toast({
+      title: `${vehicleName(vehicle)} removed from ${selectedSlot.slotNumber}`,
+      variant: "info",
+    });
   }
 
   function handleCreateSlot(values: AddParkingSlotInput) {
@@ -676,15 +920,22 @@ function ParkingPageInner() {
       id: `slot-${slotNumber.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
       slotNumber,
       zone: values.zone.trim(),
-      capacity: values.capacity,
-      assignments: [],
+      bay: values.bay,
+      allotment: null,
+      vehicles: [],
     };
     setSlots((prev) => [...prev, newSlot]);
     setCreateOpen(false);
+    recordAudit({
+      module: "Parking",
+      entityType: "Parking Slot",
+      entityId: newSlot.id,
+      entityLabel: newSlot.slotNumber,
+      action: "Create",
+      performedBy: actorName,
+    });
     toast({ title: "Parking slot created" });
   }
-
-  const spaceLeft = selectedSlot ? selectedSlot.capacity - selectedSlot.assignments.length : 0;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
@@ -695,9 +946,8 @@ function ParkingPageInner() {
             Parking
           </h1>
           <p className="text-sm text-muted-foreground">
-            {totalVehicleCount} vehicles parked across {occupiedSlotCount} of {slots.length} slots —
-            a slot can hold more than one vehicle. Pick a slot to see who&apos;s parked and its full
-            history.
+            Each slot is allotted to one flat. A car bay also fits that flat&apos;s two-wheeler and
+            cycle. Pick a slot to allot it, park vehicles, or see its history.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -728,6 +978,62 @@ function ParkingPageInner() {
         </div>
       </div>
 
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Card>
+          <CardContent className="flex flex-col gap-1">
+            <p className="text-xs text-muted-foreground">Slots allotted</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">
+              {allottedCount}
+              <span className="text-sm font-normal text-muted-foreground"> / {slots.length}</span>
+            </p>
+            <p className="text-xs text-emerald-700 dark:text-emerald-400">
+              {slots.length - allottedCount} available to allot
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex flex-col gap-1">
+            <p className="text-xs text-muted-foreground">Vehicles parked</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">{parkedTotal}</p>
+            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+              {parkedByType.map(({ type, count }) => {
+                const Icon = VEHICLE_ICON[type];
+                return (
+                  <span key={type} className="flex items-center gap-1">
+                    <Icon className="size-3.5" />
+                    {count} {VEHICLE_LABEL[type].toLowerCase()}
+                    {count === 1 ? "" : "s"}
+                  </span>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="flex flex-col gap-1">
+            <p className="text-xs text-muted-foreground">Registered vehicles without a slot</p>
+            <p
+              className={cn(
+                "flex items-center gap-1.5 text-2xl font-semibold tabular-nums",
+                unparkedVehicles.length > 0
+                  ? "text-amber-700 dark:text-amber-400"
+                  : "text-foreground",
+              )}
+            >
+              {unparkedVehicles.length > 0 && <TriangleAlert className="size-4" />}
+              {unparkedVehicles.length}
+            </p>
+            <p className="truncate text-xs text-muted-foreground">
+              {unparkedVehicles.length === 0
+                ? "Every registered vehicle has a spot."
+                : unparkedVehicles
+                    .map((v) => `${v.registrationNumber} (${flatLabelFor(v.flatId)})`)
+                    .join(", ")}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
@@ -735,12 +1041,12 @@ function ParkingPageInner() {
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search slot, vehicle, flat…"
+              placeholder="Search slot, flat, resident, vehicle…"
               className="w-64 pl-8"
             />
           </div>
           <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-            {(["all", "occupied", "vacant"] as StatusFilter[]).map((status) => (
+            {(["all", "allotted", "available"] as StatusFilter[]).map((status) => (
               <Button
                 key={status}
                 variant={statusFilter === status ? "secondary" : "ghost"}
@@ -753,31 +1059,32 @@ function ParkingPageInner() {
             ))}
           </div>
           <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-            {(["all", "car", "two_wheeler", "cycle"] as TypeFilter[]).map((type) => (
-              <Button
-                key={type}
-                variant={typeFilter === type ? "secondary" : "ghost"}
-                size="sm"
-                onClick={() => setTypeFilter(type)}
-              >
-                {type === "all" ? "All types" : VEHICLE_LABEL[type]}
-              </Button>
-            ))}
+            {(["all", ...PARKING_VEHICLE_TYPES] as TypeFilter[]).map((type) => {
+              const Icon = type === "all" ? null : VEHICLE_ICON[type];
+              return (
+                <Button
+                  key={type}
+                  variant={typeFilter === type ? "secondary" : "ghost"}
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => setTypeFilter(type)}
+                >
+                  {Icon && <Icon className="size-3.5" />}
+                  {type === "all" ? "Any vehicle" : VEHICLE_LABEL[type]}
+                </Button>
+              );
+            })}
           </div>
         </div>
         {view === "map" && (
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-emerald-500" />
-              Full
+              <span className="size-2.5 rounded-sm border border-border bg-card" />
+              Allotted
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm bg-amber-500" />
-              Partial
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-2.5 rounded-sm border border-dashed border-border bg-muted" />
-              Vacant
+              <span className="size-2.5 rounded-sm border border-dashed border-emerald-400 bg-emerald-50 dark:bg-emerald-950" />
+              Available
             </span>
           </div>
         )}
@@ -798,13 +1105,12 @@ function ParkingPageInner() {
                   <ParkingSquare className="size-4 text-muted-foreground" />
                   {zone}
                   <Badge variant="outline" className="ml-auto font-normal text-muted-foreground">
-                    {zoneSlots.filter((s) => s.assignments.length > 0).length}/{zoneSlots.length}{" "}
-                    occupied
+                    {zoneSlots.filter((s) => s.allotment).length}/{zoneSlots.length} allotted
                   </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 md:grid-cols-6">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 md:grid-cols-6">
                   {zoneSlots.map((slot) => (
                     <SlotTile
                       key={slot.id}
@@ -820,10 +1126,10 @@ function ParkingPageInner() {
         )
       ) : (
         <DataTable
-          data={tableRows}
+          data={filteredSlots}
           columns={tableColumns}
+          getRowId={(row) => row.id}
           title="Society parking"
-          filters={tableFilters}
           showPageSize
           pageSize={8}
           itemLabel="slot"
@@ -845,108 +1151,26 @@ function ParkingPageInner() {
                   <div className="flex flex-col">
                     <SheetTitle className="font-mono">{selectedSlot.slotNumber}</SheetTitle>
                     <SheetDescription>
-                      {selectedSlot.zone} · fits {selectedSlot.capacity} vehicle
-                      {selectedSlot.capacity > 1 ? "s" : ""}
+                      {selectedSlot.zone} · {PARKING_BAYS[selectedSlot.bay].label}
                     </SheetDescription>
                   </div>
                   <span className="ml-auto shrink-0">
-                    <OccupancyBadge status={occupancyOf(selectedSlot)} />
+                    <StatusBadge slot={selectedSlot} />
                   </span>
                 </div>
               </SheetHeader>
-
-              <div className="flex flex-col gap-5 px-4 pb-4">
-                <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-3.5">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                      Parked here · {selectedSlot.assignments.length}/{selectedSlot.capacity}
-                    </p>
-                  </div>
-
-                  {selectedSlot.assignments.length > 0 && (
-                    <div className="flex flex-col gap-3">
-                      {selectedSlot.assignments.map((assignment) => {
-                        const VehicleIcon = VEHICLE_ICON[assignment.vehicleType];
-                        return (
-                          <div
-                            key={assignment.id}
-                            className={cn(
-                              "flex items-center gap-3 rounded-lg border p-2.5",
-                              VEHICLE_ACCENT[assignment.vehicleType],
-                            )}
-                          >
-                            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-background/70">
-                              <VehicleIcon className="size-5" />
-                            </span>
-                            <div className="flex min-w-0 flex-1 flex-col">
-                              <span className="truncate font-mono text-sm font-bold tabular-nums">
-                                {assignment.vehicleReg ?? VEHICLE_LABEL[assignment.vehicleType]}
-                              </span>
-                              <span className="text-[11px] font-semibold tracking-wide uppercase opacity-80">
-                                {VEHICLE_LABEL[assignment.vehicleType]}
-                              </span>
-                              <span className="mt-1.5 flex items-center gap-1 text-xs opacity-80">
-                                <Avatar size="sm" className="size-4">
-                                  <AvatarImage
-                                    src={avatarUrlForName(assignment.residentName)}
-                                    alt={assignment.residentName}
-                                  />
-                                  <AvatarFallback className="text-[8px]">
-                                    {getInitials(assignment.residentName)}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <span className="truncate">{assignment.residentName}</span>
-                                <Home className="size-3 shrink-0" />
-                                {assignment.flatLabel}
-                              </span>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon-xs"
-                              className="shrink-0 hover:bg-background/70"
-                              aria-label="Remove from slot"
-                              onClick={() => handleDeassign(assignment.id)}
-                            >
-                              <X className="size-3.5" />
-                            </Button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {spaceLeft > 0 ? (
-                    <>
-                      {selectedSlot.assignments.length > 0 && <Separator />}
-                      <p className="text-xs text-muted-foreground">
-                        {selectedSlot.assignments.length === 0
-                          ? "Park a vehicle in this slot."
-                          : `Room for ${spaceLeft} more vehicle${spaceLeft > 1 ? "s" : ""}.`}
-                      </p>
-                      <AssignForm
-                        key={`${selectedSlot.id}-${selectedSlot.assignments.length}`}
-                        slot={selectedSlot}
-                        assignedRegs={assignedRegs}
-                        onAssign={handleAssign}
-                      />
-                    </>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      This slot is full. Remove a vehicle to park another.
-                    </p>
-                  )}
-                </div>
-
-                <Separator />
-
-                <div className="flex flex-col gap-4">
-                  <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                    <UserRound className="size-3 shrink-0" />
-                    History · {slotEvents.length}
-                  </p>
-                  <SlotTimeline events={slotEvents} />
-                </div>
-              </div>
+              <SlotSheetBody
+                key={`${selectedSlot.id}-${selectedSlot.allotment?.flatId ?? "none"}`}
+                slot={selectedSlot}
+                slots={slots}
+                events={slotEvents}
+                unparked={unparkedForSelected}
+                onAllot={handleAllot}
+                onRelease={handleRelease}
+                onAddVehicle={handleAddVehicle}
+                onRemoveVehicle={handleRemoveVehicle}
+                onSelectSlot={setSelectedSlotId}
+              />
             </>
           )}
         </SheetContent>

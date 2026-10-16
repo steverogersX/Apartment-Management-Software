@@ -1,3 +1,7 @@
+import { flats, flatVehicleHistory } from "./flatsMockData";
+import { currentFlat } from "./mockData";
+import { parkingSlots } from "./parkingMockData";
+
 export type MyVehicleType = "car" | "two_wheeler";
 export type StickerStatus = "active" | "pending" | "expired";
 
@@ -36,64 +40,70 @@ export type ParkingRequest = {
   requestedOn: string;
 };
 
-export const myVehicles: MyVehicle[] = [
-  {
-    id: "v-1",
-    registrationNumber: "AP 31 BT 4521",
-    type: "car",
-    make: "Hyundai",
-    model: "Creta",
-    color: "White",
-    parkingSlot: "B-12",
-    stickerStatus: "active",
-    isPrimary: true,
-  },
-  {
-    id: "v-2",
-    registrationNumber: "AP 31 CX 0098",
-    type: "two_wheeler",
-    make: "Honda",
-    model: "Activa",
-    color: "Grey",
-    parkingSlot: "B-13",
-    stickerStatus: "active",
-    isPrimary: false,
-  },
-  {
-    id: "v-3",
-    registrationNumber: "AP 39 MK 7712",
-    type: "car",
-    make: "Maruti",
-    model: "Baleno",
-    color: "Blue",
-    parkingSlot: null,
-    stickerStatus: "pending",
-    isPrimary: false,
-  },
-];
+/** The signed-in resident's flat, resolved against the society's flat records. */
+export function currentFlatRecord() {
+  return (
+    flats.find(
+      (f) =>
+        f.flatNumber === currentFlat.flatNumber && `Tower ${f.tower}` === currentFlat.apartmentName,
+    ) ?? null
+  );
+}
 
-export const myParkingSlots: MyParkingSlot[] = [
-  {
-    id: "s-1",
-    slotNumber: "B-12",
-    zone: "Basement B · Tower B",
-    slotType: "covered",
-    vehicleType: "car",
-    status: "allotted",
-    vehicleReg: "AP 31 BT 4521",
-    allottedOn: "2025-07-01",
-  },
-  {
-    id: "s-2",
-    slotNumber: "B-13",
-    zone: "Basement B · Tower B",
-    slotType: "open",
-    vehicleType: "two_wheeler",
-    status: "allotted",
-    vehicleReg: "AP 31 CX 0098",
-    allottedOn: "2025-07-01",
-  },
-];
+/** The resident's vehicles — the society's vehicle records filtered to their flat. */
+export function getMyVehicles(): MyVehicle[] {
+  const flat = currentFlatRecord();
+  if (!flat) return [];
+  return flatVehicleHistory
+    .filter((v) => v.flatId === flat.id && v.isCurrent)
+    .map((v, index) => ({
+      id: `${v.flatId}-${v.registrationNumber}`,
+      registrationNumber: v.registrationNumber,
+      type: v.type,
+      make: v.make,
+      model: v.model,
+      color: v.color,
+      parkingSlot: v.parkingSlot,
+      stickerStatus: v.parkingSlot ? "active" : "pending",
+      isPrimary: index === 0,
+    }));
+}
+
+/** Registers a vehicle against the resident's flat in the society's vehicle records. */
+export function addMyVehicle(vehicle: MyVehicle) {
+  const flat = currentFlatRecord();
+  if (!flat) return;
+  flatVehicleHistory.push({
+    flatId: flat.id,
+    residentId: flat.currentResidentIds[0] ?? "",
+    registrationNumber: vehicle.registrationNumber,
+    type: vehicle.type,
+    make: vehicle.make,
+    model: vehicle.model,
+    color: vehicle.color,
+    ownerName: currentFlat.ownerName,
+    parkingSlot: vehicle.parkingSlot,
+    isCurrent: true,
+  });
+}
+
+/** The resident's parking slots — the society's slot assignments filtered to their flat. */
+export function getMyParkingSlots(): MyParkingSlot[] {
+  const flat = currentFlatRecord();
+  if (!flat) return [];
+  return parkingSlots
+    .filter((slot) => slot.allotment?.flatId === flat.id)
+    .map((slot) => ({
+      id: slot.id,
+      slotNumber: slot.slotNumber,
+      zone: slot.zone,
+      slotType: /basement/i.test(slot.zone) ? ("covered" as const) : ("open" as const),
+      vehicleType: slot.bay === "two_wheeler" ? ("two_wheeler" as const) : ("car" as const),
+      status: "allotted" as const,
+      vehicleReg: slot.vehicles.map((v) => v.reg ?? "Cycle").join(", ") || null,
+      allottedOn: slot.allotment?.allottedOn ?? null,
+    }));
+}
 
 export const parkingRequests: ParkingRequest[] = [
   {
