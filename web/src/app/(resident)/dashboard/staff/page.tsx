@@ -45,6 +45,7 @@ import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
 import { PageIcon } from "@/components/pageIcon";
 import { CountUp } from "@/components/countUp";
+import { recordAudit } from "@/lib/auditLog";
 
 const STATUS_LABEL: Record<StaffStatus, string> = {
   active: "Active",
@@ -63,6 +64,7 @@ const STATUS_VARIANT: Record<StaffStatus, "default" | "secondary" | "outline"> =
 };
 
 export default function StaffPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const { has } = useAuth();
   const [staff, setStaff] = React.useState<StaffMember[]>(() => [...staffMembersSource]);
@@ -91,6 +93,14 @@ export default function StaffPage() {
     staffMembersSource.push(member);
     setStaff((prev) => [...prev, member]);
     setAddOpen(false);
+    recordAudit({
+      module: "Staff",
+      entityType: "Staff Member",
+      entityId: member.id,
+      entityLabel: member.name,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Staff member added" });
   }
 
@@ -102,6 +112,14 @@ export default function StaffPage() {
     }
     setStaff((prev) => prev.map((s) => (s.id === selected.id ? { ...s, ...values } : s)));
     setEditOpen(false);
+    recordAudit({
+      module: "Staff",
+      entityType: "Staff Member",
+      entityId: selected.id,
+      entityLabel: selected.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Staff member updated" });
   }
 

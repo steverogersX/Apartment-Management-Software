@@ -11,8 +11,10 @@ import { useAuth } from "@/hooks/useAuth";
 import type { PollFormInput } from "@/lib/pollsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
+import { recordAudit } from "@/lib/auditLog";
 
 export default function NewPollPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
@@ -61,6 +63,14 @@ export default function NewPollPage() {
 
     opinionPolls.unshift(newPoll);
     router.push("/dashboard/opinion-polls");
+    recordAudit({
+      module: "Communication",
+      entityType: "Poll",
+      entityId: newPoll.id,
+      entityLabel: newPoll.question,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Poll created" });
   }
 

@@ -4,6 +4,7 @@ export type AuditAction =
   | "Approve"
   | "Reject"
   | "Cancel"
+  | "Delete"
   | "Status Change"
   | "Payment Recorded"
   | "Goods Received";

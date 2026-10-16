@@ -20,7 +20,7 @@ export default function ActivityLogPage() {
           Activity Log
         </h1>
         <p className="text-sm text-muted-foreground">
-          Who did what, and when — across assets, inventory and accounts.
+          Who did what, and when — across every section of the society.
         </p>
       </div>
       <ActivityLogTable />

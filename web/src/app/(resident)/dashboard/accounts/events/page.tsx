@@ -25,6 +25,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { PageIcon } from "@/components/pageIcon";
+import { recordAudit } from "@/lib/auditLog";
 
 type StatusFilter = "Open" | "Closed" | "All";
 
@@ -73,6 +74,7 @@ function EventCard({ event }: { event: CommunityEvent }) {
 }
 
 export default function EventsPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const { has } = useAuth();
   const canManage = has("EventsManage");
@@ -103,6 +105,14 @@ export default function EventsPage() {
     });
     setVersion((v) => v + 1);
     setCreateOpen(false);
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: "",
+      entityLabel: values.name,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Event created" });
   }
 

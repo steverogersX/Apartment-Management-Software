@@ -28,8 +28,10 @@ import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { roles, type RoleRecord } from "@/lib/rolesMockData";
 import { formatDate } from "@/lib/utils";
+import { recordAudit } from "@/lib/auditLog";
 
 export function RolesTable() {
+  const { user: auditUser } = useAuth();
   const { has } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -43,6 +45,14 @@ export function RolesTable() {
     const idx = roles.findIndex((r) => r.id === deleteTarget.id);
     if (idx !== -1) roles.splice(idx, 1);
     setVersion((v) => v + 1);
+    recordAudit({
+      module: "Roles",
+      entityType: "Role",
+      entityId: deleteTarget.id,
+      entityLabel: deleteTarget.name,
+      action: "Delete",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: `"${deleteTarget.name}" deleted`, variant: "success" });
     setDeleteTarget(null);
   }

@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
-  getVisitsByPhone,
   societyVisitors as initialVisitors,
   type SocietyVisitor,
   type SocietyVisitorCategory,
@@ -19,6 +18,8 @@ import {
 import { cn, formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { StatusIcon } from "@/components/statusIcon";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
 function todayStr(offset = 0) {
   const d = new Date();
@@ -122,6 +123,7 @@ function deriveProfiles(
 }
 
 export function SocietyVisitorsTable() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const [visitors, setVisitors] = React.useState<SocietyVisitor[]>(() => [...initialVisitors]);
@@ -210,6 +212,14 @@ export function SocietyVisitorsTable() {
         checkIn: now,
         verifiedBy: "Admin",
       };
+    recordAudit({
+      module: "Visitors",
+      entityType: "Visitor",
+      entityId: profile.phone,
+      entityLabel: profile.name,
+      action: "Approve",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Visitor approved" });
   }
 
@@ -270,6 +280,14 @@ export function SocietyVisitorsTable() {
     }
     setDenyTarget(null);
     setDenyReason("");
+    recordAudit({
+      module: "Visitors",
+      entityType: "Visitor",
+      entityId: profile.phone,
+      entityLabel: profile.name,
+      action: "Reject",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Visitor denied", variant: "info" });
   }
 
@@ -281,6 +299,15 @@ export function SocietyVisitorsTable() {
     }));
     setBlockTarget(null);
     setBlockReason("");
+    recordAudit({
+      module: "Visitors",
+      entityType: "Visitor",
+      entityId: profile.phone,
+      entityLabel: profile.name,
+      action: "Status Change",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Blocked",
+    });
     toast({ title: "Visitor blocked", variant: "info" });
   }
 
@@ -289,6 +316,15 @@ export function SocietyVisitorsTable() {
       const next = { ...prev };
       delete next[profile.phone];
       return next;
+    });
+    recordAudit({
+      module: "Visitors",
+      entityType: "Visitor",
+      entityId: profile.phone,
+      entityLabel: profile.name,
+      action: "Status Change",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Unblocked",
     });
     toast({ title: "Visitor unblocked" });
   }

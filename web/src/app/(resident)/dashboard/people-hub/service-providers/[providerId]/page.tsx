@@ -40,6 +40,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/components/ui/toast";
 import { StatusIcon } from "@/components/statusIcon";
+import { recordAudit } from "@/lib/auditLog";
 
 function isWithinDays(iso: string, days: number) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -65,6 +66,7 @@ function elapsedSince(iso: string) {
 }
 
 export default function ProviderDetailPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const params = useParams<{ providerId: string }>();
   const initialProvider = React.useMemo(
@@ -148,6 +150,15 @@ export default function ProviderDetailPage() {
       },
       ...prev,
     ]);
+    recordAudit({
+      module: "Service Providers",
+      entityType: "Service Provider",
+      entityId: provider.id,
+      entityLabel: provider.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Flat unlinked",
+    });
     toast({ title: "Flat unlinked", variant: "info" });
   }
 
@@ -175,6 +186,15 @@ export default function ProviderDetailPage() {
     ]);
     setSelectedFlat("");
     setAssignOpen(false);
+    recordAudit({
+      module: "Service Providers",
+      entityType: "Service Provider",
+      entityId: provider.id,
+      entityLabel: provider.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Flat assigned",
+    });
     toast({ title: "Flat assigned" });
   }
 
@@ -196,6 +216,14 @@ export default function ProviderDetailPage() {
       ]);
     }
     setEditOpen(false);
+    recordAudit({
+      module: "Service Providers",
+      entityType: "Service Provider",
+      entityId: provider.id,
+      entityLabel: provider.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Provider updated" });
   }
 

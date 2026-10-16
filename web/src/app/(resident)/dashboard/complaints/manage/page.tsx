@@ -38,6 +38,7 @@ import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
 import { PageIcon } from "@/components/pageIcon";
+import { recordAudit } from "@/lib/auditLog";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -73,6 +74,7 @@ const PRIORITY_META: Record<
 };
 
 export default function ComplaintsManagePage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const { has } = useAuth();
 
@@ -121,6 +123,15 @@ export default function ComplaintsManagePage() {
     if (!user) return;
     const initials = getInitials(user.name);
     updateComplaint(selected.id, { assignedTo: { name: user.name, initials } });
+    recordAudit({
+      module: "Help Desk",
+      entityType: "Complaint",
+      entityId: selected.id,
+      entityLabel: selected.ticketNumber,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Assigned to ${user.name}`,
+    });
     toast({ title: "Complaint assigned" });
   }
 
@@ -150,6 +161,15 @@ export default function ComplaintsManagePage() {
     };
     complaintStatusEventsSource.push(event);
     setStatusEvents((prev) => [...prev, event]);
+    recordAudit({
+      module: "Help Desk",
+      entityType: "Complaint",
+      entityId: selected.id,
+      entityLabel: selected.ticketNumber,
+      action: "Status Change",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: status,
+    });
     toast({ title: "Complaint status updated" });
   }
 

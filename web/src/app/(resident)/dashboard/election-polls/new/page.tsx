@@ -10,8 +10,10 @@ import { useAuth } from "@/hooks/useAuth";
 import type { ElectionFormInput } from "@/lib/electionsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
+import { recordAudit } from "@/lib/auditLog";
 
 export default function NewElectionPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
@@ -62,6 +64,14 @@ export default function NewElectionPage() {
 
     elections.unshift(newElection);
     router.push("/dashboard/election-polls");
+    recordAudit({
+      module: "Communication",
+      entityType: "Election",
+      entityId: newElection.id,
+      entityLabel: newElection.title,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Election created" });
   }
 

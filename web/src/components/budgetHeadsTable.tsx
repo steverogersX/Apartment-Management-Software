@@ -35,6 +35,7 @@ import { EditBudgetHeadForm } from "./budget/editBudgetHeadForm";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { recordAudit } from "@/lib/auditLog";
 
 function varianceLabel(planned: number, actual: number) {
   const diff = actual - planned;
@@ -51,6 +52,7 @@ export function BudgetHeadsTable({
   financialYear: string;
   onMutate?: () => void;
 }) {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const { has } = useAuth();
   const canManage = has("BudgetManage");
@@ -91,6 +93,14 @@ export function BudgetHeadsTable({
     setVersion((v) => v + 1);
     onMutate?.();
     setAddOpen(false);
+    recordAudit({
+      module: "Budget",
+      entityType: "Budget Head",
+      entityId: newHead.id,
+      entityLabel: newHead.name,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Budget head added" });
   }
 
@@ -111,6 +121,14 @@ export function BudgetHeadsTable({
     setVersion((v) => v + 1);
     onMutate?.();
     setEditing(null);
+    recordAudit({
+      module: "Budget",
+      entityType: "Budget Head",
+      entityId: editing.id,
+      entityLabel: editing.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Budget head updated" });
   }
 
@@ -121,6 +139,14 @@ export function BudgetHeadsTable({
     setVersion((v) => v + 1);
     onMutate?.();
     setDeleteTarget(null);
+    recordAudit({
+      module: "Budget",
+      entityType: "Budget Head",
+      entityId: deleteTarget.id,
+      entityLabel: deleteTarget.name,
+      action: "Delete",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Budget head deleted", variant: "info" });
   }
 

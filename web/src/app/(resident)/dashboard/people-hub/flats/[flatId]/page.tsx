@@ -18,9 +18,11 @@ import {
 } from "@/components/flats/assignResidentDialog";
 import { flats, type FlatOccupancyStatus } from "@/lib/flatsMockData";
 import { residents, type ResidentRecord } from "@/lib/residentsMockData";
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { cn, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { StatusIcon } from "@/components/statusIcon";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
 const OCCUPANCY_STATUS_LABEL: Record<FlatOccupancyStatus, string> = {
   occupied: "Occupied",
@@ -33,6 +35,7 @@ const RESIDENT_OCCUPANCY_LABEL: Record<string, string> = {
 };
 
 export default function FlatDetailPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const params = useParams<{ flatId: string }>();
   const [version, setVersion] = React.useState(0);
@@ -91,6 +94,15 @@ export default function FlatDetailPage() {
       occupancyStatus: "occupied",
     };
     setVersion((v) => v + 1);
+    recordAudit({
+      module: "Flats",
+      entityType: "Flat",
+      entityId: flat.id,
+      entityLabel: `${flat.tower}-${flat.flatNumber}`,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Resident assigned: ${resident.name}`,
+    });
     toast({ title: "Resident assigned" });
   }
 
@@ -131,6 +143,15 @@ export default function FlatDetailPage() {
       occupancyStatus: "occupied",
     };
     setVersion((v) => v + 1);
+    recordAudit({
+      module: "Flats",
+      entityType: "Flat",
+      entityId: flat.id,
+      entityLabel: `${flat.tower}-${flat.flatNumber}`,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Existing resident assigned",
+    });
     toast({ title: "Resident assigned" });
   }
 
@@ -204,10 +225,7 @@ export default function FlatDetailPage() {
                       className="flex items-center gap-3 rounded-md border border-border p-3 transition-colors hover:bg-muted/50"
                     >
                       <Avatar size="sm">
-                        <AvatarImage
-                          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(r.id)}`}
-                          alt={r.name}
-                        />
+                        <AvatarImage src={avatarUrlForName(r.id)} alt={r.name} />
                         <AvatarFallback
                           className="text-[10px] font-semibold text-white"
                           style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

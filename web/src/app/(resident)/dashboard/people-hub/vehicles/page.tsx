@@ -26,6 +26,8 @@ import {
 import { residents } from "@/lib/residentsMockData";
 import { useToast } from "@/components/ui/toast";
 import { PageIcon } from "@/components/pageIcon";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
 type HubVehicleRow = {
   id: string;
@@ -145,6 +147,7 @@ const columns: ColumnDef<HubVehicleRow>[] = [
 ];
 
 export default function PeopleHubVehiclesPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const [version, setVersion] = React.useState(0);
   const [createOpen, setCreateOpen] = React.useState(false);
@@ -209,6 +212,15 @@ export default function PeopleHubVehiclesPage() {
     flatVehicleHistory.push(newEntry);
     setVersion((v) => v + 1);
     setCreateOpen(false);
+    recordAudit({
+      module: "Vehicles",
+      entityType: "Vehicle",
+      entityId: newEntry.registrationNumber,
+      entityLabel: newEntry.registrationNumber,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `${newEntry.make} ${newEntry.model}`,
+    });
     toast({ title: "Vehicle added" });
   }
 

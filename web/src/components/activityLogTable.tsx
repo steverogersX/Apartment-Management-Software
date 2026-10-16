@@ -16,13 +16,35 @@ function actionVariant(action: AuditAction) {
   return "outline";
 }
 
-const MODULES = ["Assets", "Inventory", "Invoicing", "Purchasing", "Accounts", "Dues and Receipts"];
+const MODULES = [
+  "Assets",
+  "Inventory",
+  "Invoicing",
+  "Purchasing",
+  "Accounts",
+  "Budget",
+  "Dues and Receipts",
+  "Vouchers",
+  "Events",
+  "Flats",
+  "Vehicles",
+  "Parking",
+  "Visitors",
+  "Service Providers",
+  "Committee",
+  "Staff",
+  "Maintenance",
+  "Help Desk",
+  "Communication",
+  "Roles",
+];
 const ACTIONS: AuditAction[] = [
   "Create",
   "Update",
   "Approve",
   "Reject",
   "Cancel",
+  "Delete",
   "Status Change",
   "Payment Recorded",
   "Goods Received",
