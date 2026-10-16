@@ -4,7 +4,7 @@ import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,8 +32,12 @@ import {
   type CommitteePosition,
 } from "@/lib/committeeMockData";
 import { useToast } from "@/components/ui/toast";
+import { isUnassignedResident, residents } from "@/lib/residentsMockData";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
 type DraftState = {
+  residentId: string | null;
   name: string;
   position: CommitteePosition;
   phone: string;
@@ -41,6 +45,7 @@ type DraftState = {
 };
 
 const EMPTY_DRAFT: DraftState = {
+  residentId: null,
   name: "",
   position: "Committee Member",
   phone: "",
@@ -75,6 +80,22 @@ function MemberFormDialog({
   }, [open, editing]);
 
   const [from, to] = gradientForName(draft.name || "new-member");
+  const linked = draft.residentId !== null;
+
+  function handleResidentChange(residentId: string) {
+    const resident = residents.find((r) => r.id === residentId);
+    if (!resident) {
+      setDraft((d) => ({ ...d, residentId: null }));
+      return;
+    }
+    setDraft((d) => ({
+      ...d,
+      residentId: resident.id,
+      name: resident.name,
+      phone: resident.phone,
+      email: resident.email,
+    }));
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -101,7 +122,7 @@ function MemberFormDialog({
           <div className="flex items-center gap-3">
             <Avatar>
               <AvatarImage
-                src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(draft.name || "new-member")}`}
+                src={avatarUrlForName(draft.name || "new-member")}
                 alt={draft.name || "New member"}
               />
               <AvatarFallback
@@ -117,11 +138,38 @@ function MemberFormDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
+            <label htmlFor="member-resident" className="text-sm font-medium text-foreground">
+              Resident
+            </label>
+            <select
+              id="member-resident"
+              value={draft.residentId ?? ""}
+              onChange={(e) => handleResidentChange(e.target.value)}
+              className="flex h-8 w-full cursor-pointer rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <option value="">Not a resident — enter details</option>
+              {residents
+                .filter((r) => !isUnassignedResident(r))
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} · {r.tower}-{r.flatNumber}
+                  </option>
+                ))}
+            </select>
+            {linked && (
+              <p className="text-xs text-muted-foreground">
+                Name, phone and email come from the resident record.
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
             <label htmlFor="member-name" className="text-sm font-medium text-foreground">
               Full name
             </label>
             <input
               id="member-name"
+              readOnly={linked}
               placeholder="Vikram Singh Rathore"
               value={draft.name}
               onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
@@ -156,6 +204,7 @@ function MemberFormDialog({
               </label>
               <input
                 id="member-phone"
+                readOnly={linked}
                 placeholder="+91 98765 43210"
                 value={draft.phone}
                 onChange={(e) => setDraft((d) => ({ ...d, phone: e.target.value }))}
@@ -168,6 +217,7 @@ function MemberFormDialog({
               </label>
               <input
                 id="member-email"
+                readOnly={linked}
                 type="email"
                 placeholder="vikram@example.com"
                 value={draft.email}
@@ -233,6 +283,7 @@ function DeleteConfirmDialog({
 }
 
 export function CommitteeTable() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const [members, setMembers] = React.useState<CommitteeMember[]>([...committeeMembers]);
   const [formOpen, setFormOpen] = React.useState(false);
@@ -251,6 +302,7 @@ export function CommitteeTable() {
           m.id === editing.id
             ? {
                 ...m,
+                residentId: draft.residentId,
                 name: draft.name.trim(),
                 position: draft.position,
                 phone: draft.phone.trim(),
@@ -268,7 +320,7 @@ export function CommitteeTable() {
           position: draft.position,
           phone: draft.phone.trim(),
           email: draft.email.trim(),
-          residentId: null,
+          residentId: draft.residentId,
           termStart: "2024-04-01T00:00:00+05:30",
           termEnd: "2027-03-31T00:00:00+05:30",
         },
@@ -276,6 +328,15 @@ export function CommitteeTable() {
     }
     setFormOpen(false);
     setEditing(null);
+    recordAudit({
+      module: "Committee",
+      entityType: "Committee Member",
+      entityId: editing?.id ?? "",
+      entityLabel: draft.name,
+      action: editing ? "Update" : "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: draft.position,
+    });
     toast({ title: "Committee member saved" });
   }
 
@@ -283,6 +344,14 @@ export function CommitteeTable() {
     if (!deleteTarget) return;
     setMembers((prev) => prev.filter((m) => m.id !== deleteTarget.id));
     setDeleteTarget(null);
+    recordAudit({
+      module: "Committee",
+      entityType: "Committee Member",
+      entityId: deleteTarget.id,
+      entityLabel: deleteTarget.name,
+      action: "Delete",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Committee member removed", variant: "info" });
   }
 
@@ -303,10 +372,7 @@ export function CommitteeTable() {
           return (
             <div className="flex items-center gap-2.5">
               <Avatar size="sm">
-                <AvatarImage
-                  src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`}
-                  alt={row.original.name}
-                />
+                <AvatarImage src={avatarUrlForName(row.original.id)} alt={row.original.name} />
                 <AvatarFallback
                   className="text-[10px] font-semibold text-white"
                   style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
