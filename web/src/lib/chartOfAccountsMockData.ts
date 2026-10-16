@@ -85,6 +85,8 @@ export const ledgerAccounts: LedgerAccount[] = [
   },
   { id: "la-insurance", name: "Insurance Expense", type: "Expense", groupId: "g-indirect-exp" },
   { id: "la-office", name: "Office Admin Expense", type: "Expense", groupId: "g-indirect-exp" },
+  { id: "la-event-inc", name: "Event Contributions", type: "Income", groupId: "g-indirect-inc" },
+  { id: "la-event-exp", name: "Event Expenses", type: "Expense", groupId: "g-indirect-exp" },
   {
     id: "la-other-income",
     name: "Interest & Other Income",

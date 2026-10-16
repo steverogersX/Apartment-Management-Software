@@ -50,6 +50,8 @@ import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { recordAudit } from "@/lib/auditLog";
+import { createVoucher } from "@/lib/vouchersMockData";
 
 type TimelineEntry =
   | { kind: "contribution"; id: string; date: string; data: EventContribution }
@@ -127,6 +129,7 @@ function EventTimeline({ entries }: { entries: TimelineEntry[] }) {
 }
 
 export default function EventDetailPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const params = useParams<{ eventId: string }>();
   const router = useRouter();
@@ -197,6 +200,29 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setContributeOpen(false);
+    createVoucher({
+      type: "Receipt",
+      date: new Date(values.date).toISOString(),
+      narration: `Event contribution — ${event.name}`,
+      debitAccountId: values.mode === "Cash" ? "la-cash" : "la-bank",
+      creditAccountId: "la-event-inc",
+      amount: values.amount,
+      status: "Posted",
+      sourceModule: "Events",
+      sourceRefId: event.id,
+      createdBy: auditUser?.displayName ?? "Unknown",
+      postedBy: auditUser?.displayName ?? "Unknown",
+      postedAt: new Date().toISOString(),
+    });
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Payment Recorded",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Contribution ${formatCurrency(values.amount)} via ${values.mode}`,
+    });
     toast({ title: "Contribution recorded" });
   }
 
@@ -212,6 +238,15 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setTopUpOpen(false);
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Top-up ${formatCurrency(values.amount)} — ${values.note}`,
+    });
     toast({ title: "Top-up recorded" });
   }
 
@@ -229,6 +264,29 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setExpenseOpen(false);
+    createVoucher({
+      type: "Payment",
+      date: new Date(values.date).toISOString(),
+      narration: `Event expense (${values.category}) — ${event.name}`,
+      debitAccountId: "la-event-exp",
+      creditAccountId: "la-bank",
+      amount: values.amount,
+      status: "Posted",
+      sourceModule: "Events",
+      sourceRefId: event.id,
+      createdBy: auditUser?.displayName ?? "Unknown",
+      postedBy: auditUser?.displayName ?? "Unknown",
+      postedAt: new Date().toISOString(),
+    });
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Expense ${formatCurrency(values.amount)} — ${values.category}`,
+    });
     toast({ title: "Expense recorded" });
   }
 
@@ -243,6 +301,15 @@ export default function EventDetailPage() {
     };
     setVersion((v) => v + 1);
     setCloseOpen(false);
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Status Change",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Closed",
+    });
     toast({ title: "Event closed", variant: "info" });
   }
 
