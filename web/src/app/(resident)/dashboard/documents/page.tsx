@@ -25,8 +25,6 @@ import {
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import { AttachmentDropzone } from "@/components/fileDropzone";
-import { MultiSelectDropdown } from "@/components/notices/multiSelectDropdown";
-import { flats } from "@/lib/flatsMockData";
 import {
   DOCUMENT_CATEGORIES,
   societyDocuments,
@@ -38,6 +36,8 @@ import type { Attachment } from "@/lib/attachmentTypes";
 import { formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { PageIcon } from "@/components/pageIcon";
+import { AudiencePicker } from "@/components/audiencePicker";
+import { recordAudit } from "@/lib/auditLog";
 
 function iconForType(type: Attachment["type"]) {
   switch (type) {
@@ -77,6 +77,7 @@ function handleDownload(doc: SocietyDocument) {
 }
 
 export default function DocumentsPage() {
+  const { user: auditUser } = useAuth();
   const { toast } = useToast();
   const { has } = useAuth();
   const canUpload = has("DocumentsUpload");
@@ -94,15 +95,6 @@ export default function DocumentsPage() {
   const [audienceValue, setAudienceValue] = React.useState<string[]>([]);
   const [file, setFile] = React.useState<Attachment[]>([]);
   const [error, setError] = React.useState<string | null>(null);
-
-  const towerOptions = React.useMemo(
-    () => Array.from(new Set(flats.map((f) => f.tower))).sort(),
-    [],
-  );
-  const flatOptions = React.useMemo(
-    () => flats.map((f) => `${f.tower}-${f.flatNumber}`).sort(),
-    [],
-  );
 
   function resetForm() {
     setTitle("");
@@ -145,6 +137,14 @@ export default function DocumentsPage() {
     setDocs((prev) => [newDoc, ...prev]);
     setOpen(false);
     resetForm();
+    recordAudit({
+      module: "Communication",
+      entityType: "Document",
+      entityId: newDoc.id,
+      entityLabel: newDoc.title,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
     toast({ title: "Document uploaded" });
   }
 
@@ -363,35 +363,16 @@ export default function DocumentsPage() {
                   <div className="flex flex-col gap-1.5">
                     <Label>Audience</Label>
                     <div className="flex flex-col gap-2">
-                      <Select
-                        value={audienceScope}
-                        onValueChange={(v) => {
-                          setAudienceScope(v as typeof audienceScope);
+                      <AudiencePicker
+                        scope={audienceScope}
+                        value={audienceValue}
+                        onScopeChange={(scope) => {
+                          setAudienceScope(scope);
                           setAudienceValue([]);
                         }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="All">All residents</SelectItem>
-                          <SelectItem value="Blocks">Specific blocks</SelectItem>
-                          <SelectItem value="Flats">Specific flats</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {audienceScope !== "All" && (
-                        <MultiSelectDropdown
-                          options={audienceScope === "Blocks" ? towerOptions : flatOptions}
-                          value={audienceValue}
-                          onChange={setAudienceValue}
-                          placeholder={
-                            audienceScope === "Blocks" ? "Select blocks" : "Select flats"
-                          }
-                          searchPlaceholder={
-                            audienceScope === "Blocks" ? "Search blocks…" : "Search flats…"
-                          }
-                        />
-                      )}
+                        onValueChange={setAudienceValue}
+                        triggerClassName="sm:w-full"
+                      />
                     </div>
                   </div>
 

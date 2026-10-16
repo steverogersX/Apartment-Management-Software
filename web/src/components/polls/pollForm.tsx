@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useForm } from "@tanstack/react-form";
 import { CalendarClock, Plus, Trash2, Users } from "lucide-react";
 
@@ -9,27 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { flats } from "@/lib/flatsMockData";
-import { MultiSelectDropdown } from "@/components/notices/multiSelectDropdown";
 import { DateTimePicker } from "@/components/dateTimePicker";
 import { pollFormSchema, type PollFormInput } from "@/lib/pollsMockData";
-
-function fieldError(errors: unknown[]): string | undefined {
-  if (errors.length === 0) return undefined;
-  const issue = errors[0];
-  if (typeof issue === "string") return issue;
-  if (issue && typeof issue === "object" && "message" in issue)
-    return String((issue as { message: unknown }).message);
-  return String(issue);
-}
+import { fieldError } from "@/lib/fieldError";
+import { AudiencePicker } from "@/components/audiencePicker";
 
 export function PollForm({
   onSave,
@@ -38,15 +21,6 @@ export function PollForm({
   onSave: (values: PollFormInput) => void;
   onCancel: () => void;
 }) {
-  const towerOptions = React.useMemo(
-    () => Array.from(new Set(flats.map((f) => f.tower))).sort(),
-    [],
-  );
-  const flatOptions = React.useMemo(
-    () => flats.map((f) => `${f.tower}-${f.flatNumber}`).sort(),
-    [],
-  );
-
   const form = useForm({
     defaultValues: {
       question: "",
@@ -210,44 +184,18 @@ export function PollForm({
                 Audience
               </span>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                <form.Field name="audienceScope">
-                  {(field) => (
-                    <Select
-                      value={field.state.value}
-                      onValueChange={(v) => {
-                        field.handleChange(v as PollFormInput["audienceScope"]);
+                <form.Subscribe selector={(s) => s.values}>
+                  {(values) => (
+                    <AudiencePicker
+                      scope={values.audienceScope}
+                      value={values.audienceValue ?? []}
+                      onScopeChange={(scope) => {
+                        form.setFieldValue("audienceScope", scope);
                         form.setFieldValue("audienceValue", []);
                       }}
-                    >
-                      <SelectTrigger className="w-full sm:w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="All">All residents</SelectItem>
-                        <SelectItem value="Blocks">Specific blocks</SelectItem>
-                        <SelectItem value="Flats">Specific flats</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onValueChange={(value) => form.setFieldValue("audienceValue", value)}
+                    />
                   )}
-                </form.Field>
-                <form.Subscribe selector={(s) => s.values.audienceScope}>
-                  {(scope) =>
-                    scope !== "All" && (
-                      <form.Field name="audienceValue">
-                        {(field) => (
-                          <MultiSelectDropdown
-                            options={scope === "Blocks" ? towerOptions : flatOptions}
-                            value={field.state.value ?? []}
-                            onChange={(v) => field.handleChange(v)}
-                            placeholder={scope === "Blocks" ? "Select blocks" : "Select flats"}
-                            searchPlaceholder={
-                              scope === "Blocks" ? "Search blocks…" : "Search flats…"
-                            }
-                          />
-                        )}
-                      </form.Field>
-                    )
-                  }
                 </form.Subscribe>
               </div>
             </div>
