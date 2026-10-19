@@ -40,10 +40,6 @@ export default function HelpdeskReportsPage() {
   const { has } = useAuth();
   const router = useRouter();
 
-  if (!has("ComplaintsViewAll")) {
-    return <PermissionDenied message="You do not have permission to view helpdesk reports." />;
-  }
-
   const total = complaints.length;
   const openCount = complaints.filter((c) => c.status === "open").length;
   const resolved = complaints.filter((c) => c.status === "resolved");
@@ -120,6 +116,10 @@ export default function HelpdeskReportsPage() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, []);
+
+  if (!has("ComplaintsViewAll")) {
+    return <PermissionDenied message="You do not have permission to view helpdesk reports." />;
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">

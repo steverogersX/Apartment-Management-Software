@@ -51,33 +51,11 @@ function displayStatus(visit: SocietyVisitor) {
 }
 
 export default function VisitorDetailPage() {
-  const { toast } = useToast();
   const params = useParams<{ phone: string }>();
   const phone = decodeURIComponent(params.phone);
-  const initialProfile = React.useMemo(
-    () => getVisitorProfiles().find((p) => p.phone === phone) ?? null,
-    [phone],
-  );
+  const initial = getVisitorProfiles().find((p) => p.phone === phone);
 
-  const [profile, setProfile] = React.useState<VisitorProfile | null>(initialProfile);
-  const [visits, setVisits] = React.useState<SocietyVisitor[]>(() => getVisitsByPhone(phone));
-  const [blockReason, setBlockReason] = React.useState("");
-  const [blockOpen, setBlockOpen] = React.useState(false);
-  const [denyTargetId, setDenyTargetId] = React.useState<string | null>(null);
-  const [denyReason, setDenyReason] = React.useState("");
-  const [expandedId, setExpandedId] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    setProfile(initialProfile);
-  }, [initialProfile]);
-
-  React.useEffect(() => {
-    setVisits(getVisitsByPhone(phone));
-  }, [phone]);
-
-  useBreadcrumbTitle(profile?.name ?? null);
-
-  if (!profile) {
+  if (!initial) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Visitor not found.</p>
@@ -90,6 +68,22 @@ export default function VisitorDetailPage() {
       </div>
     );
   }
+
+  return <VisitorDetail key={phone} initial={initial} />;
+}
+
+function VisitorDetail({ initial }: { initial: VisitorProfile }) {
+  const { toast } = useToast();
+  const phone = initial.phone;
+  const [profile, setProfile] = React.useState<VisitorProfile>(initial);
+  const [visits, setVisits] = React.useState<SocietyVisitor[]>(() => getVisitsByPhone(phone));
+  const [blockReason, setBlockReason] = React.useState("");
+  const [blockOpen, setBlockOpen] = React.useState(false);
+  const [denyTargetId, setDenyTargetId] = React.useState<string | null>(null);
+  const [denyReason, setDenyReason] = React.useState("");
+  const [expandedId, setExpandedId] = React.useState<string | null>(null);
+
+  useBreadcrumbTitle(profile.name);
 
   const [from, to] = gradientForName(profile.name);
   const isBlocked = profile.status === "blocked";
@@ -336,7 +330,6 @@ export default function VisitorDetailPage() {
                 const isExpanded = expandedId === visit.id;
                 const dStatus = displayStatus(visit);
                 const isInside = dStatus === "entered" && visit.checkIn && !visit.checkOut;
-                const isPending = dStatus === "pending_approval";
                 return (
                   <div key={visit.id} className="flex gap-3">
                     <div className="flex flex-col items-center">

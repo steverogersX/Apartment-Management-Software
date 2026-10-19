@@ -40,28 +40,11 @@ function formatDateTime(iso: string) {
 }
 
 export default function ForumThreadPage() {
-  const { toast } = useToast();
   const params = useParams<{ threadId: string }>();
   const router = useRouter();
-  const { has } = useAuth();
-  const canPost = has("ForumPost");
-
   const initialThread = getForumThreadById(params.threadId);
-  const [thread, setThread] = React.useState(initialThread);
-  const [replies, setReplies] = React.useState<ForumReply[]>(() =>
-    initialThread ? getRepliesForThread(initialThread.id) : [],
-  );
-  const [composerBody, setComposerBody] = React.useState("");
-  const [composerAttachments, setComposerAttachments] = React.useState<Attachment[]>([]);
-  const currentUser = "Arvind Deshmukh";
 
-  React.useEffect(() => {
-    const t = getForumThreadById(params.threadId);
-    setThread(t ?? null);
-    if (t) setReplies(getRepliesForThread(t.id));
-  }, [params.threadId]);
-
-  if (!thread) {
+  if (!initialThread) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
         <p className="text-sm text-muted-foreground">Thread not found.</p>
@@ -75,6 +58,22 @@ export default function ForumThreadPage() {
       </div>
     );
   }
+
+  return <ForumThread key={params.threadId} initial={initialThread} />;
+}
+
+function ForumThread({ initial }: { initial: NonNullable<ReturnType<typeof getForumThreadById>> }) {
+  const { toast } = useToast();
+  const { has } = useAuth();
+  const canPost = has("ForumPost");
+
+  const [thread, setThread] = React.useState(initial);
+  const [replies, setReplies] = React.useState<ForumReply[]>(() =>
+    initial ? getRepliesForThread(initial.id) : [],
+  );
+  const [composerBody, setComposerBody] = React.useState("");
+  const [composerAttachments, setComposerAttachments] = React.useState<Attachment[]>([]);
+  const currentUser = "Arvind Deshmukh";
 
   const isThreadUpvoted = thread.upvotedBy.includes(currentUser);
 

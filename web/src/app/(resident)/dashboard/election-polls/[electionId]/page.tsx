@@ -27,21 +27,11 @@ function formatDateTime(iso: string) {
 }
 
 export default function ElectionDetailPage() {
-  const { toast } = useToast();
   const params = useParams<{ electionId: string }>();
   const router = useRouter();
   const initial = getElectionById(params.electionId);
-  const [election, setElection] = React.useState(initial);
-  const [selected, setSelected] = React.useState<string[]>([]);
-  const currentFlat = "A-301";
-  const currentUser = "Arvind Deshmukh";
 
-  React.useEffect(() => {
-    setElection(getElectionById(params.electionId) ?? null);
-    setSelected([]);
-  }, [params.electionId]);
-
-  if (!election) {
+  if (!initial) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
         <p className="text-sm text-muted-foreground">Election not found.</p>
@@ -55,6 +45,16 @@ export default function ElectionDetailPage() {
       </div>
     );
   }
+
+  return <ElectionDetail key={params.electionId} initial={initial} />;
+}
+
+function ElectionDetail({ initial }: { initial: NonNullable<ReturnType<typeof getElectionById>> }) {
+  const { toast } = useToast();
+  const [election, setElection] = React.useState(initial);
+  const [selected, setSelected] = React.useState<string[]>([]);
+  const currentFlat = "A-301";
+  const currentUser = "Arvind Deshmukh";
 
   const closed = isElectionClosed(election);
   const hasVoted = election.votedFlats.includes(currentFlat);

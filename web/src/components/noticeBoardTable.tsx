@@ -40,22 +40,25 @@ export function NoticeBoardTable() {
   const currentUser = "Arvind Deshmukh";
   const canCreate = has("NoticesPost");
 
-  function handleAcknowledge(id: string) {
-    setNotices((prev) =>
-      prev.map((n) =>
-        n.id === id && !n.acknowledgedBy.includes(currentUser)
-          ? {
-              ...n,
-              acknowledgedBy: [...n.acknowledgedBy, currentUser],
-              readBy: n.readBy.some((r) => r.name === currentUser)
-                ? n.readBy
-                : [...n.readBy, { name: currentUser, viewedAt: new Date().toISOString() }],
-            }
-          : n,
-      ),
-    );
-    toast({ title: "Notice acknowledged" });
-  }
+  const handleAcknowledge = React.useCallback(
+    (id: string) => {
+      setNotices((prev) =>
+        prev.map((n) =>
+          n.id === id && !n.acknowledgedBy.includes(currentUser)
+            ? {
+                ...n,
+                acknowledgedBy: [...n.acknowledgedBy, currentUser],
+                readBy: n.readBy.some((r) => r.name === currentUser)
+                  ? n.readBy
+                  : [...n.readBy, { name: currentUser, viewedAt: new Date().toISOString() }],
+              }
+            : n,
+        ),
+      );
+      toast({ title: "Notice acknowledged" });
+    },
+    [toast],
+  );
 
   function handleRowClick(row: BoardNotice) {
     setNotices((prev) =>
@@ -340,7 +343,7 @@ export function NoticeBoardTable() {
         },
       },
     ],
-    [],
+    [handleAcknowledge],
   );
 
   const filters = React.useMemo<DataTableFilterConfig<BoardNotice>[]>(

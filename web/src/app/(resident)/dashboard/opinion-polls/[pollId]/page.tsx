@@ -62,20 +62,11 @@ function formatRelativeTime(iso: string) {
 }
 
 export default function PollDetailPage() {
-  const { toast } = useToast();
   const params = useParams<{ pollId: string }>();
   const router = useRouter();
   const poll = getPollById(params.pollId);
-  const [localPoll, setLocalPoll] = React.useState(poll);
-  const [selected, setSelected] = React.useState<string[]>([]);
-  const [selectedOptionId, setSelectedOptionId] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    setLocalPoll(getPollById(params.pollId) ?? null);
-    setSelectedOptionId(null);
-  }, [params.pollId]);
-
-  if (!localPoll) {
+  if (!poll) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
         <p className="text-sm text-muted-foreground">Poll not found.</p>
@@ -85,6 +76,15 @@ export default function PollDetailPage() {
       </div>
     );
   }
+
+  return <PollDetail key={params.pollId} initial={poll} />;
+}
+
+function PollDetail({ initial }: { initial: NonNullable<ReturnType<typeof getPollById>> }) {
+  const { toast } = useToast();
+  const [localPoll, setLocalPoll] = React.useState(initial);
+  const [selected, setSelected] = React.useState<string[]>([]);
+  const [selectedOptionId, setSelectedOptionId] = React.useState<string | null>(null);
 
   const p = localPoll;
   const currentUser = "Arvind Deshmukh";

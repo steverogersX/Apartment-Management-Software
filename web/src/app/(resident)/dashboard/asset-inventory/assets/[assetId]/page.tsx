@@ -57,37 +57,15 @@ function expiryStatus(iso: string | null) {
 }
 
 export default function AssetDetailPage() {
-  const { toast } = useToast();
   const params = useParams<{ assetId: string }>();
-  const { user, has } = useAuth();
-  const actor = user?.displayName ?? "Unknown";
-  const canManage = has("AssetsManage");
-  const initialAsset = React.useMemo(
-    () => assets.find((a) => a.id === params.assetId) ?? null,
-    [params.assetId],
-  );
-  const [asset, setAsset] = React.useState<Asset | null>(initialAsset);
-  const [editOpen, setEditOpen] = React.useState(false);
-  const [logOpen, setLogOpen] = React.useState(false);
-  const [logs, setLogs] = React.useState<AssetServiceLog[]>(() =>
-    assetServiceLogs.filter((l) => l.assetId === params.assetId),
-  );
-
-  React.useEffect(() => {
-    setAsset(initialAsset);
-  }, [initialAsset]);
-
-  React.useEffect(() => {
-    setLogs(assetServiceLogs.filter((l) => l.assetId === params.assetId));
-  }, [params.assetId]);
-
-  useBreadcrumbTitle(asset?.name ?? null);
+  const { has } = useAuth();
+  const initial = assets.find((x) => x.id === params.assetId);
 
   if (!has("AssetsView")) {
     return <PermissionDenied message="You do not have permission to view assets." />;
   }
 
-  if (!asset) {
+  if (!initial) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Asset not found.</p>
@@ -100,6 +78,23 @@ export default function AssetDetailPage() {
       </div>
     );
   }
+
+  return <AssetDetail key={initial.id} initial={initial} />;
+}
+
+function AssetDetail({ initial }: { initial: Asset }) {
+  const { toast } = useToast();
+  const { user, has } = useAuth();
+  const actor = user?.displayName ?? "Unknown";
+  const canManage = has("AssetsManage");
+  const [asset, setAsset] = React.useState<Asset>(initial);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [logOpen, setLogOpen] = React.useState(false);
+  const [logs, setLogs] = React.useState<AssetServiceLog[]>(() =>
+    assetServiceLogs.filter((l) => l.assetId === initial.id),
+  );
+
+  useBreadcrumbTitle(asset.name);
 
   function handleEditSave(values: EditAssetInput) {
     if (!asset) return;

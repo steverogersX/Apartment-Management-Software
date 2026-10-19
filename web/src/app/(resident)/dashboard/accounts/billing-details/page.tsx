@@ -39,10 +39,6 @@ export default function BillingDetailsPage() {
   const actor = user?.displayName ?? "Unknown";
   const canManage = has("BillingSettingsManage");
 
-  if (!has("BillingSettingsView")) {
-    return <PermissionDenied message="You do not have permission to manage billing settings." />;
-  }
-
   const [rate, setRate] = React.useState<BillingRateSettings>({ ...initialRate });
   const [savedRate, setSavedRate] = React.useState<BillingRateSettings>({ ...initialRate });
   const [savingRate, setSavingRate] = React.useState(false);
@@ -216,6 +212,10 @@ export default function BillingDetailsPage() {
     setSavingPayment(false);
     setSavedPaymentFlag(true);
     setTimeout(() => setSavedPaymentFlag(false), 2000);
+  }
+
+  if (!has("BillingSettingsView")) {
+    return <PermissionDenied message="You do not have permission to manage billing settings." />;
   }
 
   return (

@@ -83,10 +83,6 @@ export default function BankAccountDetailPage() {
 
   useBreadcrumbTitle(details ? ledgerName : null);
 
-  if (!has("BankAccountsView")) {
-    return <PermissionDenied message="You do not have permission to view bank accounts." />;
-  }
-
   const balance = React.useMemo(
     () => computeLedgerBalance(ledgerAccountId),
     [ledgerAccountId, version],
@@ -120,6 +116,10 @@ export default function BankAccountDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [ledgerAccountId, version],
   );
+
+  if (!has("BankAccountsView")) {
+    return <PermissionDenied message="You do not have permission to view bank accounts." />;
+  }
 
   if (!details) {
     return (

@@ -29,6 +29,7 @@ import {
   providerEntryLogs,
   providerFlatLinks,
   serviceProviders,
+  type ServiceProvider,
   type EditProviderInput,
   type ProviderActivityLog,
   type ProviderEntryLog,
@@ -66,59 +67,10 @@ function elapsedSince(iso: string) {
 }
 
 export default function ProviderDetailPage() {
-  const { user: auditUser } = useAuth();
-  const { toast } = useToast();
   const params = useParams<{ providerId: string }>();
-  const initialProvider = React.useMemo(
-    () => serviceProviders.find((p) => p.id === params.providerId) ?? null,
-    [params.providerId],
-  );
-  const [provider, setProvider] = React.useState(initialProvider);
-  const { user } = useAuth();
-  const actorName = user?.displayName ?? user?.email ?? "Admin";
+  const initial = serviceProviders.find((p) => p.id === params.providerId);
 
-  React.useEffect(() => {
-    setProvider(initialProvider);
-  }, [initialProvider]);
-
-  useBreadcrumbTitle(provider?.name ?? null);
-
-  const initialLinks = React.useMemo(
-    () =>
-      providerFlatLinks.filter((l) => l.providerId === params.providerId && l.status === "active"),
-    [params.providerId],
-  );
-  const [links, setLinks] = React.useState<ProviderFlatLink[]>(initialLinks);
-
-  React.useEffect(() => {
-    setLinks(initialLinks);
-  }, [initialLinks]);
-
-  const initialActivity = React.useMemo(
-    () => providerActivityLogs.filter((l) => l.providerId === params.providerId),
-    [params.providerId],
-  );
-  const [activity, setActivity] = React.useState<ProviderActivityLog[]>(initialActivity);
-
-  React.useEffect(() => {
-    setActivity(initialActivity);
-  }, [initialActivity]);
-
-  const logs = React.useMemo(
-    () => providerEntryLogs.filter((l) => l.providerId === params.providerId),
-    [params.providerId],
-  );
-
-  const [assignOpen, setAssignOpen] = React.useState(false);
-  const [selectedFlat, setSelectedFlat] = React.useState<string>("");
-  const [editOpen, setEditOpen] = React.useState(false);
-
-  const availableFlats = React.useMemo(() => {
-    const linked = new Set(links.map((l) => l.flatNumber));
-    return flats.filter((f) => !linked.has(`${f.tower}-${f.flatNumber}`));
-  }, [links]);
-
-  if (!provider) {
+  if (!initial) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Provider not found.</p>
@@ -131,6 +83,39 @@ export default function ProviderDetailPage() {
       </div>
     );
   }
+
+  return <ProviderDetail key={initial.id} initial={initial} />;
+}
+
+function ProviderDetail({ initial }: { initial: ServiceProvider }) {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
+  const [provider, setProvider] = React.useState(initial);
+  const { user } = useAuth();
+  const actorName = user?.displayName ?? user?.email ?? "Admin";
+
+  useBreadcrumbTitle(provider.name);
+
+  const [links, setLinks] = React.useState<ProviderFlatLink[]>(() =>
+    providerFlatLinks.filter((l) => l.providerId === initial.id && l.status === "active"),
+  );
+  const [activity, setActivity] = React.useState<ProviderActivityLog[]>(() =>
+    providerActivityLogs.filter((l) => l.providerId === initial.id),
+  );
+
+  const logs = React.useMemo(
+    () => providerEntryLogs.filter((l) => l.providerId === initial.id),
+    [initial.id],
+  );
+
+  const [assignOpen, setAssignOpen] = React.useState(false);
+  const [selectedFlat, setSelectedFlat] = React.useState<string>("");
+  const [editOpen, setEditOpen] = React.useState(false);
+
+  const availableFlats = React.useMemo(() => {
+    const linked = new Set(links.map((l) => l.flatNumber));
+    return flats.filter((f) => !linked.has(`${f.tower}-${f.flatNumber}`));
+  }, [links]);
 
   const [from, to] = gradientForName(provider.name);
 

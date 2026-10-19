@@ -49,23 +49,11 @@ function formatDateTime(iso: string) {
 }
 
 export default function MeetingDetailPage() {
-  const { toast } = useToast();
   const params = useParams<{ meetingId: string }>();
   const router = useRouter();
-  const { has } = useAuth();
-  const canManage = has("MeetingsSchedule");
-
   const initial = getMeetingById(params.meetingId);
-  const [meeting, setMeeting] = React.useState(initial);
-  const [selectedBucket, setSelectedBucket] = React.useState<"yes" | "no" | "maybe" | null>(null);
-  const currentUser = "Arvind Deshmukh";
 
-  React.useEffect(() => {
-    setMeeting(getMeetingById(params.meetingId) ?? null);
-    setSelectedBucket(null);
-  }, [params.meetingId]);
-
-  if (!meeting) {
+  if (!initial) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
         <p className="text-sm text-muted-foreground">Meeting not found.</p>
@@ -75,6 +63,18 @@ export default function MeetingDetailPage() {
       </div>
     );
   }
+
+  return <MeetingDetail key={params.meetingId} initial={initial} />;
+}
+
+function MeetingDetail({ initial }: { initial: NonNullable<ReturnType<typeof getMeetingById>> }) {
+  const { toast } = useToast();
+  const { has } = useAuth();
+  const canManage = has("MeetingsSchedule");
+
+  const [meeting, setMeeting] = React.useState(initial);
+  const [selectedBucket, setSelectedBucket] = React.useState<"yes" | "no" | "maybe" | null>(null);
+  const currentUser = "Arvind Deshmukh";
 
   const status = getMeetingStatus(meeting);
   const isCancelled = status === "cancelled";

@@ -33,37 +33,15 @@ import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
 
 export default function InventoryItemDetailPage() {
-  const { toast } = useToast();
   const params = useParams<{ itemId: string }>();
-  const { user, has } = useAuth();
-  const actor = user?.displayName ?? "Unknown";
-  const canManage = has("InventoryManage");
-  const initialItem = React.useMemo(
-    () => inventoryItems.find((i) => i.id === params.itemId) ?? null,
-    [params.itemId],
-  );
-  const [item, setItem] = React.useState<InventoryItem | null>(initialItem);
-  const [editOpen, setEditOpen] = React.useState(false);
-  const [txnOpen, setTxnOpen] = React.useState(false);
-  const [logs, setLogs] = React.useState<StockTransaction[]>(() =>
-    stockTransactions.filter((t) => t.itemId === params.itemId),
-  );
-
-  React.useEffect(() => {
-    setItem(initialItem);
-  }, [initialItem]);
-
-  React.useEffect(() => {
-    setLogs(stockTransactions.filter((t) => t.itemId === params.itemId));
-  }, [params.itemId]);
-
-  useBreadcrumbTitle(item?.name ?? null);
+  const { has } = useAuth();
+  const initial = inventoryItems.find((x) => x.id === params.itemId);
 
   if (!has("InventoryView")) {
     return <PermissionDenied message="You do not have permission to view inventory." />;
   }
 
-  if (!item) {
+  if (!initial) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Item not found.</p>
@@ -76,6 +54,23 @@ export default function InventoryItemDetailPage() {
       </div>
     );
   }
+
+  return <InventoryItemDetail key={initial.id} initial={initial} />;
+}
+
+function InventoryItemDetail({ initial }: { initial: InventoryItem }) {
+  const { toast } = useToast();
+  const { user, has } = useAuth();
+  const actor = user?.displayName ?? "Unknown";
+  const canManage = has("InventoryManage");
+  const [item, setItem] = React.useState<InventoryItem>(initial);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [txnOpen, setTxnOpen] = React.useState(false);
+  const [logs, setLogs] = React.useState<StockTransaction[]>(() =>
+    stockTransactions.filter((t) => t.itemId === initial.id),
+  );
+
+  useBreadcrumbTitle(item.name);
 
   const lowStock = item.currentStock <= item.reorderLevel;
 

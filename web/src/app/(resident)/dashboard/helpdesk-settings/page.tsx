@@ -27,10 +27,6 @@ import { PageIcon } from "@/components/pageIcon";
 export default function HelpdeskSettingsPage() {
   const { has } = useAuth();
 
-  if (!has("SocietySettingsUpdate")) {
-    return <PermissionDenied message="You do not have permission to manage helpdesk settings." />;
-  }
-
   // Categories section
   const [categories, setCategories] = React.useState<HelpdeskCategory[]>(() => [
     ...initialCategories,
@@ -123,6 +119,10 @@ export default function HelpdeskSettingsPage() {
     setSavingNotifications(false);
     setSavedNotificationsFlag(true);
     setTimeout(() => setSavedNotificationsFlag(false), 2000);
+  }
+
+  if (!has("SocietySettingsUpdate")) {
+    return <PermissionDenied message="You do not have permission to manage helpdesk settings." />;
   }
 
   return (

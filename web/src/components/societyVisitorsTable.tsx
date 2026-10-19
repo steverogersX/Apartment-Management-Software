@@ -185,43 +185,46 @@ export function SocietyVisitorsTable() {
     return profiles;
   }, [profiles, visitors, statFilter]);
 
-  function handleApprove(profile: VisitorProfile) {
-    const pending = visitors.find(
-      (v) => v.phone === profile.phone && v.status === "pending_approval",
-    );
-    if (!pending) return;
-    const now = new Date().toISOString();
-    setVisitors((prev) =>
-      prev.map((v) =>
-        v.id === pending.id
-          ? {
-              ...v,
-              status: "entered" as const,
-              checkIn: now,
-              verifiedBy: "Admin",
-              arrivedAt: v.arrivedAt,
-            }
-          : v,
-      ),
-    );
-    const idx = initialVisitors.findIndex((v) => v.id === pending.id);
-    if (idx !== -1)
-      initialVisitors[idx] = {
-        ...initialVisitors[idx],
-        status: "entered",
-        checkIn: now,
-        verifiedBy: "Admin",
-      };
-    recordAudit({
-      module: "Visitors",
-      entityType: "Visitor",
-      entityId: profile.phone,
-      entityLabel: profile.name,
-      action: "Approve",
-      performedBy: auditUser?.displayName ?? "Unknown",
-    });
-    toast({ title: "Visitor approved" });
-  }
+  const handleApprove = React.useCallback(
+    (profile: VisitorProfile) => {
+      const pending = visitors.find(
+        (v) => v.phone === profile.phone && v.status === "pending_approval",
+      );
+      if (!pending) return;
+      const now = new Date().toISOString();
+      setVisitors((prev) =>
+        prev.map((v) =>
+          v.id === pending.id
+            ? {
+                ...v,
+                status: "entered" as const,
+                checkIn: now,
+                verifiedBy: "Admin",
+                arrivedAt: v.arrivedAt,
+              }
+            : v,
+        ),
+      );
+      const idx = initialVisitors.findIndex((v) => v.id === pending.id);
+      if (idx !== -1)
+        initialVisitors[idx] = {
+          ...initialVisitors[idx],
+          status: "entered",
+          checkIn: now,
+          verifiedBy: "Admin",
+        };
+      recordAudit({
+        module: "Visitors",
+        entityType: "Visitor",
+        entityId: profile.phone,
+        entityLabel: profile.name,
+        action: "Approve",
+        performedBy: auditUser?.displayName ?? "Unknown",
+      });
+      toast({ title: "Visitor approved" });
+    },
+    [visitors, auditUser, toast],
+  );
 
   function handleDeny(profile: VisitorProfile) {
     if (!denyTarget || !denyReason.trim()) return;
@@ -311,23 +314,26 @@ export function SocietyVisitorsTable() {
     toast({ title: "Visitor blocked", variant: "info" });
   }
 
-  function handleUnblock(profile: VisitorProfile) {
-    setBlockedByPhone((prev) => {
-      const next = { ...prev };
-      delete next[profile.phone];
-      return next;
-    });
-    recordAudit({
-      module: "Visitors",
-      entityType: "Visitor",
-      entityId: profile.phone,
-      entityLabel: profile.name,
-      action: "Status Change",
-      performedBy: auditUser?.displayName ?? "Unknown",
-      details: "Unblocked",
-    });
-    toast({ title: "Visitor unblocked" });
-  }
+  const handleUnblock = React.useCallback(
+    (profile: VisitorProfile) => {
+      setBlockedByPhone((prev) => {
+        const next = { ...prev };
+        delete next[profile.phone];
+        return next;
+      });
+      recordAudit({
+        module: "Visitors",
+        entityType: "Visitor",
+        entityId: profile.phone,
+        entityLabel: profile.name,
+        action: "Status Change",
+        performedBy: auditUser?.displayName ?? "Unknown",
+        details: "Unblocked",
+      });
+      toast({ title: "Visitor unblocked" });
+    },
+    [auditUser, toast],
+  );
 
   const columns = React.useMemo<ColumnDef<VisitorProfile>[]>(
     () => [
@@ -510,7 +516,7 @@ export function SocietyVisitorsTable() {
         },
       },
     ],
-    [visitors],
+    [visitors, handleApprove, handleUnblock],
   );
 
   const filters = React.useMemo<DataTableFilterConfig<VisitorProfile>[]>(
