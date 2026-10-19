@@ -12,6 +12,7 @@ import {
   Landmark,
   Lock,
   Receipt,
+  Search,
 } from "lucide-react";
 
 import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -141,6 +143,7 @@ export default function EventDetailPage() {
   const [topUpOpen, setTopUpOpen] = React.useState(false);
   const [expenseOpen, setExpenseOpen] = React.useState(false);
   const [closeOpen, setCloseOpen] = React.useState(false);
+  const [fundingQuery, setFundingQuery] = React.useState("");
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const event = React.useMemo(
@@ -181,6 +184,15 @@ export default function EventDetailPage() {
       data: t,
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const fundingQ = fundingQuery.trim().toLowerCase();
+  const visibleTimeline = fundingQ
+    ? timeline.filter((entry) =>
+        entry.kind === "topup"
+          ? `society top-up ${entry.data.note}`.toLowerCase().includes(fundingQ)
+          : `${entry.data.residentName} ${entry.data.flatLabel}`.toLowerCase().includes(fundingQ),
+      )
+    : timeline;
 
   function handleContribute(values: RecordContributionInput) {
     if (!event) return;
@@ -451,14 +463,31 @@ export default function EventDetailPage() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <Banknote className="size-4 text-muted-foreground" />
                 History · {timeline.length}
               </CardTitle>
+              {timeline.length > 0 && (
+                <div className="relative">
+                  <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={fundingQuery}
+                    onChange={(e) => setFundingQuery(e.target.value)}
+                    placeholder="Search resident or flat…"
+                    className="h-8 w-56 pl-8"
+                  />
+                </div>
+              )}
             </CardHeader>
             <CardContent>
-              <EventTimeline entries={timeline} />
+              {fundingQ && visibleTimeline.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                  No contributions match &ldquo;{fundingQuery.trim()}&rdquo;.
+                </p>
+              ) : (
+                <EventTimeline entries={visibleTimeline} />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

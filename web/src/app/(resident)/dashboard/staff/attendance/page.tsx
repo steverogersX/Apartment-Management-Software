@@ -15,7 +15,7 @@ import {
   type StaffAttendanceEvent,
 } from "@/lib/staffMockData";
 import { useAuth } from "@/hooks/useAuth";
-import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { avatarUrlForName, formatDate, getInitials, gradientForName } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
 import { PageIcon } from "@/components/pageIcon";
@@ -171,8 +171,27 @@ export default function StaffAttendancePage() {
         placeholder: "Search staff",
         predicate: (row, query) => row.staffName.toLowerCase().includes(query.toLowerCase()),
       },
+      {
+        id: "date",
+        label: "Date",
+        type: "select",
+        options: [...new Set(logRows.map((r) => r.date))]
+          .sort()
+          .reverse()
+          .map((d) => ({ label: formatDate(d), value: d })),
+        predicate: (row, value) => row.date === value,
+      },
+      {
+        id: "role",
+        label: "Role",
+        type: "select",
+        options: [...new Set(logRows.map((r) => r.staffRole))]
+          .sort()
+          .map((r) => ({ label: r, value: r })),
+        predicate: (row, value) => row.staffRole === value,
+      },
     ],
-    [],
+    [logRows],
   );
 
   if (!canView) {

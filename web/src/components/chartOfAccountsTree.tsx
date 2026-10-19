@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight, Plus } from "lucide-react";
+import { ChevronRight, Plus, Search } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -22,15 +23,16 @@ import {
   type AddAccountGroupInput,
   type AddLedgerAccountInput,
   type LedgerAccount,
+  groupLedgerIds,
 } from "@/lib/chartOfAccountsMockData";
-import { computeGroupBalance, computeLedgerBalance } from "@/lib/bankAccountsMockData";
+import { computeAllLedgerBalances } from "@/lib/bankAccountsMockData";
 import { AddAccountGroupForm } from "./chart-of-accounts/addAccountGroupForm";
 import { AddLedgerAccountForm } from "./chart-of-accounts/addLedgerAccountForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { useToast } from "@/components/ui/toast";
 
-function LedgerRow({ account }: { account: LedgerAccount }) {
+function LedgerRow({ account, balance }: { account: LedgerAccount; balance: number }) {
   return (
     <div className="flex items-center gap-3 rounded-md px-2 py-2 pl-9 hover:bg-muted/50">
       <div className="flex min-w-0 flex-1 flex-col">
@@ -38,7 +40,7 @@ function LedgerRow({ account }: { account: LedgerAccount }) {
       </div>
       <Badge variant="outline">{account.type}</Badge>
       <span className="w-28 shrink-0 text-right text-sm font-medium tabular-nums text-foreground">
-        {formatCurrency(computeLedgerBalance(account.id))}
+        {formatCurrency(balance)}
       </span>
     </div>
   );
@@ -50,17 +52,19 @@ function GroupNode({
   ledgers,
   expandedIds,
   onToggle,
+  balances,
 }: {
   group: AccountGroup;
   groups: AccountGroup[];
   ledgers: LedgerAccount[];
   expandedIds: string[];
   onToggle: (id: string) => void;
+  balances: Map<string, number>;
 }) {
   const expanded = expandedIds.includes(group.id);
   const children = groups.filter((g) => g.parentGroupId === group.id);
   const ownLedgers = ledgers.filter((a) => a.groupId === group.id);
-  const balance = computeGroupBalance(group.id);
+  const balance = groupLedgerIds(group.id).reduce((sum, id) => sum + (balances.get(id) ?? 0), 0);
 
   return (
     <Collapsible open={expanded} onOpenChange={() => onToggle(group.id)}>
@@ -88,10 +92,11 @@ function GroupNode({
             ledgers={ledgers}
             expandedIds={expandedIds}
             onToggle={onToggle}
+            balances={balances}
           />
         ))}
         {ownLedgers.map((a) => (
-          <LedgerRow key={a.id} account={a} />
+          <LedgerRow key={a.id} account={a} balance={balances.get(a.id) ?? 0} />
         ))}
         {children.length === 0 && ownLedgers.length === 0 && (
           <p className="px-2 py-1 pl-9 text-xs text-muted-foreground">No accounts yet.</p>
@@ -113,6 +118,37 @@ export function ChartOfAccountsTree() {
   );
   const [groupOpen, setGroupOpen] = React.useState(false);
   const [ledgerOpen, setLedgerOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const balances = React.useMemo(() => computeAllLedgerBalances(), []);
+
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    const byId = new Map(groups.map((g) => [g.id, g]));
+    const matchedGroupIds = new Set(
+      groups.filter((g) => g.name.toLowerCase().includes(q)).map((g) => g.id),
+    );
+    const underMatchedGroup = (groupId: string | null): boolean => {
+      for (let id = groupId; id; id = byId.get(id)?.parentGroupId ?? null) {
+        if (matchedGroupIds.has(id)) return true;
+      }
+      return false;
+    };
+    const visibleLedgers = ledgers.filter(
+      (l) => l.name.toLowerCase().includes(q) || underMatchedGroup(l.groupId),
+    );
+    const visibleGroupIds = new Set<string>();
+    const addWithAncestors = (groupId: string | null) => {
+      for (let id = groupId; id; id = byId.get(id)?.parentGroupId ?? null) visibleGroupIds.add(id);
+    };
+    visibleLedgers.forEach((l) => addWithAncestors(l.groupId));
+    groups.filter((g) => underMatchedGroup(g.id)).forEach((g) => addWithAncestors(g.id));
+    return {
+      groups: groups.filter((g) => visibleGroupIds.has(g.id)),
+      ledgers: visibleLedgers,
+      expandedIds: [...visibleGroupIds],
+    };
+  }, [query, groups, ledgers]);
 
   function toggle(id: string) {
     setExpandedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -169,7 +205,8 @@ export function ChartOfAccountsTree() {
     toast({ title: "Ledger account added" });
   }
 
-  const topLevel = groups.filter((g) => g.parentGroupId === null);
+  const shownGroups = filtered?.groups ?? groups;
+  const topLevel = shownGroups.filter((g) => g.parentGroupId === null);
 
   return (
     <>
@@ -195,16 +232,32 @@ export function ChartOfAccountsTree() {
           )}
         </CardHeader>
         <CardContent className="flex flex-col gap-0.5">
-          {topLevel.map((group) => (
-            <GroupNode
-              key={group.id}
-              group={group}
-              groups={groups}
-              ledgers={ledgers}
-              expandedIds={expandedIds}
-              onToggle={toggle}
+          <div className="relative mb-2">
+            <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search ledger or group…"
+              className="w-full pl-8 sm:w-72"
             />
-          ))}
+          </div>
+          {topLevel.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+              No accounts match &ldquo;{query.trim()}&rdquo;.
+            </p>
+          ) : (
+            topLevel.map((group) => (
+              <GroupNode
+                key={group.id}
+                group={group}
+                groups={shownGroups}
+                ledgers={filtered?.ledgers ?? ledgers}
+                expandedIds={filtered?.expandedIds ?? expandedIds}
+                onToggle={toggle}
+                balances={balances}
+              />
+            ))
+          )}
         </CardContent>
       </Card>
 

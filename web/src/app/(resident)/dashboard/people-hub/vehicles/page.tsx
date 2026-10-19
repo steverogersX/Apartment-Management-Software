@@ -160,12 +160,13 @@ export default function PeopleHubVehiclesPage() {
         id: "search",
         label: "Search",
         type: "search",
-        placeholder: "Search reg, owner, model…",
+        placeholder: "Search reg, owner, flat, model…",
         predicate: (row, query) => {
           const q = query.trim().toLowerCase();
           return (
             row.registrationNumber.toLowerCase().includes(q) ||
             row.ownerName.toLowerCase().includes(q) ||
+            row.flatLabel.toLowerCase().includes(q) ||
             `${row.make} ${row.model}`.toLowerCase().includes(q)
           );
         },
@@ -190,6 +191,25 @@ export default function PeopleHubVehiclesPage() {
           { label: "Two-wheeler", value: "two_wheeler" },
         ],
         predicate: (row, value) => row.type === value,
+      },
+      {
+        id: "tower",
+        label: "Tower",
+        type: "select",
+        options: [...new Set(flats.map((f) => f.tower))]
+          .sort()
+          .map((t) => ({ label: `Tower ${t}`, value: `Tower ${t}` })),
+        predicate: (row, value) => row.tower === value,
+      },
+      {
+        id: "parking",
+        label: "Parking",
+        type: "select",
+        options: [
+          { label: "Has a slot", value: "assigned" },
+          { label: "No slot", value: "none" },
+        ],
+        predicate: (row, value) => (row.parkingSlot ? "assigned" : "none") === value,
       },
     ],
     [],

@@ -149,20 +149,35 @@ export function MaintenanceDuesTable({
     return showFlat ? all : all.filter((c) => c.id !== "flatLabel");
   }, [showFlat]);
 
-  const filters = React.useMemo<DataTableFilterConfig<DuesRow>[]>(
-    () => [
+  const filters = React.useMemo<DataTableFilterConfig<DuesRow>[]>(() => {
+    const periods = [...source]
+      .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
+      .map((d) => d.period)
+      .filter((p, i, all) => all.indexOf(p) === i);
+    const towers = [...new Set(source.map((d) => d.tower))].sort();
+    const modes = [...new Set(source.map((d) => d.paidMode).filter((m) => m !== null))].sort();
+    const list: DataTableFilterConfig<DuesRow>[] = [
       {
         id: "search",
         label: "Search",
         type: "search",
-        placeholder: "Search flat or owner",
+        placeholder: showFlat ? "Search flat, owner or receipt" : "Search period or receipt",
         predicate: (row, query) => {
           const q = query.toLowerCase();
           return (
             (row.flatLabel ?? "").toLowerCase().includes(q) ||
-            row.ownerName.toLowerCase().includes(q)
+            row.ownerName.toLowerCase().includes(q) ||
+            row.period.toLowerCase().includes(q) ||
+            (row.receiptNumber ?? "").toLowerCase().includes(q)
           );
         },
+      },
+      {
+        id: "period",
+        label: "Month",
+        type: "select",
+        options: periods.map((p) => ({ label: p, value: p })),
+        predicate: (row, value) => row.period === value,
       },
       {
         id: "status",
@@ -174,9 +189,27 @@ export function MaintenanceDuesTable({
         })),
         predicate: (row, value) => row.status === value,
       },
-    ],
-    [],
-  );
+    ];
+    if (showFlat && towers.length > 1) {
+      list.push({
+        id: "tower",
+        label: "Tower",
+        type: "select",
+        options: towers.map((t) => ({ label: `Tower ${t}`, value: t })),
+        predicate: (row, value) => row.tower === value,
+      });
+    }
+    if (modes.length > 1) {
+      list.push({
+        id: "mode",
+        label: "Payment mode",
+        type: "select",
+        options: modes.map((m) => ({ label: m, value: m })),
+        predicate: (row, value) => row.paidMode === value,
+      });
+    }
+    return list;
+  }, [source, showFlat]);
 
   return (
     <DataTable

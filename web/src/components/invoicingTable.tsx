@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { additionalCharges, billingRateSettings, gstSettings } from "@/lib/billingSettingsMockData";
-import { flats } from "@/lib/flatsMockData";
+import { flatLabelById, flats } from "@/lib/flatsMockData";
 import {
   computeInvoiceTotals,
   computeOutstandingBalance,
@@ -35,11 +35,7 @@ import { recordAudit } from "@/lib/auditLog";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 
-function flatLabel(flatId: string) {
-  const f = flats.find((fl) => fl.id === flatId);
-  if (!f) return flatId;
-  return `${f.tower}-${f.flatNumber}`;
-}
+const flatLabel = flatLabelById;
 
 function statusBadgeVariant(status: string) {
   if (status === "Paid") return "secondary";
@@ -323,6 +319,15 @@ export function InvoicingTable({
         type: "select",
         options: billingPeriods.map((p) => ({ label: p, value: p })),
         predicate: (row, value) => row.billingPeriod === value,
+      },
+      {
+        id: "tower",
+        label: "Tower",
+        type: "select",
+        options: Array.from(new Set(flats.map((f) => f.tower)))
+          .sort()
+          .map((t) => ({ label: `Tower ${t}`, value: t })),
+        predicate: (row, value) => flatLabel(row.flatId).startsWith(`${value}-`),
       },
       {
         id: "status",

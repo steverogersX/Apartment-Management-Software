@@ -173,6 +173,25 @@ export function InventoryTable() {
         predicate: (row, value) => row.category === value,
       },
       {
+        id: "stockStatus",
+        label: "Stock",
+        type: "select",
+        options: [
+          { label: "Low stock", value: "low" },
+          { label: "In stock", value: "ok" },
+        ],
+        predicate: (row, value) => (row.currentStock <= row.reorderLevel ? "low" : "ok") === value,
+      },
+      {
+        id: "store",
+        label: "Store",
+        type: "select",
+        options: Array.from(new Set(inventoryItems.map((i) => i.store)))
+          .sort()
+          .map((s) => ({ label: s, value: s })),
+        predicate: (row, value) => row.store === value,
+      },
+      {
         id: "groupBy",
         label: "Group by",
         type: "groupBy",

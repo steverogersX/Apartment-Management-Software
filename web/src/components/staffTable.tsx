@@ -11,6 +11,7 @@ import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
   STAFF_ROLES,
+  STAFF_SHIFTS,
   type StaffMember,
   type StaffRole,
   type StaffStatus,
@@ -161,6 +162,23 @@ export function StaffTable({
         type: "select",
         options: STAFF_ROLES.map((r: StaffRole) => ({ label: r, value: r })),
         predicate: (row, value) => row.role === value,
+      },
+      {
+        id: "shift",
+        label: "Shift",
+        type: "select",
+        options: STAFF_SHIFTS.map((s) => ({ label: s, value: s })),
+        predicate: (row, value) => row.shift === value,
+      },
+      {
+        id: "idProof",
+        label: "ID proof",
+        type: "select",
+        options: [
+          { label: "Verified", value: "verified" },
+          { label: "Pending", value: "pending" },
+        ],
+        predicate: (row, value) => row.idProofVerified === (value === "verified"),
       },
       {
         id: "status",

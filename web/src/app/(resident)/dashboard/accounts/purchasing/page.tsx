@@ -34,6 +34,7 @@ import {
   purchaseRequests as initialPRs,
   vendors as initialVendors,
   type PurchaseOrder,
+  type PurchaseOrderStatus,
   type PurchaseRequest,
   type Vendor,
 } from "@/lib/purchasingMockData";
@@ -61,9 +62,6 @@ export default function PurchasingPage() {
   const canApprove = has("PurchasingApprove");
   const canManage = has("PurchasingManage");
 
-  if (!has("PurchasingView")) {
-    return <PermissionDenied message="You do not have permission to view purchasing." />;
-  }
   const [prs, setPrs] = React.useState<PurchaseRequest[]>(() => [...initialPRs]);
   const [pos, setPos] = React.useState<PurchaseOrder[]>(() => [...initialPOs]);
   const [vendors, setVendors] = React.useState<Vendor[]>(() => [...initialVendors]);
@@ -488,6 +486,64 @@ export default function PurchasingPage() {
     [],
   );
 
+  const poFilters = React.useMemo<DataTableFilterConfig<PurchaseOrder>[]>(
+    () => [
+      {
+        id: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Search PO # or vendor",
+        predicate: (row, q) => {
+          const query = q.toLowerCase();
+          const vendorName = vendors.find((v) => v.id === row.vendorId)?.name ?? "";
+          return (
+            row.poNumber.toLowerCase().includes(query) || vendorName.toLowerCase().includes(query)
+          );
+        },
+      },
+      {
+        id: "status",
+        label: "Status",
+        type: "select",
+        options: (["Draft", "Sent", "Received", "Cancelled"] as PurchaseOrderStatus[]).map((s) => ({
+          label: s,
+          value: s,
+        })),
+        predicate: (row, v) => row.status === v,
+      },
+    ],
+    [vendors],
+  );
+
+  const vendorFilters = React.useMemo<DataTableFilterConfig<Vendor>[]>(
+    () => [
+      {
+        id: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Search vendor or contact",
+        predicate: (row, q) => {
+          const query = q.toLowerCase();
+          return (
+            row.name.toLowerCase().includes(query) ||
+            row.contactPerson.toLowerCase().includes(query) ||
+            row.phone.includes(query)
+          );
+        },
+      },
+      {
+        id: "category",
+        label: "Category",
+        type: "select",
+        options: [...new Set(vendors.map((v) => v.category))]
+          .sort()
+          .map((c) => ({ label: c, value: c })),
+        predicate: (row, v) => row.category === v,
+      },
+    ],
+    [vendors],
+  );
+
   const poColumns = React.useMemo<ColumnDef<PurchaseOrder>[]>(
     () => [
       {
@@ -623,6 +679,10 @@ export default function PurchasingPage() {
     [],
   );
 
+  if (!has("PurchasingView")) {
+    return <PermissionDenied message="You do not have permission to view purchasing." />;
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
@@ -673,6 +733,7 @@ export default function PurchasingPage() {
             columns={poColumns}
             getRowId={(r) => r.id}
             title="Orders"
+            filters={poFilters}
             showPageSize
             pageSize={8}
             itemLabel="order"
@@ -695,6 +756,7 @@ export default function PurchasingPage() {
             columns={vendorColumns}
             getRowId={(r) => r.id}
             title="Vendors"
+            filters={vendorFilters}
             showPageSize
             pageSize={8}
             itemLabel="vendor"

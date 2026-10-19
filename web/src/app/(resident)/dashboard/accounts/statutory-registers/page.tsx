@@ -244,6 +244,7 @@ export default function StatutoryRegistersPage() {
             columns={minutesColumns}
             getRowId={(r) => r.id}
             title="Minutes Register"
+            filters={minutesFilters}
             enableColumnVisibility
             showPageSize
             pageSize={8}
@@ -329,5 +330,40 @@ const minutesColumns: ColumnDef<Meeting>[] = [
         </span>
       );
     },
+  },
+];
+
+function minutesState(meeting: Meeting) {
+  if (getMeetingStatus(meeting) === "cancelled") return "cancelled";
+  return (meeting.minutes?.length ?? 0) > 0 ? "filed" : "pending";
+}
+
+const minutesFilters: DataTableFilterConfig<Meeting>[] = [
+  {
+    id: "search",
+    label: "Search",
+    type: "search",
+    placeholder: "Search meeting",
+    predicate: (row, query) => row.title.toLowerCase().includes(query.toLowerCase()),
+  },
+  {
+    id: "type",
+    label: "Type",
+    type: "select",
+    options: [...new Set(meetings.map(meetingTypeLabel))]
+      .sort()
+      .map((t) => ({ label: t, value: t })),
+    predicate: (row, value) => meetingTypeLabel(row) === value,
+  },
+  {
+    id: "minutes",
+    label: "Minutes",
+    type: "select",
+    options: [
+      { label: "Filed", value: "filed" },
+      { label: "Pending", value: "pending" },
+      { label: "Cancelled", value: "cancelled" },
+    ],
+    predicate: (row, value) => minutesState(row) === value,
   },
 ];

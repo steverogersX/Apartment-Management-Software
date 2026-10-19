@@ -171,6 +171,31 @@ export function ActivityLogTable() {
         options: ACTIONS.map((a) => ({ label: a, value: a })),
         predicate: (row, value) => row.action === value,
       },
+      {
+        id: "performedBy",
+        label: "Performed by",
+        type: "select",
+        options: [...new Set(auditLog.map((e) => e.performedBy))]
+          .sort()
+          .map((name) => ({ label: name, value: name })),
+        predicate: (row, value) => row.performedBy === value,
+      },
+      {
+        id: "when",
+        label: "When",
+        type: "select",
+        options: [
+          { label: "Today", value: "1" },
+          { label: "Last 7 days", value: "7" },
+          { label: "Last 30 days", value: "30" },
+        ],
+        predicate: (row, value) => {
+          const since = new Date();
+          since.setHours(0, 0, 0, 0);
+          since.setDate(since.getDate() - (Number(value) - 1));
+          return new Date(row.performedAt).getTime() >= since.getTime();
+        },
+      },
     ],
     [],
   );

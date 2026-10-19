@@ -273,8 +273,33 @@ export function VouchersTable() {
         })),
         predicate: (row, value) => row.status === value,
       },
+      {
+        id: "month",
+        label: "Month",
+        type: "select",
+        options: [...new Set(rows.map((r) => r.date.slice(0, 7)))]
+          .sort()
+          .reverse()
+          .map((m) => ({
+            label: new Date(`${m}-01T00:00:00`).toLocaleDateString("en-IN", {
+              month: "long",
+              year: "numeric",
+            }),
+            value: m,
+          })),
+        predicate: (row, value) => row.date.slice(0, 7) === value,
+      },
+      {
+        id: "source",
+        label: "Source",
+        type: "select",
+        options: [...new Set(rows.map((r) => r.sourceModule ?? "Manual"))]
+          .sort()
+          .map((s) => ({ label: s, value: s })),
+        predicate: (row, value) => (row.sourceModule ?? "Manual") === value,
+      },
     ],
-    [],
+    [rows],
   );
 
   return (

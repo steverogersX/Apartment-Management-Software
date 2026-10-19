@@ -248,7 +248,44 @@ export function ComplaintsTable({
         ),
         predicate: (row, value) => row.status === value,
       },
+      {
+        id: "priority",
+        label: "Priority",
+        type: "select",
+        options: (["high", "medium", "low"] as ComplaintPriority[]).map((p) => ({
+          label: PRIORITY_META[p].label,
+          value: p,
+        })),
+        predicate: (row, value) => row.priority === value,
+      },
     ];
+    const categories = [...new Set(source.map((r) => r.category))].sort();
+    if (categories.length > 1) {
+      base.push({
+        id: "category",
+        label: "Category",
+        type: "select",
+        options: categories.map((c) => ({ label: c, value: c })),
+        predicate: (row, value) => row.category === value,
+      });
+    }
+    const assignees = [
+      ...new Set(source.map((r) => r.assignedTo?.name).filter((n): n is string => !!n)),
+    ].sort();
+    const hasUnassigned = source.some((r) => !r.assignedTo);
+    if (assignees.length + (hasUnassigned ? 1 : 0) > 1) {
+      base.push({
+        id: "assignee",
+        label: "Assigned to",
+        type: "select",
+        options: [
+          ...assignees.map((n) => ({ label: n, value: n })),
+          ...(hasUnassigned ? [{ label: "Unassigned", value: "__unassigned" }] : []),
+        ],
+        predicate: (row, value) =>
+          value === "__unassigned" ? !row.assignedTo : row.assignedTo?.name === value,
+      });
+    }
     if (enableGrouping) {
       base.push({
         id: "groupBy",
@@ -264,7 +301,7 @@ export function ComplaintsTable({
       });
     }
     return base;
-  }, [enableGrouping]);
+  }, [enableGrouping, source]);
 
   return (
     <DataTable
