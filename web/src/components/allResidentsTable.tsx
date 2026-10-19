@@ -55,10 +55,7 @@ function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
   const selectedCount = flatsForResident.filter((f) => selected[f.id]).length;
   const allSelected = flatsForResident.length > 0 && selectedCount === flatsForResident.length;
   const someSelected = selectedCount > 0 && !allSelected;
-  const revealCount = useStaggeredReveal(
-    flatsForResident.map((f) => f.id).join(" "),
-    flatsForResident.length,
-  );
+  const revealCount = useStaggeredReveal(flatsForResident.length);
 
   if (flatsForResident.length === 0) {
     return (

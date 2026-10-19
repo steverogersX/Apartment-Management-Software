@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { assets, assetServiceLogs, type AssetCategory } from "./assetsMockData";
-import { receipts, type PaymentMode } from "./duesMockData";
+import { receipts, type PaymentMode, type Receipt } from "./duesMockData";
 import { flats, type FlatRecord } from "./flatsMockData";
 import { computeInvoiceTotals, invoices } from "./invoicingMockData";
 import { residents } from "./residentsMockData";
@@ -342,24 +342,34 @@ export type FlatMaintenanceDue = {
   receiptNumber: string | null;
 };
 
-function ownerNameForFlat(flat: FlatRecord): string {
+function ownerNameForFlat(
+  flat: FlatRecord,
+  residentById: Map<string, (typeof residents)[number]>,
+): string {
   if (flat.owner) return flat.owner.name;
   const occupants = flat.currentResidentIds
-    .map((id) => residents.find((r) => r.id === id))
+    .map((id) => residentById.get(id))
     .filter((r): r is NonNullable<typeof r> => !!r);
   return (occupants.find((r) => r.occupancyType === "owner") ?? occupants[0])?.name ?? "—";
 }
 
 export function getFlatMaintenanceDues(): FlatMaintenanceDue[] {
   const now = Date.now();
+  const flatById = new Map(flats.map((f) => [f.id, f]));
+  const residentById = new Map(residents.map((r) => [r.id, r]));
+  const latestReceipt = new Map<string, Receipt>();
+  for (const r of receipts) {
+    const current = latestReceipt.get(r.invoiceId);
+    if (!current || new Date(r.paymentDate).getTime() > new Date(current.paymentDate).getTime()) {
+      latestReceipt.set(r.invoiceId, r);
+    }
+  }
   return invoices
     .filter((invoice) => invoice.status !== "Cancelled" && invoice.status !== "Draft")
     .flatMap((invoice) => {
-      const flat = flats.find((f) => f.id === invoice.flatId);
+      const flat = flatById.get(invoice.flatId);
       if (!flat) return [];
-      const receipt = receipts
-        .filter((r) => r.invoiceId === invoice.id)
-        .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime())[0];
+      const receipt = latestReceipt.get(invoice.id);
       const status: MaintenancePaymentStatus =
         invoice.status === "Paid"
           ? "paid"
@@ -372,7 +382,7 @@ export function getFlatMaintenanceDues(): FlatMaintenanceDue[] {
           invoiceId: invoice.id,
           tower: flat.tower,
           flatNumber: flat.flatNumber,
-          ownerName: ownerNameForFlat(flat),
+          ownerName: ownerNameForFlat(flat, residentById),
           period: invoice.billingPeriod,
           amount: computeInvoiceTotals(invoice).total,
           amountPaid: invoice.amountPaid,
@@ -386,14 +396,37 @@ export function getFlatMaintenanceDues(): FlatMaintenanceDue[] {
     });
 }
 
+export function flatDuesKey(tower: string, flatNumber: string) {
+  return `${tower}-${flatNumber}`;
+}
+
+/** Every flat's dues, newest first, built in one pass — use this when looking up many flats. */
+export function getDuesByFlat(
+  dues: FlatMaintenanceDue[] = getFlatMaintenanceDues(),
+): Map<string, FlatMaintenanceDue[]> {
+  const byFlat = new Map<string, FlatMaintenanceDue[]>();
+  for (const d of dues) {
+    const key = flatDuesKey(d.tower, d.flatNumber);
+    const list = byFlat.get(key);
+    if (list) list.push(d);
+    else byFlat.set(key, [d]);
+  }
+  for (const list of byFlat.values()) {
+    list.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+  }
+  return byFlat;
+}
+
 export function duesForFlat(tower: string, flatNumber: string): FlatMaintenanceDue[] {
-  return getFlatMaintenanceDues()
-    .filter((d) => d.tower === tower && d.flatNumber === flatNumber)
-    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+  return getDuesByFlat().get(flatDuesKey(tower, flatNumber)) ?? [];
+}
+
+export function maintenanceStatusFromDues(dues: FlatMaintenanceDue[]): "paid" | "due" {
+  return dues.some((d) => d.status !== "paid") ? "due" : "paid";
 }
 
 export function maintenanceStatusForFlat(tower: string, flatNumber: string): "paid" | "due" {
-  return duesForFlat(tower, flatNumber).some((d) => d.status !== "paid") ? "due" : "paid";
+  return maintenanceStatusFromDues(duesForFlat(tower, flatNumber));
 }
 
 export function societyCollectionSummary(dues: FlatMaintenanceDue[] = getFlatMaintenanceDues()) {

@@ -38,6 +38,7 @@ import {
   getDisplayStatus,
   invoices,
   isOverdue,
+  isPastDue,
   type Invoice,
 } from "@/lib/invoicingMockData";
 import { receipts, type RecordPaymentInput } from "@/lib/duesMockData";
@@ -50,42 +51,15 @@ import { PermissionDenied } from "@/components/permissionDenied";
 import { useToast } from "@/components/ui/toast";
 
 export default function InvoiceDetailPage() {
-  const { toast } = useToast();
   const params = useParams<{ invoiceId: string }>();
-  const { user, has } = useAuth();
-  const actor = user?.displayName ?? "Unknown";
-  const canManageInvoices = has("InvoicingManage");
-  const canRecordPayment = has("DuesReceiptsManage");
-  const initial = React.useMemo(
-    () => invoices.find((inv) => inv.id === params.invoiceId) ?? null,
-    [params.invoiceId],
-  );
-  const [invoice, setInvoice] = React.useState<Invoice | null>(initial);
-  const [lateOpen, setLateOpen] = React.useState(false);
-  const [lateAmount, setLateAmount] = React.useState(500);
-  const [lateDesc, setLateDesc] = React.useState("Late fee");
-  const [cancelOpen, setCancelOpen] = React.useState(false);
-  const [cancelReason, setCancelReason] = React.useState("");
-  const [paymentOpen, setPaymentOpen] = React.useState(false);
-  const [invoiceReceipts, setInvoiceReceipts] = React.useState(() =>
-    receipts.filter((r) => r.invoiceId === params.invoiceId),
-  );
-
-  React.useEffect(() => {
-    setInvoice(initial);
-  }, [initial]);
-
-  React.useEffect(() => {
-    setInvoiceReceipts(receipts.filter((r) => r.invoiceId === params.invoiceId));
-  }, [params.invoiceId]);
-
-  useBreadcrumbTitle(invoice?.invoiceNumber ?? null);
+  const { has } = useAuth();
+  const initial = invoices.find((inv) => inv.id === params.invoiceId);
 
   if (!has("InvoicingViewAll")) {
     return <PermissionDenied message="You do not have permission to view invoices." />;
   }
 
-  if (!invoice) {
+  if (!initial) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Invoice not found.</p>
@@ -98,6 +72,28 @@ export default function InvoiceDetailPage() {
       </div>
     );
   }
+
+  return <InvoiceDetail key={initial.id} initial={initial} />;
+}
+
+function InvoiceDetail({ initial }: { initial: Invoice }) {
+  const { toast } = useToast();
+  const { user, has } = useAuth();
+  const actor = user?.displayName ?? "Unknown";
+  const canManageInvoices = has("InvoicingManage");
+  const canRecordPayment = has("DuesReceiptsManage");
+  const [invoice, setInvoice] = React.useState<Invoice>(initial);
+  const [lateOpen, setLateOpen] = React.useState(false);
+  const [lateAmount, setLateAmount] = React.useState(500);
+  const [lateDesc, setLateDesc] = React.useState("Late fee");
+  const [cancelOpen, setCancelOpen] = React.useState(false);
+  const [cancelReason, setCancelReason] = React.useState("");
+  const [paymentOpen, setPaymentOpen] = React.useState(false);
+  const [invoiceReceipts, setInvoiceReceipts] = React.useState(() =>
+    receipts.filter((r) => r.invoiceId === initial.id),
+  );
+
+  useBreadcrumbTitle(invoice.invoiceNumber);
 
   const totals = computeInvoiceTotals(invoice);
   const displayStatus = getDisplayStatus(invoice);
@@ -221,7 +217,7 @@ export default function InvoiceDetailPage() {
           </Button>
         )}
         {canManageInvoices &&
-          new Date(invoice.dueDate).getTime() < Date.now() &&
+          isPastDue(invoice) &&
           invoice.status !== "Paid" &&
           invoice.status !== "Cancelled" &&
           invoice.status !== "Draft" && (

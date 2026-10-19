@@ -358,14 +358,15 @@ export function DataTable<TData>({
   const groupValue = groupFilter ? (filterValues[groupFilter.id] ?? "none") : "none";
   const isGrouped = !!groupFilter && groupValue !== "none";
 
+  const deferredFilterValues = React.useDeferredValue(filterValues);
   const filteredData = React.useMemo(() => {
     return activeFilters.reduce((rows, filter) => {
       if (filter.type === "groupBy") return rows;
-      const value = filterValues[filter.id];
+      const value = deferredFilterValues[filter.id];
       if (!value || value === "all") return rows;
       return rows.filter((row) => filter.predicate(row, value));
     }, data);
-  }, [activeFilters, data, filterValues]);
+  }, [activeFilters, data, deferredFilterValues]);
 
   const displayData = React.useMemo(() => {
     if (!isGrouped || !groupFilter || groupFilter.type !== "groupBy") return filteredData;
@@ -400,8 +401,7 @@ export function DataTable<TData>({
   });
 
   const pageRows = table.getRowModel().rows;
-  const pageRowsKey = pageRows.map((r) => r.id).join(" ");
-  const revealCount = useStaggeredReveal(pageRowsKey, pageRows.length);
+  const revealCount = useStaggeredReveal(pageRows.length);
 
   const leafColumns = table.getAllLeafColumns();
   const orderedColumnIds = table.getVisibleLeafColumns().map((c) => c.id);

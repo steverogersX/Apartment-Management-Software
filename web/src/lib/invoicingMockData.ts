@@ -46,6 +46,10 @@ export function computeOutstandingBalance(invoice: Invoice) {
 
 export function isOverdue(invoice: Invoice) {
   if (invoice.status !== "Issued") return false;
+  return isPastDue(invoice);
+}
+
+export function isPastDue(invoice: Invoice) {
   return new Date(invoice.dueDate).getTime() < Date.now();
 }
 
@@ -600,3 +604,16 @@ invoices.push(
   seededInvoice(101, "flat-b304", "04", "April", true),
   seededInvoice(102, "flat-b304", "05", "May", true),
 );
+
+let invoiceNumberIndex: { size: number; byId: Map<string, string> } | null = null;
+
+/** Invoice numbers never change, so this caches only the number, never the (replaceable) invoice. */
+export function invoiceNumberFor(invoiceId: string): string {
+  if (!invoiceNumberIndex || invoiceNumberIndex.size !== invoices.length) {
+    invoiceNumberIndex = {
+      size: invoices.length,
+      byId: new Map(invoices.map((i) => [i.id, i.invoiceNumber])),
+    };
+  }
+  return invoiceNumberIndex.byId.get(invoiceId) ?? invoiceId;
+}

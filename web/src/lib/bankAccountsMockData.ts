@@ -44,6 +44,18 @@ export function computeLedgerBalance(ledgerAccountId: string): number {
     }, opening);
 }
 
+/** Every ledger's balance in a single pass over the vouchers. */
+export function computeAllLedgerBalances(): Map<string, number> {
+  const balances = new Map<string, number>();
+  for (const b of bankAccountDetails) balances.set(b.ledgerAccountId, b.openingBalance);
+  for (const v of vouchers) {
+    if (v.status !== "Posted") continue;
+    balances.set(v.debitAccountId, (balances.get(v.debitAccountId) ?? 0) + v.amount);
+    balances.set(v.creditAccountId, (balances.get(v.creditAccountId) ?? 0) - v.amount);
+  }
+  return balances;
+}
+
 export function computeGroupBalance(groupId: string): number {
   return groupLedgerIds(groupId).reduce((sum, id) => sum + computeLedgerBalance(id), 0);
 }

@@ -32,7 +32,12 @@ import {
   type FlatVehicleEntry,
   getTowers,
 } from "@/lib/flatsMockData";
-import { duesForFlat, maintenanceStatusForFlat } from "@/lib/maintenanceMockData";
+import {
+  flatDuesKey,
+  getDuesByFlat,
+  maintenanceStatusFromDues,
+  type FlatMaintenanceDue,
+} from "@/lib/maintenanceMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { StatusIcon } from "@/components/statusIcon";
@@ -56,16 +61,16 @@ for (const v of flatVehicleHistory) {
   vehiclesByFlat.set(v.flatId, [...(vehiclesByFlat.get(v.flatId) ?? []), v]);
 }
 
-function FlatMaintenanceCell({ flat }: { flat: FlatRecord }) {
+function FlatMaintenanceCell({ flat, dues }: { flat: FlatRecord; dues: FlatMaintenanceDue[] }) {
   const { has } = useAuth();
-  const status = maintenanceStatusForFlat(flat.tower, flat.flatNumber);
+  const status = maintenanceStatusFromDues(dues);
   const content = (
     <>
       <StatusIcon status={status} />
       <span className="whitespace-nowrap text-foreground">{MAINTENANCE_LABEL[status]}</span>
     </>
   );
-  if (!has("MaintenanceViewAll") || duesForFlat(flat.tower, flat.flatNumber).length === 0) {
+  if (!has("MaintenanceViewAll") || dues.length === 0) {
     return <div className="flex items-center gap-2">{content}</div>;
   }
   return (
@@ -154,10 +159,7 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
   const selectedCount = currentResidents.filter((r) => selected[r.id]).length;
   const allSelected = currentResidents.length > 0 && selectedCount === currentResidents.length;
   const someSelected = selectedCount > 0 && !allSelected;
-  const revealCount = useStaggeredReveal(
-    currentResidents.map((r) => r.id).join(" "),
-    currentResidents.length,
-  );
+  const revealCount = useStaggeredReveal(currentResidents.length);
 
   if (currentResidents.length === 0) {
     return (
@@ -321,6 +323,12 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function FlatsTable() {
+  const duesByFlat = React.useMemo(() => getDuesByFlat(), []);
+  const duesFor = React.useCallback(
+    (flat: FlatRecord) => duesByFlat.get(flatDuesKey(flat.tower, flat.flatNumber)) ?? [],
+    [duesByFlat],
+  );
+
   const columns = React.useMemo<ColumnDef<FlatRecord>[]>(
     () => [
       {
@@ -372,10 +380,10 @@ export function FlatsTable() {
       },
       {
         id: "maintenanceStatus",
-        accessorFn: (row) => maintenanceStatusForFlat(row.tower, row.flatNumber),
+        accessorFn: (row) => maintenanceStatusFromDues(duesFor(row)),
         meta: { label: "Maintenance" },
         header: () => <DataTableColumnHeader label="Maintenance" />,
-        cell: ({ row }) => <FlatMaintenanceCell flat={row.original} />,
+        cell: ({ row }) => <FlatMaintenanceCell flat={row.original} dues={duesFor(row.original)} />,
       },
       {
         id: "occupancyStatus",
@@ -442,7 +450,7 @@ export function FlatsTable() {
           ) : null,
       },
     ],
-    [],
+    [duesFor],
   );
 
   const filters = React.useMemo<DataTableFilterConfig<FlatRecord>[]>(
@@ -485,6 +493,39 @@ export function FlatsTable() {
         predicate: (row, value) => row.occupancyStatus === value,
       },
       {
+        id: "type",
+        label: "Type",
+        type: "select",
+        options: [...new Set(flats.map((f) => f.type))].sort().map((t) => ({ label: t, value: t })),
+        predicate: (row, value) => row.type === value,
+      },
+      {
+        id: "maintenanceStatus",
+        label: "Maintenance",
+        type: "select",
+        options: [
+          { label: "Paid", value: "paid" },
+          { label: "Due", value: "due" },
+        ],
+        predicate: (row, value) => maintenanceStatusFromDues(duesFor(row)) === value,
+      },
+      {
+        id: "occupancy",
+        label: "Occupancy",
+        type: "select",
+        options: [
+          { label: "Owner-occupied", value: "owner" },
+          { label: "Tenant-occupied", value: "tenant" },
+        ],
+        predicate: (row, value) => {
+          if (row.currentResidentIds.length === 0) return false;
+          const hasOwner = row.currentResidentIds.some(
+            (id) => residentMap.get(id)?.occupancyType === "owner",
+          );
+          return value === "owner" ? hasOwner : !hasOwner;
+        },
+      },
+      {
         id: "groupBy",
         label: "Group by",
         type: "groupBy",
@@ -504,7 +545,7 @@ export function FlatsTable() {
         },
       },
     ],
-    [],
+    [duesFor],
   );
 
   const renderSubRow = React.useCallback((row: FlatRecord) => <FlatSubRow flat={row} />, []);

@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { flats } from "@/lib/flatsMockData";
+import { flatLabelById, getFlatById } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { receipts } from "@/lib/duesMockData";
 import { computeInvoiceTotals, isOverdue, type Invoice } from "@/lib/invoicingMockData";
@@ -54,10 +54,7 @@ const STATUS_BADGE_CLASS: Record<CycleStatus, string> = {
     "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300",
 };
 
-function flatLabelFor(flatId: string) {
-  const f = flats.find((fl) => fl.id === flatId);
-  return f ? `${f.tower}-${f.flatNumber}` : flatId;
-}
+const flatLabelFor = flatLabelById;
 
 function ownerNameFor(flatId: string) {
   return residents.find((r) => r.flatId === flatId)?.name ?? "—";
@@ -98,9 +95,7 @@ function buildCycles(source: Invoice[]): Cycle[] {
       invoices: periodInvoices,
       flatsCovered: periodInvoices.length,
       towers: [
-        ...new Set(
-          periodInvoices.map((inv) => flats.find((f) => f.id === inv.flatId)?.tower ?? "—"),
-        ),
+        ...new Set(periodInvoices.map((inv) => getFlatById(inv.flatId)?.tower ?? "—")),
       ].sort(),
       totalExpected,
       totalCollected,

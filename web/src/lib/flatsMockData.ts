@@ -541,3 +541,18 @@ export const flatVehicleHistory: FlatVehicleEntry[] = [
     isCurrent: true,
   },
 ];
+
+let flatIndex: { size: number; byId: Map<string, FlatRecord> } | null = null;
+
+/** Constant-time flat lookup for per-row table code; rebuilt whenever a flat is added. */
+export function getFlatById(flatId: string): FlatRecord | undefined {
+  if (!flatIndex || flatIndex.size !== flats.length) {
+    flatIndex = { size: flats.length, byId: new Map(flats.map((f) => [f.id, f])) };
+  }
+  return flatIndex.byId.get(flatId);
+}
+
+export function flatLabelById(flatId: string): string {
+  const flat = getFlatById(flatId);
+  return flat ? `${flat.tower}-${flat.flatNumber}` : flatId;
+}
