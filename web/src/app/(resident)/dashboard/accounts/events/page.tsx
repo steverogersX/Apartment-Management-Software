@@ -23,6 +23,9 @@ import {
   type CommunityEvent,
 } from "@/lib/eventsMockData";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
+import { recordAudit } from "@/lib/auditLog";
 
 type StatusFilter = "Open" | "Closed" | "All";
 
@@ -71,6 +74,8 @@ function EventCard({ event }: { event: CommunityEvent }) {
 }
 
 export default function EventsPage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const { has } = useAuth();
   const canManage = has("EventsManage");
   const [statusFilter, setStatusFilter] = React.useState<StatusFilter>("Open");
@@ -100,13 +105,25 @@ export default function EventsPage() {
     });
     setVersion((v) => v + 1);
     setCreateOpen(false);
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: "",
+      entityLabel: values.name,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
+    toast({ title: "Event created" });
   }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">Events</h1>
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
+            Events
+          </h1>
           <p className="text-sm text-muted-foreground">
             Community events funded by voluntary flat contributions — festivals, celebrations, and
             society-wide collections.

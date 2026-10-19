@@ -25,16 +25,6 @@ export default function AssigneeDetailPage() {
   const name = decodeURIComponent(encodedName);
   const { has } = useAuth();
 
-  if (!has("ComplaintsViewAll")) {
-    return (
-      <PermissionDenied
-        message="You do not have permission to view assignee history."
-        backHref="/dashboard/helpdesk-reports"
-        backLabel="Back to reports"
-      />
-    );
-  }
-
   const user = users.find((u) => u.name === name);
   const assigned = complaints.filter((c) => c.assignedTo?.name === name);
   const resolved = assigned.filter((c) => c.status === "resolved");
@@ -60,6 +50,16 @@ export default function AssigneeDetailPage() {
       new Date(a.resolvedAt ?? a.createdAt).getTime(),
   );
   const activeAssignmentsData: ComplaintRow[] = active;
+
+  if (!has("ComplaintsViewAll")) {
+    return (
+      <PermissionDenied
+        message="You do not have permission to view assignee history."
+        backHref="/dashboard/helpdesk-reports"
+        backLabel="Back to reports"
+      />
+    );
+  }
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">

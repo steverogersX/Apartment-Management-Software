@@ -10,8 +10,12 @@ import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { MeetingFormInput } from "@/lib/meetingsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { recordAudit } from "@/lib/auditLog";
 
 export default function NewMeetingPage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const canCreate = has("MeetingsSchedule");
@@ -53,6 +57,15 @@ export default function NewMeetingPage() {
 
     meetings.unshift(newMeeting);
     router.push("/dashboard/meetings");
+    recordAudit({
+      module: "Communication",
+      entityType: "Meeting",
+      entityId: newMeeting.id,
+      entityLabel: newMeeting.title,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
+    toast({ title: "Meeting scheduled" });
   }
 
   return (

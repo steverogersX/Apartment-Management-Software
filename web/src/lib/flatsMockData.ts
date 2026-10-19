@@ -26,7 +26,6 @@ export type FlatRecord = {
   type: FlatType;
   areaSqft: number;
   occupancyStatus: FlatOccupancyStatus;
-  maintenanceStatus: FlatMaintenanceStatus;
   currentResidentIds: string[];
   // Set only when the flat is tenant-occupied and the owner is not a current resident.
   owner: FlatOwnerContact | null;
@@ -74,7 +73,6 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1450,
     occupancyStatus: "occupied",
-    maintenanceStatus: "due",
     currentResidentIds: ["1", "3"],
     owner: null,
   },
@@ -86,7 +84,6 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1100,
     occupancyStatus: "occupied",
-    maintenanceStatus: "due",
     currentResidentIds: ["2"],
     owner: null,
   },
@@ -98,7 +95,6 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1500,
     occupancyStatus: "occupied",
-    maintenanceStatus: "due",
     currentResidentIds: ["3"],
     owner: { name: "Sanjay Mehta", phone: "+91 98220 11223", email: "sanjay.mehta@gmail.com" },
   },
@@ -110,7 +106,6 @@ export const flats: FlatRecord[] = [
     type: "1BHK",
     areaSqft: 750,
     occupancyStatus: "occupied",
-    maintenanceStatus: "due",
     currentResidentIds: ["4"],
     owner: { name: "Ramesh Iyer", phone: "+91 98450 22110", email: "ramesh.iyer@gmail.com" },
   },
@@ -122,7 +117,6 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1650,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
     currentResidentIds: ["5"],
     owner: null,
   },
@@ -134,7 +128,6 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1050,
     occupancyStatus: "vacant",
-    maintenanceStatus: "due",
     currentResidentIds: [],
     // Neha Kulkarni moved out 2025-11-20 (see flatOccupancyHistory) but still owns this flat.
     owner: { name: "Neha Kulkarni", phone: "+91 93456 78901", email: "neha.kulkarni@gmail.com" },
@@ -147,7 +140,6 @@ export const flats: FlatRecord[] = [
     type: "4BHK",
     areaSqft: 1900,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
     currentResidentIds: ["7"],
     owner: null,
   },
@@ -159,7 +151,6 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1150,
     occupancyStatus: "occupied",
-    maintenanceStatus: "due",
     currentResidentIds: ["8"],
     owner: { name: "Deepak Shah", phone: "+91 98670 33445", email: "deepak.shah@gmail.com" },
   },
@@ -171,7 +162,6 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1350,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
     currentResidentIds: ["9"],
     owner: null,
   },
@@ -183,7 +173,6 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1200,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
     currentResidentIds: ["10"],
     owner: {
       name: "Vikas Choudhary",
@@ -199,7 +188,6 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1080,
     occupancyStatus: "vacant",
-    maintenanceStatus: "due",
     currentResidentIds: [],
     // Harish Krishnan moved out (see flatOccupancyHistory / residentsMockData) but still owns
     // this flat — vacant just means nobody lives here right now, not that it's unowned.
@@ -217,7 +205,6 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1120,
     occupancyStatus: "occupied",
-    maintenanceStatus: "paid",
     currentResidentIds: ["12"],
     owner: null,
   },
@@ -229,7 +216,6 @@ export const flats: FlatRecord[] = [
     type: "2BHK",
     areaSqft: 1180,
     occupancyStatus: "vacant",
-    maintenanceStatus: "due",
     currentResidentIds: [],
     owner: { name: "Rajesh Kumar", phone: "+91 99001 22334", email: "rajesh.kumar@gmail.com" },
   },
@@ -241,7 +227,6 @@ export const flats: FlatRecord[] = [
     type: "1BHK",
     areaSqft: 780,
     occupancyStatus: "vacant",
-    maintenanceStatus: "due",
     currentResidentIds: [],
     owner: { name: "Sneha Joshi", phone: "+91 99112 33445", email: "sneha.joshi@gmail.com" },
   },
@@ -253,11 +238,26 @@ export const flats: FlatRecord[] = [
     type: "3BHK",
     areaSqft: 1400,
     occupancyStatus: "vacant",
-    maintenanceStatus: "paid",
     currentResidentIds: [],
     owner: { name: "Manoj Verma", phone: "+91 99223 44556", email: "manoj.verma@gmail.com" },
   },
+  {
+    id: "flat-b304",
+    flatNumber: "304",
+    tower: "B",
+    floor: 3,
+    type: "3BHK",
+    areaSqft: 1450,
+    occupancyStatus: "occupied",
+    currentResidentIds: ["14"],
+    owner: null,
+  },
 ];
+
+/** Tower letters present in the society, sorted. */
+export function getTowers(): string[] {
+  return Array.from(new Set(flats.map((f) => f.tower))).sort();
+}
 
 export const flatOccupancyHistory: FlatOccupancyHistoryEntry[] = [
   // flat-a301 — current owner + 2 past
@@ -355,6 +355,13 @@ export const flatOccupancyHistory: FlatOccupancyHistoryEntry[] = [
     occupancyType: "owner",
     moveInDate: "2015-11-01T00:00:00+05:30",
     moveOutDate: "2023-12-31T00:00:00+05:30",
+  },
+  {
+    flatId: "flat-b304",
+    residentName: "Padma Konkonapala",
+    occupancyType: "owner",
+    moveInDate: "2025-07-01T00:00:00+05:30",
+    moveOutDate: null,
   },
 ];
 
@@ -469,7 +476,7 @@ export const flatVehicleHistory: FlatVehicleEntry[] = [
     model: "Seltos",
     color: "Red",
     ownerName: "Suresh Iyer",
-    parkingSlot: "C-09",
+    parkingSlot: "C-10",
     isCurrent: true,
   },
   {
@@ -496,4 +503,56 @@ export const flatVehicleHistory: FlatVehicleEntry[] = [
     parkingSlot: null,
     isCurrent: false,
   },
+  // flat-b304
+  {
+    flatId: "flat-b304",
+    residentId: "14",
+    registrationNumber: "AP 31 BT 4521",
+    type: "car",
+    make: "Hyundai",
+    model: "Creta",
+    color: "White",
+    ownerName: "Padma Konkonapala",
+    parkingSlot: "B-12",
+    isCurrent: true,
+  },
+  {
+    flatId: "flat-b304",
+    residentId: "14",
+    registrationNumber: "AP 31 CX 0098",
+    type: "two_wheeler",
+    make: "Honda",
+    model: "Activa",
+    color: "Grey",
+    ownerName: "Padma Konkonapala",
+    parkingSlot: "B-12",
+    isCurrent: true,
+  },
+  {
+    flatId: "flat-b304",
+    residentId: "14",
+    registrationNumber: "AP 39 MK 7712",
+    type: "car",
+    make: "Maruti",
+    model: "Baleno",
+    color: "Blue",
+    ownerName: "Padma Konkonapala",
+    parkingSlot: null,
+    isCurrent: true,
+  },
 ];
+
+let flatIndex: { size: number; byId: Map<string, FlatRecord> } | null = null;
+
+/** Constant-time flat lookup for per-row table code; rebuilt whenever a flat is added. */
+export function getFlatById(flatId: string): FlatRecord | undefined {
+  if (!flatIndex || flatIndex.size !== flats.length) {
+    flatIndex = { size: flats.length, byId: new Map(flats.map((f) => [f.id, f])) };
+  }
+  return flatIndex.byId.get(flatId);
+}
+
+export function flatLabelById(flatId: string): string {
+  const flat = getFlatById(flatId);
+  return flat ? `${flat.tower}-${flat.flatNumber}` : flatId;
+}

@@ -205,6 +205,16 @@ export function HistoryTable() {
         },
       },
       {
+        id: "kind",
+        label: "Type",
+        type: "select",
+        options: [
+          { label: "Occupancy", value: "occupancy" },
+          { label: "Vehicle", value: "vehicle" },
+        ],
+        predicate: (row, value) => row.kind === value,
+      },
+      {
         id: "groupBy",
         label: "Group by",
         type: "groupBy",

@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { MoreHorizontal, Plus, ShieldOff, UserCog, UserPlus } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,19 +15,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import {
   roleOptions,
   users as initialUsers,
   type UserAccountStatus,
   type UserRecord,
 } from "@/lib/usersMockData";
-
-const STATUS_DOT: Record<UserAccountStatus, string> = {
-  active: "bg-emerald-500",
-  invited: "bg-amber-500",
-  suspended: "bg-red-500",
-};
+import { StatusIcon } from "@/components/statusIcon";
 
 const STATUS_LABEL: Record<UserAccountStatus, string> = {
   active: "Active",
@@ -73,10 +67,7 @@ export function UsersTable() {
           return (
             <div className="flex items-center gap-2.5">
               <Avatar size="default">
-                <AvatarImage
-                  src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`}
-                  alt={row.original.name}
-                />
+                <AvatarImage src={avatarUrlForName(row.original.id)} alt={row.original.name} />
                 <AvatarFallback
                   className="text-xs font-semibold text-white"
                   style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
@@ -120,7 +111,7 @@ export function UsersTable() {
           const status = row.original.status;
           return (
             <div className="flex items-center gap-2">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status])} />
+              <StatusIcon status={status} />
               <span className="whitespace-nowrap text-foreground">{STATUS_LABEL[status]}</span>
             </div>
           );

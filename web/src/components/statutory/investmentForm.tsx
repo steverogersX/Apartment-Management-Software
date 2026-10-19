@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { ledgerAccounts } from "@/lib/chartOfAccountsMockData";
 import { addInvestmentSchema, type AddInvestmentInput } from "@/lib/investmentRegisterMockData";
-import { fieldError } from "@/components/assets/assetFormFields";
+import { fieldError } from "@/lib/fieldError";
 
 export function InvestmentForm({
   onSave,

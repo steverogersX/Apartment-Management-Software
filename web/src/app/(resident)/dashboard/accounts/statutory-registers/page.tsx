@@ -18,6 +18,7 @@ import { NominationsTable } from "@/components/statutory/nominationsTable";
 import { InvestmentsTable } from "@/components/statutory/investmentsTable";
 import { formatDate } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 function meetingTypeLabel(meeting: Meeting) {
   if (meeting.audience.scope === "All") return "General Body";
@@ -188,7 +189,8 @@ export default function StatutoryRegistersPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
           Statutory Registers
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -242,6 +244,7 @@ export default function StatutoryRegistersPage() {
             columns={minutesColumns}
             getRowId={(r) => r.id}
             title="Minutes Register"
+            filters={minutesFilters}
             enableColumnVisibility
             showPageSize
             pageSize={8}
@@ -327,5 +330,40 @@ const minutesColumns: ColumnDef<Meeting>[] = [
         </span>
       );
     },
+  },
+];
+
+function minutesState(meeting: Meeting) {
+  if (getMeetingStatus(meeting) === "cancelled") return "cancelled";
+  return (meeting.minutes?.length ?? 0) > 0 ? "filed" : "pending";
+}
+
+const minutesFilters: DataTableFilterConfig<Meeting>[] = [
+  {
+    id: "search",
+    label: "Search",
+    type: "search",
+    placeholder: "Search meeting",
+    predicate: (row, query) => row.title.toLowerCase().includes(query.toLowerCase()),
+  },
+  {
+    id: "type",
+    label: "Type",
+    type: "select",
+    options: [...new Set(meetings.map(meetingTypeLabel))]
+      .sort()
+      .map((t) => ({ label: t, value: t })),
+    predicate: (row, value) => meetingTypeLabel(row) === value,
+  },
+  {
+    id: "minutes",
+    label: "Minutes",
+    type: "select",
+    options: [
+      { label: "Filed", value: "filed" },
+      { label: "Pending", value: "pending" },
+      { label: "Cancelled", value: "cancelled" },
+    ],
+    predicate: (row, value) => minutesState(row) === value,
   },
 ];

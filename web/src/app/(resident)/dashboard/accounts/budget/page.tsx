@@ -18,6 +18,7 @@ import { BudgetSummaryChart } from "@/components/budgetSummaryChart";
 import { useAuth } from "@/hooks/useAuth";
 import { budgetHeads, currentFinancialYear, FINANCIAL_YEARS } from "@/lib/budgetMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function BudgetPage() {
   const { has } = useAuth();
@@ -44,7 +45,10 @@ export default function BudgetPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">Budget</h1>
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
+            Budget
+          </h1>
           <p className="text-sm text-muted-foreground">
             Annual budget heads, planned vs actuals and variance.
           </p>

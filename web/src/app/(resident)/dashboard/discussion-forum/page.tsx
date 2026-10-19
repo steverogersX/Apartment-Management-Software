@@ -19,19 +19,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { FORUM_CATEGORIES, forumThreads } from "@/lib/forumMockData";
 import { useAuth } from "@/hooks/useAuth";
-import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
-
-function formatRelativeTime(iso: string) {
-  const diffMs = Date.now() - new Date(iso).getTime();
-  const minutes = Math.round(diffMs / 60000);
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
-}
+import { avatarUrlForName, getInitials, gradientForName, formatTimeAgo } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function DiscussionForumPage() {
   const router = useRouter();
@@ -75,7 +64,10 @@ export default function DiscussionForumPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Discussion Forum</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Discussion Forum
+        </h1>
         <p className="text-sm text-muted-foreground">
           Ask questions, share ideas, and discuss society matters.
         </p>
@@ -188,7 +180,7 @@ export default function DiscussionForumPage() {
                       <MessageCircle className="size-3.5" />
                       {thread.replyCount}
                     </span>
-                    <span>{formatRelativeTime(thread.lastActivityAt)}</span>
+                    <span>{formatTimeAgo(thread.lastActivityAt)}</span>
                   </div>
                   {/* mobile fallback */}
                   <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-muted-foreground sm:hidden">

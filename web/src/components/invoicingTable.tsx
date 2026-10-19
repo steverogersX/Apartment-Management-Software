@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { additionalCharges, billingRateSettings, gstSettings } from "@/lib/billingSettingsMockData";
-import { flats } from "@/lib/flatsMockData";
+import { flatLabelById, flats } from "@/lib/flatsMockData";
 import {
   computeInvoiceTotals,
   computeOutstandingBalance,
@@ -33,12 +33,9 @@ import { GenerateInvoicesForm } from "./invoicing/generateInvoicesForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
-function flatLabel(flatId: string) {
-  const f = flats.find((fl) => fl.id === flatId);
-  if (!f) return flatId;
-  return `${f.tower}-${f.flatNumber}`;
-}
+const flatLabel = flatLabelById;
 
 function statusBadgeVariant(status: string) {
   if (status === "Paid") return "secondary";
@@ -53,6 +50,7 @@ export function InvoicingTable({
   flatId = null,
   readOnly = false,
 }: { flatId?: string | null; readOnly?: boolean } = {}) {
+  const { toast } = useToast();
   const router = useRouter();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -156,6 +154,7 @@ export function InvoicingTable({
     });
     setRows((prev) => [...prev, ...newInvoices]);
     setGenerateOpen(false);
+    toast({ title: "Invoices generated" });
   }
 
   const summary = React.useMemo(() => {
@@ -320,6 +319,15 @@ export function InvoicingTable({
         type: "select",
         options: billingPeriods.map((p) => ({ label: p, value: p })),
         predicate: (row, value) => row.billingPeriod === value,
+      },
+      {
+        id: "tower",
+        label: "Tower",
+        type: "select",
+        options: Array.from(new Set(flats.map((f) => f.tower)))
+          .sort()
+          .map((t) => ({ label: `Tower ${t}`, value: t })),
+        predicate: (row, value) => flatLabel(row.flatId).startsWith(`${value}-`),
       },
       {
         id: "status",

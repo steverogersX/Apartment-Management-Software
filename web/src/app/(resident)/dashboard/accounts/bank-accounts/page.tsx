@@ -3,6 +3,7 @@
 import { BankAccountsTable } from "@/components/bankAccountsTable";
 import { useAuth } from "@/hooks/useAuth";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function BankAccountsPage() {
   const { has } = useAuth();
@@ -14,7 +15,10 @@ export default function BankAccountsPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Bank Accounts</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Bank Accounts
+        </h1>
         <p className="text-sm text-muted-foreground">
           Bank and cash ledgers with balances and reconciliation.
         </p>

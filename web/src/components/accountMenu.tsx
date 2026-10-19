@@ -74,17 +74,11 @@ export function AccountMenu({
   const [uncontrolledActive, setUncontrolledActive] = React.useState(
     () => effectiveRoles[0] ?? null,
   );
-  React.useEffect(() => {
-    if (
-      !controlledActiveRole &&
-      effectiveRoles.length &&
-      !effectiveRoles.includes(uncontrolledActive ?? "")
-    ) {
-      setUncontrolledActive(effectiveRoles[0] ?? null);
-    }
-  }, [effectiveRoles, uncontrolledActive, controlledActiveRole]);
-
-  const activeRole = controlledActiveRole ?? uncontrolledActive;
+  const activeRole =
+    controlledActiveRole ??
+    (uncontrolledActive && effectiveRoles.includes(uncontrolledActive)
+      ? uncontrolledActive
+      : (effectiveRoles[0] ?? null));
 
   const handleSwitch = (role: string) => {
     if (isSwitching) return;
@@ -100,7 +94,6 @@ export function AccountMenu({
   // change, so the section must say so instead of reading like a normal role switcher.
   const ownedRoles = yourRoles ?? [];
   const isPreviewTool = ownedRoles.length > 0 && effectiveRoles.length > ownedRoles.length;
-  const isPreviewing = isPreviewTool && !!activeRole && !ownedRoles.includes(activeRole);
 
   return (
     <DropdownMenu>

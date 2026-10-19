@@ -4,23 +4,14 @@ import * as React from "react";
 import { useForm } from "@tanstack/react-form";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/datePicker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { additionalCharges, billingRateSettings, gstSettings } from "@/lib/billingSettingsMockData";
-import { flats } from "@/lib/flatsMockData";
+import { flats, getTowers } from "@/lib/flatsMockData";
 import { generateInvoicesSchema, type GenerateInvoicesInput } from "@/lib/invoicingMockData";
-
-function fieldError(errors: unknown[]): string | undefined {
-  if (errors.length === 0) return undefined;
-  const issue = errors[0];
-  if (typeof issue === "string") return issue;
-  if (issue && typeof issue === "object" && "message" in issue) {
-    return String((issue as { message: unknown }).message);
-  }
-  return String(issue);
-}
+import { fieldError } from "@/lib/fieldError";
+import { FlatCheckboxGrid } from "@/components/flats/flatCheckboxGrid";
 
 function computeMaintenanceForFlat(flat: { areaSqft: number }) {
   const { method, equalSplitAmount, ratePerSqft } = billingRateSettings;
@@ -206,7 +197,7 @@ export function GenerateInvoicesForm({
           <Button type="button" variant="outline" size="sm" onClick={selectAll}>
             All flats
           </Button>
-          {["A", "B", "C"].map((t) => (
+          {getTowers().map((t) => (
             <Button
               key={t}
               type="button"
@@ -221,26 +212,11 @@ export function GenerateInvoicesForm({
             Clear
           </Button>
         </div>
-        <div className="max-h-36 overflow-y-auto rounded-md border border-border p-2">
-          <div className="grid grid-cols-2 gap-2">
-            {flats.map((f) => {
-              const label = `${f.tower}-${f.flatNumber}`;
-              const checked = selectedFlatIds.includes(f.id);
-              return (
-                <label
-                  key={f.id}
-                  className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm hover:bg-muted"
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(v) => toggleFlat(f.id, v === true)}
-                  />
-                  <span className="truncate">{label}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
+        <FlatCheckboxGrid
+          flats={flats}
+          isChecked={(f) => selectedFlatIds.includes(f.id)}
+          onToggle={(f, checked) => toggleFlat(f.id, checked)}
+        />
         <form.Field name="selectedFlatIds">
           {(field: any) => (
             <>

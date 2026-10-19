@@ -3,19 +3,14 @@
 import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import type { FlatMaintenanceDue, MaintenancePaymentStatus } from "@/lib/maintenanceMockData";
+import { StatusIcon } from "@/components/statusIcon";
 
 export type DuesRow = FlatMaintenanceDue & { flatLabel?: string };
-
-const STATUS_DOT: Record<MaintenancePaymentStatus, string> = {
-  paid: "bg-emerald-500",
-  pending: "bg-amber-500",
-  overdue: "bg-red-500",
-};
 
 const STATUS_LABEL: Record<MaintenancePaymentStatus, string> = {
   paid: "Paid",
@@ -110,9 +105,7 @@ export function MaintenanceDuesTable({
         header: () => <DataTableColumnHeader label="Status" />,
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
-            <span
-              className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[row.original.status])}
-            />
+            <StatusIcon status={row.original.status} />
             <span className="whitespace-nowrap text-foreground">
               {STATUS_LABEL[row.original.status]}
             </span>
@@ -156,20 +149,35 @@ export function MaintenanceDuesTable({
     return showFlat ? all : all.filter((c) => c.id !== "flatLabel");
   }, [showFlat]);
 
-  const filters = React.useMemo<DataTableFilterConfig<DuesRow>[]>(
-    () => [
+  const filters = React.useMemo<DataTableFilterConfig<DuesRow>[]>(() => {
+    const periods = [...source]
+      .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime())
+      .map((d) => d.period)
+      .filter((p, i, all) => all.indexOf(p) === i);
+    const towers = [...new Set(source.map((d) => d.tower))].sort();
+    const modes = [...new Set(source.map((d) => d.paidMode).filter((m) => m !== null))].sort();
+    const list: DataTableFilterConfig<DuesRow>[] = [
       {
         id: "search",
         label: "Search",
         type: "search",
-        placeholder: "Search flat or owner",
+        placeholder: showFlat ? "Search flat, owner or receipt" : "Search period or receipt",
         predicate: (row, query) => {
           const q = query.toLowerCase();
           return (
             (row.flatLabel ?? "").toLowerCase().includes(q) ||
-            row.ownerName.toLowerCase().includes(q)
+            row.ownerName.toLowerCase().includes(q) ||
+            row.period.toLowerCase().includes(q) ||
+            (row.receiptNumber ?? "").toLowerCase().includes(q)
           );
         },
+      },
+      {
+        id: "period",
+        label: "Month",
+        type: "select",
+        options: periods.map((p) => ({ label: p, value: p })),
+        predicate: (row, value) => row.period === value,
       },
       {
         id: "status",
@@ -181,9 +189,27 @@ export function MaintenanceDuesTable({
         })),
         predicate: (row, value) => row.status === value,
       },
-    ],
-    [],
-  );
+    ];
+    if (showFlat && towers.length > 1) {
+      list.push({
+        id: "tower",
+        label: "Tower",
+        type: "select",
+        options: towers.map((t) => ({ label: `Tower ${t}`, value: t })),
+        predicate: (row, value) => row.tower === value,
+      });
+    }
+    if (modes.length > 1) {
+      list.push({
+        id: "mode",
+        label: "Payment mode",
+        type: "select",
+        options: modes.map((m) => ({ label: m, value: m })),
+        predicate: (row, value) => row.paidMode === value,
+      });
+    }
+    return list;
+  }, [source, showFlat]);
 
   return (
     <DataTable

@@ -12,6 +12,7 @@ import {
   Landmark,
   Lock,
   Receipt,
+  Search,
 } from "lucide-react";
 
 import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +51,9 @@ import {
 import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { recordAudit } from "@/lib/auditLog";
+import { createVoucher } from "@/lib/vouchersMockData";
 
 type TimelineEntry =
   | { kind: "contribution"; id: string; date: string; data: EventContribution }
@@ -126,6 +131,8 @@ function EventTimeline({ entries }: { entries: TimelineEntry[] }) {
 }
 
 export default function EventDetailPage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const params = useParams<{ eventId: string }>();
   const router = useRouter();
   const { has } = useAuth();
@@ -136,6 +143,7 @@ export default function EventDetailPage() {
   const [topUpOpen, setTopUpOpen] = React.useState(false);
   const [expenseOpen, setExpenseOpen] = React.useState(false);
   const [closeOpen, setCloseOpen] = React.useState(false);
+  const [fundingQuery, setFundingQuery] = React.useState("");
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const event = React.useMemo(
@@ -177,6 +185,15 @@ export default function EventDetailPage() {
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const fundingQ = fundingQuery.trim().toLowerCase();
+  const visibleTimeline = fundingQ
+    ? timeline.filter((entry) =>
+        entry.kind === "topup"
+          ? `society top-up ${entry.data.note}`.toLowerCase().includes(fundingQ)
+          : `${entry.data.residentName} ${entry.data.flatLabel}`.toLowerCase().includes(fundingQ),
+      )
+    : timeline;
+
   function handleContribute(values: RecordContributionInput) {
     if (!event) return;
     const flat = flats.find((f) => f.id === values.flatId);
@@ -195,6 +212,30 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setContributeOpen(false);
+    createVoucher({
+      type: "Receipt",
+      date: new Date(values.date).toISOString(),
+      narration: `Event contribution — ${event.name}`,
+      debitAccountId: values.mode === "Cash" ? "la-cash" : "la-bank",
+      creditAccountId: "la-event-inc",
+      amount: values.amount,
+      status: "Posted",
+      sourceModule: "Events",
+      sourceRefId: event.id,
+      createdBy: auditUser?.displayName ?? "Unknown",
+      postedBy: auditUser?.displayName ?? "Unknown",
+      postedAt: new Date().toISOString(),
+    });
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Payment Recorded",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Contribution ${formatCurrency(values.amount)} via ${values.mode}`,
+    });
+    toast({ title: "Contribution recorded" });
   }
 
   function handleTopUp(values: RecordTopUpInput) {
@@ -209,6 +250,16 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setTopUpOpen(false);
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Top-up ${formatCurrency(values.amount)} — ${values.note}`,
+    });
+    toast({ title: "Top-up recorded" });
   }
 
   function handleRecordExpense(values: RecordExpenseInput) {
@@ -225,6 +276,30 @@ export default function EventDetailPage() {
     });
     setVersion((v) => v + 1);
     setExpenseOpen(false);
+    createVoucher({
+      type: "Payment",
+      date: new Date(values.date).toISOString(),
+      narration: `Event expense (${values.category}) — ${event.name}`,
+      debitAccountId: "la-event-exp",
+      creditAccountId: "la-bank",
+      amount: values.amount,
+      status: "Posted",
+      sourceModule: "Events",
+      sourceRefId: event.id,
+      createdBy: auditUser?.displayName ?? "Unknown",
+      postedBy: auditUser?.displayName ?? "Unknown",
+      postedAt: new Date().toISOString(),
+    });
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Expense ${formatCurrency(values.amount)} — ${values.category}`,
+    });
+    toast({ title: "Expense recorded" });
   }
 
   function handleClose() {
@@ -238,6 +313,16 @@ export default function EventDetailPage() {
     };
     setVersion((v) => v + 1);
     setCloseOpen(false);
+    recordAudit({
+      module: "Events",
+      entityType: "Event",
+      entityId: event.id,
+      entityLabel: event.name,
+      action: "Status Change",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Closed",
+    });
+    toast({ title: "Event closed", variant: "info" });
   }
 
   return (
@@ -378,14 +463,31 @@ export default function EventDetailPage() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <Banknote className="size-4 text-muted-foreground" />
                 History · {timeline.length}
               </CardTitle>
+              {timeline.length > 0 && (
+                <div className="relative">
+                  <Search className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={fundingQuery}
+                    onChange={(e) => setFundingQuery(e.target.value)}
+                    placeholder="Search resident or flat…"
+                    className="h-8 w-56 pl-8"
+                  />
+                </div>
+              )}
             </CardHeader>
             <CardContent>
-              <EventTimeline entries={timeline} />
+              {fundingQ && visibleTimeline.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                  No contributions match &ldquo;{fundingQuery.trim()}&rdquo;.
+                </p>
+              ) : (
+                <EventTimeline entries={visibleTimeline} />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

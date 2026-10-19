@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 
-import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DoodleHouse } from "@/components/icons/doodleHouse";
@@ -28,27 +28,17 @@ import {
   type ResidentStatus,
   type ResidentRecord,
 } from "@/lib/residentsMockData";
+import { StatusIcon } from "@/components/statusIcon";
 
 const OCCUPANCY_LABEL: Record<ResidentOccupancyType, string> = {
   owner: "Owner",
   tenant: "Tenant",
 };
 
-const STATUS_DOT: Record<ResidentStatus, string> = {
-  active: "bg-emerald-500",
-  pending: "bg-amber-500",
-  moved_out: "bg-zinc-400",
-};
-
 const STATUS_LABEL: Record<ResidentStatus, string> = {
   active: "Active",
   pending: "Pending",
   moved_out: "Moved out",
-};
-
-const FLAT_OCCUPANCY_DOT: Record<FlatOccupancyStatus, string> = {
-  occupied: "bg-emerald-500",
-  vacant: "bg-zinc-400",
 };
 
 const FLAT_OCCUPANCY_LABEL: Record<FlatOccupancyStatus, string> = {
@@ -65,10 +55,7 @@ function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
   const selectedCount = flatsForResident.filter((f) => selected[f.id]).length;
   const allSelected = flatsForResident.length > 0 && selectedCount === flatsForResident.length;
   const someSelected = selectedCount > 0 && !allSelected;
-  const revealCount = useStaggeredReveal(
-    flatsForResident.map((f) => f.id).join(" "),
-    flatsForResident.length,
-  );
+  const revealCount = useStaggeredReveal(flatsForResident.length);
 
   if (flatsForResident.length === 0) {
     return (
@@ -189,12 +176,7 @@ function ResidentFlatSubRow({ resident }: { resident: ResidentRecord }) {
                   </TableCell>
                   <TableCell className="px-4 py-2">
                     <div className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "size-1.5 shrink-0 rounded-full",
-                          FLAT_OCCUPANCY_DOT[flat.occupancyStatus],
-                        )}
-                      />
+                      <StatusIcon status={flat.occupancyStatus} />
                       <span className="whitespace-nowrap text-sm text-foreground">
                         {FLAT_OCCUPANCY_LABEL[flat.occupancyStatus]}
                       </span>
@@ -232,10 +214,7 @@ export function AllResidentsTable() {
               className="flex items-center gap-2.5 rounded-md px-1 py-0.5 -mx-1 hover:bg-muted/50 transition-colors"
             >
               <Avatar size="sm">
-                <AvatarImage
-                  src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`}
-                  alt={row.original.name}
-                />
+                <AvatarImage src={avatarUrlForName(row.original.id)} alt={row.original.name} />
                 <AvatarFallback
                   className="text-[10px] font-semibold text-white"
                   style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
@@ -294,7 +273,7 @@ export function AllResidentsTable() {
           const status = row.original.status;
           return (
             <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status])} />
+              <StatusIcon status={status} />
               <span className="whitespace-nowrap text-sm text-foreground">
                 {STATUS_LABEL[status]}
               </span>

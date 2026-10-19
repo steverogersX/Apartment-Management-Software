@@ -18,12 +18,11 @@ import {
 } from "@/components/flats/assignResidentDialog";
 import { flats, type FlatOccupancyStatus } from "@/lib/flatsMockData";
 import { residents, type ResidentRecord } from "@/lib/residentsMockData";
-import { cn, getInitials, gradientForName } from "@/lib/utils";
-
-const OCCUPANCY_STATUS_DOT: Record<FlatOccupancyStatus, string> = {
-  occupied: "bg-emerald-500",
-  vacant: "bg-zinc-400",
-};
+import { cn, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
 const OCCUPANCY_STATUS_LABEL: Record<FlatOccupancyStatus, string> = {
   occupied: "Occupied",
@@ -36,6 +35,8 @@ const RESIDENT_OCCUPANCY_LABEL: Record<string, string> = {
 };
 
 export default function FlatDetailPage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const params = useParams<{ flatId: string }>();
   const [version, setVersion] = React.useState(0);
   const [assignOpen, setAssignOpen] = React.useState(false);
@@ -93,6 +94,16 @@ export default function FlatDetailPage() {
       occupancyStatus: "occupied",
     };
     setVersion((v) => v + 1);
+    recordAudit({
+      module: "Flats",
+      entityType: "Flat",
+      entityId: flat.id,
+      entityLabel: `${flat.tower}-${flat.flatNumber}`,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Resident assigned: ${resident.name}`,
+    });
+    toast({ title: "Resident assigned" });
   }
 
   function handleAssignExisting(residentId: string) {
@@ -132,6 +143,16 @@ export default function FlatDetailPage() {
       occupancyStatus: "occupied",
     };
     setVersion((v) => v + 1);
+    recordAudit({
+      module: "Flats",
+      entityType: "Flat",
+      entityId: flat.id,
+      entityLabel: `${flat.tower}-${flat.flatNumber}`,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Existing resident assigned",
+    });
+    toast({ title: "Resident assigned" });
   }
 
   return (
@@ -156,12 +177,7 @@ export default function FlatDetailPage() {
               </h1>
               <Badge variant="outline">{flat.type}</Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span
-                  className={cn(
-                    "size-1.5 shrink-0 rounded-full",
-                    OCCUPANCY_STATUS_DOT[flat.occupancyStatus],
-                  )}
-                />
+                <StatusIcon status={flat.occupancyStatus} />
                 {OCCUPANCY_STATUS_LABEL[flat.occupancyStatus]}
               </span>
             </div>
@@ -209,10 +225,7 @@ export default function FlatDetailPage() {
                       className="flex items-center gap-3 rounded-md border border-border p-3 transition-colors hover:bg-muted/50"
                     >
                       <Avatar size="sm">
-                        <AvatarImage
-                          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(r.id)}`}
-                          alt={r.name}
-                        />
+                        <AvatarImage src={avatarUrlForName(r.id)} alt={r.name} />
                         <AvatarFallback
                           className="text-[10px] font-semibold text-white"
                           style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { listRolesRequest } from "@/lib/roleApi";
 import { createUserRequest } from "@/lib/userApi";
 import { ApiClientError } from "@/lib/apiClient";
+import { fieldError } from "@/lib/fieldError";
 
 const EMPTY_VEHICLE: VehicleInput = {
   registrationNumber: "",
@@ -42,16 +43,6 @@ const DEFAULT_VALUES: CreateUserBody = {
   vehicles: [],
   roleIds: [],
 };
-
-function fieldError(errors: unknown[]): string | undefined {
-  if (errors.length === 0) return undefined;
-  const issue = errors[0];
-  if (typeof issue === "string") return issue;
-  if (issue && typeof issue === "object" && "message" in issue) {
-    return String((issue as { message: unknown }).message);
-  }
-  return String(issue);
-}
 
 export function CreateUserForm() {
   const router = useRouter();

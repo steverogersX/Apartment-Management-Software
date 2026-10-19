@@ -8,18 +8,20 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 import { MaintenanceDuesTable, type DuesRow } from "@/components/maintenanceDuesTable";
 import {
-  flatMaintenanceDues as flatMaintenanceDuesSource,
+  getFlatMaintenanceDues,
   societyCollectionSummary,
   type FlatMaintenanceDue,
 } from "@/lib/maintenanceMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
+import { CountUp } from "@/components/countUp";
 
 export default function MaintenanceDuesPage() {
   const router = useRouter();
   const { has } = useAuth();
-  const [dues] = React.useState<FlatMaintenanceDue[]>(() => [...flatMaintenanceDuesSource]);
+  const [dues] = React.useState<FlatMaintenanceDue[]>(getFlatMaintenanceDues);
 
   const summary = React.useMemo(() => societyCollectionSummary(dues), [dues]);
 
@@ -34,7 +36,10 @@ export default function MaintenanceDuesPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Maintenance Dues</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Maintenance Dues
+        </h1>
         <p className="text-sm text-muted-foreground">
           Every flat's maintenance charge — due date, payment status, and when/how it was paid.
           Click a flat for its full ledger.
@@ -49,7 +54,7 @@ export default function MaintenanceDuesPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {formatCurrency(summary.totalBilled)}
+              <CountUp value={summary.totalBilled} format={formatCurrency} />
             </p>
           </CardContent>
         </Card>
@@ -60,7 +65,7 @@ export default function MaintenanceDuesPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {formatCurrency(summary.totalCollected)}
+              <CountUp value={summary.totalCollected} format={formatCurrency} />
             </p>
             <p className="text-xs text-muted-foreground">
               {summary.collectionRate}% collection rate
@@ -74,7 +79,7 @@ export default function MaintenanceDuesPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {formatCurrency(summary.totalOutstanding)}
+              <CountUp value={summary.totalOutstanding} format={formatCurrency} />
             </p>
           </CardContent>
         </Card>
@@ -85,7 +90,7 @@ export default function MaintenanceDuesPage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {summary.defaulterFlats}
+              <CountUp value={summary.defaulterFlats} />
             </p>
           </CardContent>
         </Card>

@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import { useForm } from "@tanstack/react-form";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { flats } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { recordContributionSchema, type RecordContributionInput } from "@/lib/eventsMockData";
+import { fieldError } from "@/lib/fieldError";
 
 const CONTRIBUTION_MODES: RecordContributionInput["mode"][] = [
   "Cash",
@@ -28,16 +28,6 @@ const CONTRIBUTION_MODES: RecordContributionInput["mode"][] = [
   "Card",
   "Online Gateway",
 ];
-
-function fieldError(errors: unknown[]): string | undefined {
-  if (errors.length === 0) return undefined;
-  const issue = errors[0];
-  if (typeof issue === "string") return issue;
-  if (issue && typeof issue === "object" && "message" in issue) {
-    return String((issue as { message: unknown }).message);
-  }
-  return String(issue);
-}
 
 export function RecordContributionForm({
   onSave,

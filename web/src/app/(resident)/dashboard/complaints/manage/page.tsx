@@ -36,6 +36,9 @@ import { users } from "@/lib/usersMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
+import { recordAudit } from "@/lib/auditLog";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -71,6 +74,8 @@ const PRIORITY_META: Record<
 };
 
 export default function ComplaintsManagePage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const { has } = useAuth();
 
   const [complaintsData, setComplaintsData] = React.useState<Complaint[]>(() => [
@@ -118,6 +123,16 @@ export default function ComplaintsManagePage() {
     if (!user) return;
     const initials = getInitials(user.name);
     updateComplaint(selected.id, { assignedTo: { name: user.name, initials } });
+    recordAudit({
+      module: "Help Desk",
+      entityType: "Complaint",
+      entityId: selected.id,
+      entityLabel: selected.ticketNumber,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `Assigned to ${user.name}`,
+    });
+    toast({ title: "Complaint assigned" });
   }
 
   function handleStatusChange(status: ComplaintStatus) {
@@ -146,6 +161,16 @@ export default function ComplaintsManagePage() {
     };
     complaintStatusEventsSource.push(event);
     setStatusEvents((prev) => [...prev, event]);
+    recordAudit({
+      module: "Help Desk",
+      entityType: "Complaint",
+      entityId: selected.id,
+      entityLabel: selected.ticketNumber,
+      action: "Status Change",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: status,
+    });
+    toast({ title: "Complaint status updated" });
   }
 
   const canAssign = has("ComplaintsAssign");
@@ -164,7 +189,10 @@ export default function ComplaintsManagePage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Manage Complaints</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Manage Complaints
+        </h1>
         <p className="text-sm text-muted-foreground">All complaints across the society.</p>
       </div>
 

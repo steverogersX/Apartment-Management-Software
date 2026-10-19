@@ -10,7 +10,7 @@ import { FlatSelect } from "@/components/flats/flatSelect";
 import { Textarea } from "@/components/ui/textarea";
 import { flats } from "@/lib/flatsMockData";
 import { addNominationSchema, type AddNominationInput } from "@/lib/nominationRegisterMockData";
-import { fieldError } from "@/components/assets/assetFormFields";
+import { fieldError } from "@/lib/fieldError";
 
 export function NominationForm({
   onSave,

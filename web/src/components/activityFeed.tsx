@@ -4,7 +4,7 @@ import * as React from "react";
 import { format, formatDistanceToNow, isToday } from "date-fns";
 import { AlertTriangle, Check, Sparkles, Ticket, X } from "lucide-react";
 
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { cn, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { useNow } from "@/hooks/useNow";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -80,10 +80,7 @@ function ActivityIcon({ entry }: { entry: ActivityEntry }) {
     const [from, to] = gradientForName(entry.name);
     return (
       <Avatar className="size-8 shrink-0">
-        <AvatarImage
-          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(entry.id)}`}
-          alt={entry.name}
-        />
+        <AvatarImage src={avatarUrlForName(entry.id)} alt={entry.name} />
         <AvatarFallback
           className="text-[11px] font-semibold text-white"
           style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

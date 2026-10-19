@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+import { assets, assetServiceLogs, type AssetCategory } from "./assetsMockData";
+import { receipts, type PaymentMode, type Receipt } from "./duesMockData";
+import { flats, type FlatRecord } from "./flatsMockData";
+import { computeInvoiceTotals, invoices } from "./invoicingMockData";
+import { residents } from "./residentsMockData";
+
 /**
  * UI-only mock data for the Maintenance log — a record of who did maintenance work, where (a
  * specific flat or a society common area), and when. This is a log/register, not a ticketing
@@ -274,6 +280,38 @@ export const maintenanceLog: MaintenanceLogEntry[] = [
   },
 ];
 
+const ASSET_CATEGORY_TO_WORK: Partial<Record<AssetCategory, MaintenanceCategory>> = {
+  Electrical: "Electrical",
+  Plumbing: "Plumbing",
+  Furniture: "Carpentry",
+  "Safety Equipment": "Fire Safety",
+};
+
+/**
+ * Service/repair entries recorded against an asset (Asset & Inventory), presented in the shape of
+ * the society maintenance log so common-area work is visible in one place. Read-only here — they
+ * are still created and edited on the asset.
+ */
+export function assetServiceAsMaintenanceLog(): MaintenanceLogEntry[] {
+  return assetServiceLogs.map((log) => {
+    const asset = assets.find((a) => a.id === log.assetId);
+    return {
+      id: `asset-${log.id}`,
+      scope: "society",
+      tower: null,
+      flatNumber: null,
+      location: asset ? `${asset.name} · ${asset.location}` : "Asset",
+      category: (asset && ASSET_CATEGORY_TO_WORK[asset.category]) ?? "Other",
+      description: `${log.type}: ${log.description}`,
+      staffId: null,
+      performedOn: log.date.slice(0, 10),
+      cost: log.cost ?? null,
+      loggedBy: log.loggedBy,
+      loggedAt: log.date,
+    };
+  });
+}
+
 export function maintenanceLogForFlat(tower: string, flatNumber: string): MaintenanceLogEntry[] {
   return maintenanceLog
     .filter((e) => e.scope === "flat" && e.tower === tower && e.flatNumber === flatNumber)
@@ -281,394 +319,119 @@ export function maintenanceLogForFlat(tower: string, flatNumber: string): Mainte
 }
 
 /**
- * The maintenance *charge* ledger — what each flat owes per period, and when/whether/how the
- * owner paid it. Separate from the work log above: this is money (due date, paid date, mode,
- * receipt), not work (who did what). Intentionally standalone from `Accounts` — this is the
- * dedicated per-flat maintenance-payment view requested for this section specifically.
+ * The maintenance *charge* ledger — what each flat owes per period, and when/whether/how it was
+ * paid. This is a read-only view over Accounts: every row is an invoice (`invoicingMockData`)
+ * joined with its latest receipt (`duesMockData`). Payments are recorded through
+ * `recordInvoicePayment` in `billing.ts`, never written here.
  */
 export type MaintenancePaymentStatus = "paid" | "pending" | "overdue";
 
-export type MaintenancePaymentMode = "UPI" | "Cash" | "Bank Transfer" | "Cheque";
-
 export type FlatMaintenanceDue = {
   id: string;
+  invoiceId: string;
   tower: string;
   flatNumber: string;
   ownerName: string;
   period: string;
   amount: number;
+  amountPaid: number;
   dueDate: string;
   status: MaintenancePaymentStatus;
   paidDate: string | null;
-  paidMode: MaintenancePaymentMode | null;
+  paidMode: PaymentMode | null;
   receiptNumber: string | null;
 };
 
-export const recordMaintenancePaymentSchema = z.object({
-  paidDate: z.string().min(1, "Paid date is required"),
-  paidMode: z.enum(["UPI", "Cash", "Bank Transfer", "Cheque"]),
-  receiptNumber: z.string().min(1, "Receipt number is required"),
-});
+function ownerNameForFlat(
+  flat: FlatRecord,
+  residentById: Map<string, (typeof residents)[number]>,
+): string {
+  if (flat.owner) return flat.owner.name;
+  const occupants = flat.currentResidentIds
+    .map((id) => residentById.get(id))
+    .filter((r): r is NonNullable<typeof r> => !!r);
+  return (occupants.find((r) => r.occupancyType === "owner") ?? occupants[0])?.name ?? "—";
+}
 
-export type RecordMaintenancePaymentInput = z.infer<typeof recordMaintenancePaymentSchema>;
+export function getFlatMaintenanceDues(): FlatMaintenanceDue[] {
+  const now = Date.now();
+  const flatById = new Map(flats.map((f) => [f.id, f]));
+  const residentById = new Map(residents.map((r) => [r.id, r]));
+  const latestReceipt = new Map<string, Receipt>();
+  for (const r of receipts) {
+    const current = latestReceipt.get(r.invoiceId);
+    if (!current || new Date(r.paymentDate).getTime() > new Date(current.paymentDate).getTime()) {
+      latestReceipt.set(r.invoiceId, r);
+    }
+  }
+  return invoices
+    .filter((invoice) => invoice.status !== "Cancelled" && invoice.status !== "Draft")
+    .flatMap((invoice) => {
+      const flat = flatById.get(invoice.flatId);
+      if (!flat) return [];
+      const receipt = latestReceipt.get(invoice.id);
+      const status: MaintenancePaymentStatus =
+        invoice.status === "Paid"
+          ? "paid"
+          : new Date(invoice.dueDate).getTime() < now
+            ? "overdue"
+            : "pending";
+      return [
+        {
+          id: invoice.id,
+          invoiceId: invoice.id,
+          tower: flat.tower,
+          flatNumber: flat.flatNumber,
+          ownerName: ownerNameForFlat(flat, residentById),
+          period: invoice.billingPeriod,
+          amount: computeInvoiceTotals(invoice).total,
+          amountPaid: invoice.amountPaid,
+          dueDate: invoice.dueDate,
+          status,
+          paidDate: invoice.paidOn,
+          paidMode: receipt?.paymentMode ?? null,
+          receiptNumber: receipt?.receiptNumber ?? null,
+        },
+      ];
+    });
+}
 
-export const flatMaintenanceDues: FlatMaintenanceDue[] = [
-  {
-    id: "due-304-apr",
-    tower: "B",
-    flatNumber: "304",
-    ownerName: "Padma Konkonapala",
-    period: "April 2026",
-    amount: 4500,
-    dueDate: "2026-04-05",
-    status: "paid",
-    paidDate: "2026-04-03",
-    paidMode: "UPI",
-    receiptNumber: "RCPT-2026-0412",
-  },
-  {
-    id: "due-304-may",
-    tower: "B",
-    flatNumber: "304",
-    ownerName: "Padma Konkonapala",
-    period: "May 2026",
-    amount: 4500,
-    dueDate: "2026-05-05",
-    status: "paid",
-    paidDate: "2026-05-06",
-    paidMode: "UPI",
-    receiptNumber: "RCPT-2026-0498",
-  },
-  {
-    id: "due-304-jun",
-    tower: "B",
-    flatNumber: "304",
-    ownerName: "Padma Konkonapala",
-    period: "June 2026",
-    amount: 4500,
-    dueDate: "2026-06-05",
-    status: "pending",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-301-apr",
-    tower: "A",
-    flatNumber: "301",
-    ownerName: "Arvind Deshmukh",
-    period: "April 2026",
-    amount: 5200,
-    dueDate: "2026-04-05",
-    status: "paid",
-    paidDate: "2026-04-02",
-    paidMode: "Bank Transfer",
-    receiptNumber: "RCPT-2026-0405",
-  },
-  {
-    id: "due-301-may",
-    tower: "A",
-    flatNumber: "301",
-    ownerName: "Arvind Deshmukh",
-    period: "May 2026",
-    amount: 5200,
-    dueDate: "2026-05-05",
-    status: "overdue",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-301-jun",
-    tower: "A",
-    flatNumber: "301",
-    ownerName: "Arvind Deshmukh",
-    period: "June 2026",
-    amount: 5200,
-    dueDate: "2026-06-05",
-    status: "overdue",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-204-apr",
-    tower: "B",
-    flatNumber: "204",
-    ownerName: "Sunita Patil",
-    period: "April 2026",
-    amount: 4200,
-    dueDate: "2026-04-05",
-    status: "paid",
-    paidDate: "2026-04-05",
-    paidMode: "Cash",
-    receiptNumber: "RCPT-2026-0409",
-  },
-  {
-    id: "due-204-may",
-    tower: "B",
-    flatNumber: "204",
-    ownerName: "Sunita Patil",
-    period: "May 2026",
-    amount: 4200,
-    dueDate: "2026-05-05",
-    status: "paid",
-    paidDate: "2026-05-04",
-    paidMode: "Cash",
-    receiptNumber: "RCPT-2026-0490",
-  },
-  {
-    id: "due-204-jun",
-    tower: "B",
-    flatNumber: "204",
-    ownerName: "Sunita Patil",
-    period: "June 2026",
-    amount: 4200,
-    dueDate: "2026-06-05",
-    status: "pending",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-502-apr",
-    tower: "A",
-    flatNumber: "502",
-    ownerName: "Rohan Mehta",
-    period: "April 2026",
-    amount: 6000,
-    dueDate: "2026-04-05",
-    status: "paid",
-    paidDate: "2026-04-01",
-    paidMode: "UPI",
-    receiptNumber: "RCPT-2026-0401",
-  },
-  {
-    id: "due-502-may",
-    tower: "A",
-    flatNumber: "502",
-    ownerName: "Rohan Mehta",
-    period: "May 2026",
-    amount: 6000,
-    dueDate: "2026-05-05",
-    status: "paid",
-    paidDate: "2026-05-05",
-    paidMode: "UPI",
-    receiptNumber: "RCPT-2026-0495",
-  },
-  {
-    id: "due-502-jun",
-    tower: "A",
-    flatNumber: "502",
-    ownerName: "Rohan Mehta",
-    period: "June 2026",
-    amount: 6000,
-    dueDate: "2026-06-05",
-    status: "pending",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-103-apr",
-    tower: "C",
-    flatNumber: "103",
-    ownerName: "Kavya Nair",
-    period: "April 2026",
-    amount: 4000,
-    dueDate: "2026-04-05",
-    status: "overdue",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-103-may",
-    tower: "C",
-    flatNumber: "103",
-    ownerName: "Kavya Nair",
-    period: "May 2026",
-    amount: 4000,
-    dueDate: "2026-05-05",
-    status: "overdue",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-103-jun",
-    tower: "C",
-    flatNumber: "103",
-    ownerName: "Kavya Nair",
-    period: "June 2026",
-    amount: 4000,
-    dueDate: "2026-06-05",
-    status: "overdue",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-405-jun",
-    tower: "B",
-    flatNumber: "405",
-    ownerName: "Mohammed Farhan",
-    period: "June 2026",
-    amount: 4800,
-    dueDate: "2026-06-05",
-    status: "paid",
-    paidDate: "2026-06-04",
-    paidMode: "Bank Transfer",
-    receiptNumber: "RCPT-2026-0560",
-  },
-  {
-    id: "due-208-jun",
-    tower: "C",
-    flatNumber: "208",
-    ownerName: "Neha Kulkarni",
-    period: "June 2026",
-    amount: 4300,
-    dueDate: "2026-06-05",
-    status: "pending",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-601-jun",
-    tower: "A",
-    flatNumber: "601",
-    ownerName: "Vikram Singh Rathore",
-    period: "June 2026",
-    amount: 5200,
-    dueDate: "2026-06-05",
-    status: "paid",
-    paidDate: "2026-06-02",
-    paidMode: "UPI",
-    receiptNumber: "RCPT-2026-0548",
-  },
-  {
-    id: "due-110-jun",
-    tower: "B",
-    flatNumber: "110",
-    ownerName: "Deepak Shah",
-    period: "June 2026",
-    amount: 3800,
-    dueDate: "2026-06-05",
-    status: "pending",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-307-jun",
-    tower: "C",
-    flatNumber: "307",
-    ownerName: "Suresh Iyer",
-    period: "June 2026",
-    amount: 4600,
-    dueDate: "2026-06-05",
-    status: "paid",
-    paidDate: "2026-06-03",
-    paidMode: "Bank Transfer",
-    receiptNumber: "RCPT-2026-0553",
-  },
-  {
-    id: "due-402-jun",
-    tower: "A",
-    flatNumber: "402",
-    ownerName: "Vikas Choudhary",
-    period: "June 2026",
-    amount: 4500,
-    dueDate: "2026-06-05",
-    status: "paid",
-    paidDate: "2026-06-05",
-    paidMode: "UPI",
-    receiptNumber: "RCPT-2026-0564",
-  },
-  {
-    id: "due-506-jun",
-    tower: "C",
-    flatNumber: "506",
-    ownerName: "Harish Krishnan",
-    period: "June 2026",
-    amount: 4300,
-    dueDate: "2026-06-05",
-    status: "overdue",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-201-jun",
-    tower: "B",
-    flatNumber: "201",
-    ownerName: "Divya Reddy",
-    period: "June 2026",
-    amount: 4200,
-    dueDate: "2026-06-05",
-    status: "paid",
-    paidDate: "2026-06-01",
-    paidMode: "Cheque",
-    receiptNumber: "RCPT-2026-0541",
-  },
-  {
-    id: "due-202-jun",
-    tower: "A",
-    flatNumber: "202",
-    ownerName: "Rajesh Kumar",
-    period: "June 2026",
-    amount: 4000,
-    dueDate: "2026-06-05",
-    status: "pending",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-305-jun",
-    tower: "B",
-    flatNumber: "305",
-    ownerName: "Sneha Joshi",
-    period: "June 2026",
-    amount: 4500,
-    dueDate: "2026-06-05",
-    status: "overdue",
-    paidDate: null,
-    paidMode: null,
-    receiptNumber: null,
-  },
-  {
-    id: "due-410-jun",
-    tower: "C",
-    flatNumber: "410",
-    ownerName: "Manoj Verma",
-    period: "June 2026",
-    amount: 4300,
-    dueDate: "2026-06-05",
-    status: "paid",
-    paidDate: "2026-06-04",
-    paidMode: "UPI",
-    receiptNumber: "RCPT-2026-0558",
-  },
-];
+export function flatDuesKey(tower: string, flatNumber: string) {
+  return `${tower}-${flatNumber}`;
+}
+
+/** Every flat's dues, newest first, built in one pass — use this when looking up many flats. */
+export function getDuesByFlat(
+  dues: FlatMaintenanceDue[] = getFlatMaintenanceDues(),
+): Map<string, FlatMaintenanceDue[]> {
+  const byFlat = new Map<string, FlatMaintenanceDue[]>();
+  for (const d of dues) {
+    const key = flatDuesKey(d.tower, d.flatNumber);
+    const list = byFlat.get(key);
+    if (list) list.push(d);
+    else byFlat.set(key, [d]);
+  }
+  for (const list of byFlat.values()) {
+    list.sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+  }
+  return byFlat;
+}
 
 export function duesForFlat(tower: string, flatNumber: string): FlatMaintenanceDue[] {
-  return flatMaintenanceDues
-    .filter((d) => d.tower === tower && d.flatNumber === flatNumber)
-    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+  return getDuesByFlat().get(flatDuesKey(tower, flatNumber)) ?? [];
+}
+
+export function maintenanceStatusFromDues(dues: FlatMaintenanceDue[]): "paid" | "due" {
+  return dues.some((d) => d.status !== "paid") ? "due" : "paid";
 }
 
 export function maintenanceStatusForFlat(tower: string, flatNumber: string): "paid" | "due" {
-  const dues = duesForFlat(tower, flatNumber);
-  return dues.length > 0 && dues.every((d) => d.status === "paid") ? "paid" : "due";
+  return maintenanceStatusFromDues(duesForFlat(tower, flatNumber));
 }
 
-export function societyCollectionSummary(dues: FlatMaintenanceDue[] = flatMaintenanceDues) {
+export function societyCollectionSummary(dues: FlatMaintenanceDue[] = getFlatMaintenanceDues()) {
   const totalBilled = dues.reduce((sum, d) => sum + d.amount, 0);
-  const totalCollected = dues
-    .filter((d) => d.status === "paid")
-    .reduce((sum, d) => sum + d.amount, 0);
+  const totalCollected = dues.reduce((sum, d) => sum + d.amountPaid, 0);
   const totalOutstanding = totalBilled - totalCollected;
   const defaulterFlats = new Set(
     dues.filter((d) => d.status === "overdue").map((d) => `${d.tower}-${d.flatNumber}`),

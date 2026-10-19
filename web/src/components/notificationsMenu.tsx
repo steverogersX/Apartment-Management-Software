@@ -41,7 +41,10 @@ export function NotificationsMenu() {
       <PopoverTrigger render={<Button variant="ghost" size="icon-sm" className="relative" />}>
         <Bell className="size-4" />
         {unreadCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-red-500" />
+          <span className="absolute right-1.5 top-1.5 flex size-1.5">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-500 opacity-75" />
+            <span className="relative inline-flex size-1.5 rounded-full bg-red-500" />
+          </span>
         )}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">

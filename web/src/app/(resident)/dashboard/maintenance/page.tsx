@@ -14,6 +14,7 @@ import {
   type MaintenancePaymentStatus,
 } from "@/lib/maintenanceMockData";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 const CURRENT_RESIDENT = { name: "Padma Konkonapala", tower: "B", flatNumber: "304" };
 
@@ -44,7 +45,10 @@ export default function MaintenancePage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">My Maintenance</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          My Maintenance
+        </h1>
         <p className="text-sm text-muted-foreground">
           Maintenance dues and work history for Flat {CURRENT_RESIDENT.flatNumber}.
         </p>

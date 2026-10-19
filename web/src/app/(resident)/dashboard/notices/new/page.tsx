@@ -9,8 +9,12 @@ import { boardNotices, type BoardNotice } from "@/lib/noticesMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { NoticeFormInput } from "@/lib/noticesMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { recordAudit } from "@/lib/auditLog";
 
 export default function NewNoticePage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const canCreate = has("NoticesPost");
@@ -57,6 +61,15 @@ export default function NewNoticePage() {
     };
     boardNotices.unshift(newNotice);
     router.push("/dashboard/notices");
+    recordAudit({
+      module: "Communication",
+      entityType: "Notice",
+      entityId: newNotice.id,
+      entityLabel: newNotice.title,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
+    toast({ title: "Notice published" });
   }
 
   return (

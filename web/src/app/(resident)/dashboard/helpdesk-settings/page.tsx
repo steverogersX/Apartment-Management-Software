@@ -22,13 +22,10 @@ import type {
   SlaRule,
 } from "@/lib/helpdeskSettingsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function HelpdeskSettingsPage() {
   const { has } = useAuth();
-
-  if (!has("SocietySettingsUpdate")) {
-    return <PermissionDenied message="You do not have permission to manage helpdesk settings." />;
-  }
 
   // Categories section
   const [categories, setCategories] = React.useState<HelpdeskCategory[]>(() => [
@@ -124,10 +121,17 @@ export default function HelpdeskSettingsPage() {
     setTimeout(() => setSavedNotificationsFlag(false), 2000);
   }
 
+  if (!has("SocietySettingsUpdate")) {
+    return <PermissionDenied message="You do not have permission to manage helpdesk settings." />;
+  }
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Helpdesk Settings</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Helpdesk Settings
+        </h1>
         <p className="text-sm text-muted-foreground">
           Manage categories, SLA rules, and notifications for complaints.
         </p>

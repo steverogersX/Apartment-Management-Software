@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
 
 import { cn, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 const CATEGORY_VARIANT: Record<string, "secondary" | "outline" | "default"> = {
   Maintenance: "secondary",
@@ -27,6 +28,7 @@ const CATEGORY_VARIANT: Record<string, "secondary" | "outline" | "default"> = {
 };
 
 export function NoticeBoardTable() {
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const [notices, setNotices] = React.useState<BoardNotice[]>(() =>
@@ -38,21 +40,25 @@ export function NoticeBoardTable() {
   const currentUser = "Arvind Deshmukh";
   const canCreate = has("NoticesPost");
 
-  function handleAcknowledge(id: string) {
-    setNotices((prev) =>
-      prev.map((n) =>
-        n.id === id && !n.acknowledgedBy.includes(currentUser)
-          ? {
-              ...n,
-              acknowledgedBy: [...n.acknowledgedBy, currentUser],
-              readBy: n.readBy.some((r) => r.name === currentUser)
-                ? n.readBy
-                : [...n.readBy, { name: currentUser, viewedAt: new Date().toISOString() }],
-            }
-          : n,
-      ),
-    );
-  }
+  const handleAcknowledge = React.useCallback(
+    (id: string) => {
+      setNotices((prev) =>
+        prev.map((n) =>
+          n.id === id && !n.acknowledgedBy.includes(currentUser)
+            ? {
+                ...n,
+                acknowledgedBy: [...n.acknowledgedBy, currentUser],
+                readBy: n.readBy.some((r) => r.name === currentUser)
+                  ? n.readBy
+                  : [...n.readBy, { name: currentUser, viewedAt: new Date().toISOString() }],
+              }
+            : n,
+        ),
+      );
+      toast({ title: "Notice acknowledged" });
+    },
+    [toast],
+  );
 
   function handleRowClick(row: BoardNotice) {
     setNotices((prev) =>
@@ -337,7 +343,7 @@ export function NoticeBoardTable() {
         },
       },
     ],
-    [],
+    [handleAcknowledge],
   );
 
   const filters = React.useMemo<DataTableFilterConfig<BoardNotice>[]>(

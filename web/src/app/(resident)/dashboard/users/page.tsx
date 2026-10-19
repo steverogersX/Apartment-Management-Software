@@ -1,10 +1,14 @@
 import { UsersTable } from "@/components/usersTable";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function UsersPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Users</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Users
+        </h1>
         <p className="text-sm text-muted-foreground">
           Manage who has access to this society and what they can do.
         </p>

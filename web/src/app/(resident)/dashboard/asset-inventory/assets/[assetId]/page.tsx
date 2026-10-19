@@ -32,6 +32,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { formatCurrency } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
 
 function formatDate(iso: string | null) {
   if (!iso) return "—";
@@ -54,43 +56,16 @@ function expiryStatus(iso: string | null) {
   return { label: "Valid", variant: "secondary" as const, dot: "bg-emerald-500" };
 }
 
-const STATUS_DOT: Record<Asset["status"], string> = {
-  Active: "bg-emerald-500",
-  "Under Repair": "bg-amber-500",
-  Retired: "bg-zinc-400",
-};
-
 export default function AssetDetailPage() {
   const params = useParams<{ assetId: string }>();
-  const { user, has } = useAuth();
-  const actor = user?.displayName ?? "Unknown";
-  const canManage = has("AssetsManage");
-  const initialAsset = React.useMemo(
-    () => assets.find((a) => a.id === params.assetId) ?? null,
-    [params.assetId],
-  );
-  const [asset, setAsset] = React.useState<Asset | null>(initialAsset);
-  const [editOpen, setEditOpen] = React.useState(false);
-  const [logOpen, setLogOpen] = React.useState(false);
-  const [logs, setLogs] = React.useState<AssetServiceLog[]>(() =>
-    assetServiceLogs.filter((l) => l.assetId === params.assetId),
-  );
-
-  React.useEffect(() => {
-    setAsset(initialAsset);
-  }, [initialAsset]);
-
-  React.useEffect(() => {
-    setLogs(assetServiceLogs.filter((l) => l.assetId === params.assetId));
-  }, [params.assetId]);
-
-  useBreadcrumbTitle(asset?.name ?? null);
+  const { has } = useAuth();
+  const initial = assets.find((x) => x.id === params.assetId);
 
   if (!has("AssetsView")) {
     return <PermissionDenied message="You do not have permission to view assets." />;
   }
 
-  if (!asset) {
+  if (!initial) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Asset not found.</p>
@@ -103,6 +78,23 @@ export default function AssetDetailPage() {
       </div>
     );
   }
+
+  return <AssetDetail key={initial.id} initial={initial} />;
+}
+
+function AssetDetail({ initial }: { initial: Asset }) {
+  const { toast } = useToast();
+  const { user, has } = useAuth();
+  const actor = user?.displayName ?? "Unknown";
+  const canManage = has("AssetsManage");
+  const [asset, setAsset] = React.useState<Asset>(initial);
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [logOpen, setLogOpen] = React.useState(false);
+  const [logs, setLogs] = React.useState<AssetServiceLog[]>(() =>
+    assetServiceLogs.filter((l) => l.assetId === initial.id),
+  );
+
+  useBreadcrumbTitle(asset.name);
 
   function handleEditSave(values: EditAssetInput) {
     if (!asset) return;
@@ -136,6 +128,7 @@ export default function AssetDetailPage() {
       performedBy: actor,
     });
     setEditOpen(false);
+    toast({ title: "Asset updated" });
   }
 
   function handleLogService(values: AddServiceLogInput) {
@@ -169,6 +162,7 @@ export default function AssetDetailPage() {
       setAsset((prev) => (prev ? { ...prev, amcExpiry: values.newAmcExpiry as string } : prev));
     }
     setLogOpen(false);
+    toast({ title: "Service logged" });
   }
 
   const warranty = expiryStatus(asset.warrantyExpiry);
@@ -192,7 +186,7 @@ export default function AssetDetailPage() {
               <Badge variant="outline">{asset.assetTag}</Badge>
               <Badge variant="outline">{asset.category}</Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[asset.status])} />
+                <StatusIcon status={asset.status} />
                 {asset.status}
               </span>
               {canManage && (

@@ -36,6 +36,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -71,6 +73,7 @@ const PRIORITY_META: Record<
 };
 
 export default function ComplaintsPage() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const [complaintsData, setComplaintsData] = React.useState<Complaint[]>(() => [
     ...complaintsSource,
@@ -110,6 +113,7 @@ export default function ComplaintsPage() {
     };
     complaintStatusEventsSource.push(event);
     setStatusEvents((prev) => [...prev, event]);
+    toast({ title: "Complaint marked resolved" });
   }
 
   if (!has("ComplaintsRaise")) {
@@ -119,7 +123,10 @@ export default function ComplaintsPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">My Complaints</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          My Complaints
+        </h1>
         <p className="text-sm text-muted-foreground">
           Raise, track, and resolve issues for Flat 304 — only you can mark your own ticket
           resolved.

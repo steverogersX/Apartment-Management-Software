@@ -18,10 +18,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { useAuth } from "@/hooks/useAuth";
-import { flats } from "@/lib/flatsMockData";
-import { computeInvoiceTotals, computeOutstandingBalance, invoices } from "@/lib/invoicingMockData";
+import { flatLabelById, flats, getFlatById } from "@/lib/flatsMockData";
+import { computeOutstandingBalance, invoiceNumberFor, invoices } from "@/lib/invoicingMockData";
 import { getAgeingBucket, receipts, type AgeingBucket, type Receipt } from "@/lib/duesMockData";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 type DuesRow = {
   flatId: string;
@@ -33,18 +34,11 @@ type DuesRow = {
   lastPaymentDate: string | null;
 };
 
-function flatLabelFor(flatId: string) {
-  const f = flats.find((fl) => fl.id === flatId);
-  return f ? `${f.tower}-${f.flatNumber}` : flatId;
-}
+const flatLabelFor = flatLabelById;
 
 export default function DuesAndReceiptsPage() {
   const { has } = useAuth();
   const [receiptOpen, setReceiptOpen] = React.useState<Receipt | null>(null);
-
-  if (!has("DuesReceiptsViewAll")) {
-    return <PermissionDenied message="You do not have permission to view dues and receipts." />;
-  }
 
   const duesRows = React.useMemo<DuesRow[]>(() => {
     const map = new Map<string, { invoices: typeof invoices; receipts: Receipt[] }>();
@@ -52,7 +46,10 @@ export default function DuesAndReceiptsPage() {
       if (inv.status === "Paid" || inv.status === "Cancelled") return;
       const outstanding = computeOutstandingBalance(inv);
       if (outstanding <= 0) return;
-      const entry = map.get(inv.flatId) ?? { invoices: [] as any, receipts: [] as any };
+      const entry = map.get(inv.flatId) ?? {
+        invoices: [] as typeof invoices,
+        receipts: [] as Receipt[],
+      };
       entry.invoices.push(inv);
       map.set(inv.flatId, entry);
     });
@@ -211,14 +208,11 @@ export default function DuesAndReceiptsPage() {
         accessorKey: "invoiceId",
         meta: { label: "Invoice" },
         header: () => <DataTableColumnHeader label="Invoice #" />,
-        cell: ({ row }) => {
-          const inv = invoices.find((i) => i.id === row.original.invoiceId);
-          return (
-            <span className="text-sm text-muted-foreground">
-              {inv?.invoiceNumber ?? row.original.invoiceId}
-            </span>
-          );
-        },
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {invoiceNumberFor(row.original.invoiceId)}
+          </span>
+        ),
       },
       {
         id: "amount",
@@ -248,14 +242,67 @@ export default function DuesAndReceiptsPage() {
     [],
   );
 
+  const duesFilters = React.useMemo<DataTableFilterConfig<DuesRow>[]>(
+    () => [
+      {
+        id: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Search flat",
+        predicate: (row, q) => row.flatLabel.toLowerCase().includes(q.toLowerCase()),
+      },
+      {
+        id: "ageing",
+        label: "Ageing",
+        type: "select",
+        options: (
+          ["Current", "1-30 days", "31-60 days", "61-90 days", "90+ days"] as AgeingBucket[]
+        ).map((b) => ({ label: b, value: b })),
+        predicate: (row, v) => row.ageing === v,
+      },
+      {
+        id: "tower",
+        label: "Tower",
+        type: "select",
+        options: [...new Set(flats.map((f) => f.tower))]
+          .sort()
+          .map((t) => ({ label: `Tower ${t}`, value: t })),
+        predicate: (row, v) => row.tower === v,
+      },
+    ],
+    [],
+  );
+
   const receiptFilters = React.useMemo<DataTableFilterConfig<Receipt>[]>(
     () => [
       {
         id: "search",
         label: "Search",
         type: "search",
-        placeholder: "Search receipt #",
-        predicate: (row, q) => row.receiptNumber.toLowerCase().includes(q.toLowerCase()),
+        placeholder: "Search receipt # or invoice #",
+        predicate: (row, q) => {
+          const query = q.toLowerCase();
+          return (
+            row.receiptNumber.toLowerCase().includes(query) ||
+            invoiceNumberFor(row.invoiceId).toLowerCase().includes(query)
+          );
+        },
+      },
+      {
+        id: "month",
+        label: "Month",
+        type: "select",
+        options: [...new Set(receipts.map((r) => r.paymentDate.slice(0, 7)))]
+          .sort()
+          .reverse()
+          .map((m) => ({
+            label: new Date(`${m}-01T00:00:00`).toLocaleDateString("en-IN", {
+              month: "long",
+              year: "numeric",
+            }),
+            value: m,
+          })),
+        predicate: (row, v) => row.paymentDate.slice(0, 7) === v,
       },
       {
         id: "paymentMode",
@@ -279,19 +326,23 @@ export default function DuesAndReceiptsPage() {
         label: "Tower",
         type: "select",
         options: ["A", "B", "C"].map((t) => ({ label: `Tower ${t}`, value: t })),
-        predicate: (row, v) => {
-          const f = flats.find((fl) => fl.id === row.flatId);
-          return f?.tower === v;
-        },
+        predicate: (row, v) => getFlatById(row.flatId)?.tower === v,
       },
     ],
     [],
   );
 
+  if (!has("DuesReceiptsViewAll")) {
+    return <PermissionDenied message="You do not have permission to view dues and receipts." />;
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Dues and Receipts</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Dues and Receipts
+        </h1>
         <p className="text-sm text-muted-foreground">
           Outstanding balances and payment receipts register.
         </p>
@@ -343,6 +394,7 @@ export default function DuesAndReceiptsPage() {
             columns={duesColumns}
             getRowId={(r) => r.flatId}
             title="Outstanding Dues"
+            filters={duesFilters}
             showPageSize
             pageSize={8}
             itemLabel="flat"

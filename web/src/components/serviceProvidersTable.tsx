@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Plus } from "lucide-react";
 
-import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,16 +27,13 @@ import {
   serviceProviders,
   type EditProviderInput,
   type ServiceProvider,
-  type ServiceProviderCategory,
   type ServiceProviderStatus,
 } from "@/lib/providersMockData";
 import { AddProviderForm } from "./providers/addProviderForm";
 import { useAuth } from "@/hooks/useAuth";
-
-const STATUS_DOT: Record<ServiceProviderStatus, string> = {
-  active: "bg-emerald-500",
-  blocked: "bg-red-500",
-};
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
+import { recordAudit } from "@/lib/auditLog";
 
 const STATUS_LABEL: Record<ServiceProviderStatus, string> = {
   active: "Active",
@@ -57,6 +54,8 @@ function lastVerifiedBy(providerId: string) {
 }
 
 export function ServiceProvidersTable() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
   const actorName = user?.displayName ?? user?.email ?? "Admin";
@@ -69,7 +68,7 @@ export function ServiceProvidersTable() {
       name: values.name,
       category: values.category,
       phone: values.phone,
-      photoUrl: `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(values.name)}`,
+      photoUrl: avatarUrlForName(values.name),
       idProofType: values.idProofType,
       idProofNumber: values.idProofNumber,
       status: values.status,
@@ -97,6 +96,15 @@ export function ServiceProvidersTable() {
       });
     });
     setAddOpen(false);
+    recordAudit({
+      module: "Service Providers",
+      entityType: "Service Provider",
+      entityId: newProvider.id,
+      entityLabel: newProvider.name,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
+    toast({ title: "Service provider added" });
   }
 
   const columns = React.useMemo<ColumnDef<ServiceProvider>[]>(
@@ -117,10 +125,7 @@ export function ServiceProvidersTable() {
             <div className="flex items-center gap-2.5">
               <Avatar size="sm">
                 <AvatarImage
-                  src={
-                    row.original.photoUrl ||
-                    `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(row.original.id)}`
-                  }
+                  src={row.original.photoUrl || avatarUrlForName(row.original.id)}
                   alt={row.original.name}
                 />
                 <AvatarFallback
@@ -209,7 +214,7 @@ export function ServiceProvidersTable() {
           const status = row.original.status;
           return (
             <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[status])} />
+              <StatusIcon status={status} />
               <Badge variant={status === "active" ? "secondary" : "destructive"}>
                 {STATUS_LABEL[status]}
               </Badge>

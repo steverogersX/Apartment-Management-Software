@@ -18,18 +18,20 @@ import {
 
 import { MaintenanceDuesTable } from "@/components/maintenanceDuesTable";
 import { MaintenanceTable, type MaintenanceRow } from "@/components/maintenanceTable";
-import { RecordPaymentForm } from "@/components/maintenance/recordPaymentForm";
+import { RecordPaymentForm } from "@/components/dues/recordPaymentForm";
 import {
   duesForFlat,
-  flatMaintenanceDues as flatMaintenanceDuesSource,
   maintenanceLogForFlat,
   type FlatMaintenanceDue,
   type MaintenancePaymentStatus,
-  type RecordMaintenancePaymentInput,
 } from "@/lib/maintenanceMockData";
+import { recordInvoicePayment } from "@/lib/billing";
+import type { RecordPaymentInput } from "@/lib/duesMockData";
+import { invoices } from "@/lib/invoicingMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 const STATUS_LABEL: Record<MaintenancePaymentStatus, string> = {
   paid: "Paid",
@@ -44,7 +46,8 @@ const STATUS_VARIANT: Record<MaintenancePaymentStatus, "default" | "secondary" |
 };
 
 export default function FlatMaintenanceDuesPage() {
-  const { has } = useAuth();
+  const { toast } = useToast();
+  const { has, user } = useAuth();
   const params = useParams<{ flatId: string }>();
   const [tower, flatNumber] = decodeURIComponent(params.flatId).split("-");
 
@@ -62,20 +65,14 @@ export default function FlatMaintenanceDuesPage() {
   const outstanding = dues.filter((d) => d.status !== "paid");
   const latest = dues[0] ?? null;
 
-  function handleRecordPayment(values: RecordMaintenancePaymentInput) {
-    if (!payTarget) return;
-    const idx = flatMaintenanceDuesSource.findIndex((d) => d.id === payTarget.id);
-    const patch: Partial<FlatMaintenanceDue> = {
-      status: "paid",
-      paidDate: values.paidDate,
-      paidMode: values.paidMode,
-      receiptNumber: values.receiptNumber,
-    };
-    if (idx !== -1) {
-      flatMaintenanceDuesSource[idx] = { ...flatMaintenanceDuesSource[idx], ...patch };
-    }
-    setDues((prev) => prev.map((d) => (d.id === payTarget.id ? { ...d, ...patch } : d)));
+  const payInvoice = payTarget ? invoices.find((i) => i.id === payTarget.invoiceId) : undefined;
+
+  function handleRecordPayment(values: RecordPaymentInput) {
+    if (!payInvoice) return;
+    recordInvoicePayment(payInvoice, values, user?.displayName ?? "Unknown");
+    setDues(duesForFlat(tower, flatNumber));
     setPayTarget(null);
+    toast({ title: "Payment recorded" });
   }
 
   if (!has("MaintenanceViewAll")) {
@@ -173,9 +170,10 @@ export default function FlatMaintenanceDuesPage() {
               {payTarget && `${tower}-${flatNumber} · ${payTarget.period}`}
             </DialogDescription>
           </DialogHeader>
-          {payTarget && (
+          {payTarget && payInvoice && (
             <RecordPaymentForm
               key={payTarget.id}
+              invoice={payInvoice}
               onSave={handleRecordPayment}
               onCancel={() => setPayTarget(null)}
             />

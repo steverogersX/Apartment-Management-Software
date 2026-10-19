@@ -1,5 +1,7 @@
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 
+import { iconForColumnLabel } from "@/lib/columnIcons";
+
 export type IconType = React.ComponentType<{ className?: string }>;
 
 /**
@@ -7,7 +9,7 @@ export type IconType = React.ComponentType<{ className?: string }>;
  * clickable and show the sort-direction indicator; omit both for a plain label.
  */
 export function DataTableColumnHeader({
-  icon: Icon,
+  icon,
   label,
   sorted,
   onClick,
@@ -17,6 +19,7 @@ export function DataTableColumnHeader({
   sorted?: false | "asc" | "desc";
   onClick?: () => void;
 }) {
+  const Icon = icon ?? iconForColumnLabel(label);
   const content = (
     <>
       {Icon && <Icon className="size-3.5 text-muted-foreground/70" />}

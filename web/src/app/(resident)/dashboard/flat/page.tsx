@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { useFlats } from "@/hooks/useFlats";
 import { currentFlat } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function FlatPage() {
   const { flats, activeFlat, switchFlat, isSwitchingFlat } = useFlats();
@@ -63,7 +64,10 @@ export default function FlatPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">My Flat</h1>
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
+            My Flat
+          </h1>
           <p className="text-sm text-muted-foreground">Ownership and unit details on record.</p>
         </div>
         {flats.length > 1 && (

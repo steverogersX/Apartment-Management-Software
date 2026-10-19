@@ -34,8 +34,10 @@ import {
   ChevronRight,
   GripVertical,
   Home,
+  Inbox,
   Plus,
   Search,
+  SearchX,
   SlidersHorizontal,
   Trash2,
   X,
@@ -356,14 +358,15 @@ export function DataTable<TData>({
   const groupValue = groupFilter ? (filterValues[groupFilter.id] ?? "none") : "none";
   const isGrouped = !!groupFilter && groupValue !== "none";
 
+  const deferredFilterValues = React.useDeferredValue(filterValues);
   const filteredData = React.useMemo(() => {
     return activeFilters.reduce((rows, filter) => {
       if (filter.type === "groupBy") return rows;
-      const value = filterValues[filter.id];
+      const value = deferredFilterValues[filter.id];
       if (!value || value === "all") return rows;
       return rows.filter((row) => filter.predicate(row, value));
     }, data);
-  }, [activeFilters, data, filterValues]);
+  }, [activeFilters, data, deferredFilterValues]);
 
   const displayData = React.useMemo(() => {
     if (!isGrouped || !groupFilter || groupFilter.type !== "groupBy") return filteredData;
@@ -398,8 +401,7 @@ export function DataTable<TData>({
   });
 
   const pageRows = table.getRowModel().rows;
-  const pageRowsKey = pageRows.map((r) => r.id).join(" ");
-  const revealCount = useStaggeredReveal(pageRowsKey, pageRows.length);
+  const revealCount = useStaggeredReveal(pageRows.length);
 
   const leafColumns = table.getAllLeafColumns();
   const orderedColumnIds = table.getVisibleLeafColumns().map((c) => c.id);
@@ -429,6 +431,31 @@ export function DataTable<TData>({
   }
 
   const selectedCount = table.getFilteredSelectedRowModel().rows.length;
+
+  const baseFilterValues = defaultFilterValues ?? {};
+  const hasActiveFilters = filters.some((f) => {
+    if (f.type === "groupBy") return false;
+    const current = filterValues[f.id] ?? "";
+    const base = baseFilterValues[f.id] ?? "";
+    return current !== base && !(current === "all" && base === "");
+  });
+
+  const knownRowIdsRef = React.useRef<Set<string> | null>(null);
+  const freshTimerRef = React.useRef<number | undefined>(undefined);
+  const [freshRowIds, setFreshRowIds] = React.useState<Set<string>>(() => new Set());
+  React.useEffect(() => {
+    if (!getRowId) return;
+    const ids = data.map((row) => getRowId(row));
+    const known = knownRowIdsRef.current;
+    knownRowIdsRef.current = new Set(ids);
+    if (!known) return;
+    const fresh = ids.filter((id) => !known.has(id));
+    if (fresh.length === 0 || fresh.length > 5) return;
+    setFreshRowIds(new Set(fresh));
+    window.clearTimeout(freshTimerRef.current);
+    freshTimerRef.current = window.setTimeout(() => setFreshRowIds(new Set()), 2000);
+  }, [data, getRowId]);
+  React.useEffect(() => () => window.clearTimeout(freshTimerRef.current), []);
 
   return (
     <div className="overflow-hidden rounded-md border border-border bg-card">
@@ -721,7 +748,8 @@ export function DataTable<TData>({
                         : undefined
                     }
                     className={cn(
-                      "border-border hover:bg-muted/50 animate-rise",
+                      "border-border hover:bg-muted/50",
+                      freshRowIds.has(row.id) ? "animate-row-flash" : "animate-rise",
                       isInteractiveRow &&
                         "cursor-pointer focus-visible:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
                     )}
@@ -755,7 +783,9 @@ export function DataTable<TData>({
                       className="border-border bg-transparent hover:bg-transparent"
                     >
                       <TableCell colSpan={row.getVisibleCells().length} className="p-0">
-                        <div>{renderSubRow(row.original)}</div>
+                        <div className="animate-in fade-in-0 slide-in-from-top-1 duration-200">
+                          {renderSubRow(row.original)}
+                        </div>
                       </TableCell>
                     </TableRow>,
                   );
@@ -767,10 +797,26 @@ export function DataTable<TData>({
             <TableRow className="hover:bg-transparent">
               <TableCell
                 colSpan={table.getVisibleLeafColumns().length}
-                className="h-24 text-center text-sm text-muted-foreground"
+                className="h-40 text-center text-sm text-muted-foreground"
               >
-                <div className="flex flex-col items-center justify-center gap-2.5">
+                <div className="flex animate-in flex-col items-center justify-center gap-2.5 py-6 fade-in-0 duration-300">
+                  <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    {hasActiveFilters ? (
+                      <SearchX className="size-5" />
+                    ) : (
+                      <Inbox className="size-5" />
+                    )}
+                  </span>
                   <span>{emptyMessage}</span>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setFilterValues(baseFilterValues)}
+                    >
+                      Clear filters
+                    </Button>
+                  )}
                   {emptyAction}
                 </div>
               </TableCell>

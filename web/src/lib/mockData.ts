@@ -1,3 +1,7 @@
+import { flats } from "./flatsMockData";
+import { computeOutstandingBalance, invoices } from "./invoicingMockData";
+import { societyVisitors } from "./visitorsMockData";
+
 export type ComplaintStatus = "open" | "in_progress" | "resolved" | "escalated";
 export type ComplaintPriority = "low" | "medium" | "high";
 
@@ -49,64 +53,22 @@ export type Visitor = {
   passCode: string;
 };
 
-export const visitors_log: Visitor[] = [
-  {
-    id: "1",
-    name: "Ramesh Delivery (Amazon)",
-    date: "2026-06-18",
-    time: "11:30",
-    status: "expected",
-    passCode: "GVR-7K2P9X",
-  },
-  {
-    id: "2",
-    name: "Lakshmi Aunty",
-    date: "2026-06-17",
-    time: "18:00",
-    status: "entered",
-    passCode: "GVR-3M8Q1Z",
-  },
-  {
-    id: "3",
-    name: "Swiggy — Order #44213",
-    date: "2026-06-17",
-    time: "13:15",
-    status: "completed",
-    passCode: "GVR-9F4T2A",
-  },
-  {
-    id: "4",
-    name: "AC Service Technician",
-    date: "2026-06-16",
-    time: "10:00",
-    status: "completed",
-    passCode: "GVR-5J7N6B",
-  },
-  {
-    id: "5",
-    name: "Unknown Salesperson",
-    date: "2026-06-15",
-    time: "16:45",
-    status: "denied",
-    passCode: "GVR-2C1V8D",
-  },
-  {
-    id: "6",
-    name: "Cousin — Arjun",
-    date: "2026-06-14",
-    time: "19:30",
-    status: "completed",
-    passCode: "GVR-8H5R3E",
-  },
-  {
-    id: "7",
-    name: "Flipkart Delivery",
-    date: "2026-06-13",
-    time: "12:00",
-    status: "expired",
-    passCode: "GVR-6B9L4F",
-  },
-];
+const RESIDENT_FLAT_LABEL = "B-304";
+
+function getResidentVisitorLog(): Visitor[] {
+  return societyVisitors
+    .filter((v) => v.flatNumber === RESIDENT_FLAT_LABEL)
+    .map((v) => ({
+      id: v.id,
+      name: v.name,
+      date: v.date,
+      time: v.expectedTime,
+      status: v.status,
+      passCode: v.passCode,
+    }));
+}
+
+export const visitors_log: Visitor[] = getResidentVisitorLog();
 
 export type NoticeKind = "maintenance" | "event" | "feature" | "general";
 
@@ -154,7 +116,8 @@ export const stats = {
   upcomingBookings: 1,
 };
 
-export const billHistory: BillMonth[] = [
+/** Months before invoicing went live in the app; later months come from the flat's invoices. */
+const LEGACY_BILL_HISTORY: BillMonth[] = [
   { date: "2025-07-01", month: "Jul", paid: 4100, due: 0 },
   { date: "2025-08-01", month: "Aug", paid: 4100, due: 0 },
   { date: "2025-09-01", month: "Sep", paid: 4250, due: 0 },
@@ -164,10 +127,33 @@ export const billHistory: BillMonth[] = [
   { date: "2026-01-01", month: "Jan", paid: 4200, due: 0 },
   { date: "2026-02-01", month: "Feb", paid: 4200, due: 0 },
   { date: "2026-03-01", month: "Mar", paid: 4350, due: 0 },
-  { date: "2026-04-01", month: "Apr", paid: 0, due: 4350 },
-  { date: "2026-05-01", month: "May", paid: 4350, due: 0 },
-  { date: "2026-06-01", month: "Jun", paid: 0, due: 8400 },
 ];
+
+export function getBillHistory(): BillMonth[] {
+  const flat = flats.find(
+    (f) =>
+      f.flatNumber === currentFlat.flatNumber && `Tower ${f.tower}` === currentFlat.apartmentName,
+  );
+  const byMonth = new Map<string, BillMonth>();
+  for (const invoice of invoices) {
+    if (!flat || invoice.flatId !== flat.id) continue;
+    if (invoice.status === "Cancelled" || invoice.status === "Draft") continue;
+    const date = `${invoice.issueDate.slice(0, 7)}-01`;
+    const entry = byMonth.get(date) ?? {
+      date,
+      month: new Date(date).toLocaleDateString("en-IN", { month: "short" }),
+      paid: 0,
+      due: 0,
+    };
+    entry.paid += invoice.amountPaid;
+    entry.due += computeOutstandingBalance(invoice);
+    byMonth.set(date, entry);
+  }
+  return [
+    ...LEGACY_BILL_HISTORY,
+    ...[...byMonth.values()].sort((a, b) => a.date.localeCompare(b.date)),
+  ];
+}
 
 export const complaintStatusBreakdown: { status: ComplaintStatus; count: number }[] = [
   { status: "open", count: 3 },
@@ -387,27 +373,6 @@ export function getComplaintTimeline(complaintId: string): ComplaintStatusEvent[
     .filter((e) => e.complaintId === complaintId)
     .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime());
 }
-
-export const vehicles: Vehicle[] = [
-  {
-    id: "1",
-    registrationNumber: "AP 31 BT 4521",
-    type: "car",
-    make: "Hyundai",
-    model: "Creta",
-    color: "White",
-    parkingSlot: "B-12",
-  },
-  {
-    id: "2",
-    registrationNumber: "AP 31 CX 0098",
-    type: "two_wheeler",
-    make: "Honda",
-    model: "Activa",
-    color: "Grey",
-    parkingSlot: "B-13",
-  },
-];
 
 export const notices: Notice[] = [
   {

@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { createRoleRequest, updateRoleRequest } from "@/lib/roleApi";
 import { ApiClientError } from "@/lib/apiClient";
+import { useToast } from "@/components/ui/toast";
 
 const PERMISSION_ENTRIES = Object.entries(Permission) as [PermissionKey, PermissionDefinition][];
 
@@ -35,6 +36,7 @@ function domainLabel(domain: string) {
 }
 
 export function RolePermissionForm({ role }: { role?: RoleResponse }) {
+  const { toast } = useToast();
   const router = useRouter();
   const { has, token, activeSociety } = useAuth();
   const isEdit = !!role;
@@ -107,6 +109,7 @@ export function RolePermissionForm({ role }: { role?: RoleResponse }) {
           permissions: permissionNames,
         });
       }
+      toast({ title: "Role saved" });
       router.push("/dashboard/roles");
     } catch (err) {
       setFormError(err instanceof ApiClientError ? err.message : "Failed to save role");

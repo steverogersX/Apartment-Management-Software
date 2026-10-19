@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { House, Plus, UserPlus, X } from "lucide-react";
+import { Home, Plus, UserPlus, X } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,8 @@ import {
   residents,
   type ResidentOccupancyType,
 } from "@/lib/residentsMockData";
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { cn, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 const FLAT_TYPES: FlatType[] = ["1BHK", "2BHK", "3BHK", "4BHK"];
 
@@ -40,7 +41,7 @@ type PendingResident =
   | { key: string; kind: "existing"; residentId: string };
 
 function mascotUrl(seed: string) {
-  return `https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(seed)}`;
+  return avatarUrlForName(seed);
 }
 
 function ResidentAvatar({
@@ -67,6 +68,7 @@ function ResidentAvatar({
 }
 
 export function CreateFlatForm() {
+  const { toast } = useToast();
   const router = useRouter();
   const [flatNumber, setFlatNumber] = React.useState("");
   const [tower, setTower] = React.useState("");
@@ -160,7 +162,6 @@ export function CreateFlatForm() {
       type,
       areaSqft: areaNum,
       occupancyStatus: pendingResidents.length > 0 ? "occupied" : "vacant",
-      maintenanceStatus: "due",
       currentResidentIds: [],
       owner: null,
     });
@@ -197,6 +198,7 @@ export function CreateFlatForm() {
     }
 
     router.push("/dashboard/people-hub/flats");
+    toast({ title: "Flat added" });
   }
 
   return (
@@ -204,7 +206,7 @@ export function CreateFlatForm() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <House className="size-4 text-muted-foreground" />
+            <Home className="size-4 text-muted-foreground" />
             Flat details
           </CardTitle>
           <CardDescription>Basic information about the unit.</CardDescription>
@@ -488,7 +490,7 @@ export function CreateFlatForm() {
             Cancel
           </Button>
           <Button type="submit" disabled={submitting} className="gap-1.5">
-            <House className="size-3.5" />
+            <Home className="size-3.5" />
             {submitting ? "Adding…" : "Add flat"}
           </Button>
         </div>

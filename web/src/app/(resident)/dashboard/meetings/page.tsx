@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { getMeetingStatus, meetings } from "@/lib/meetingsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, getInitials, gradientForName } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -70,7 +71,10 @@ export default function MeetingsPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Meetings</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Meetings
+        </h1>
         <p className="text-sm text-muted-foreground">
           Scheduled gatherings for the society — RSVP and stay updated.
         </p>

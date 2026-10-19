@@ -1,3 +1,4 @@
+import { flatVehicleHistory } from "./flatsMockData";
 import { residents } from "./residentsMockData";
 
 export type UserAccountStatus = "active" | "invited" | "suspended";
@@ -49,6 +50,26 @@ function residentById(id: string) {
   return r;
 }
 
+/** A user's vehicles are the society's vehicle records for their flat — never a separate list. */
+function currentVehiclesForResident(id: string) {
+  const flatId = residentById(id).flatId;
+  return flatVehicleHistory.filter((v) => v.isCurrent && !!flatId && v.flatId === flatId);
+}
+
+function vehiclesForResident(id: string): VehicleDetail[] {
+  return currentVehiclesForResident(id).map((v) => ({
+    registrationNumber: v.registrationNumber,
+    type: v.type,
+    make: v.make,
+    model: v.model,
+    color: v.color,
+  }));
+}
+
+function parkingSlotForResident(id: string): string | null {
+  return currentVehiclesForResident(id).find((v) => v.parkingSlot)?.parkingSlot ?? null;
+}
+
 export const users: UserRecord[] = [
   {
     id: "user-1",
@@ -61,23 +82,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("7").flatNumber,
     occupancyType: residentById("7").occupancyType,
     occupation: "Retired Bank Manager",
-    vehicles: [
-      {
-        registrationNumber: "TS09 CD 5678",
-        type: "car",
-        make: "Honda",
-        model: "City",
-        color: "Silver",
-      },
-      {
-        registrationNumber: "TS09 ZZ 4421",
-        type: "two_wheeler",
-        make: "Honda",
-        model: "Activa",
-        color: "Black",
-      },
-    ],
-    parkingSlot: "A-28",
+    vehicles: vehiclesForResident("7"),
+    parkingSlot: parkingSlotForResident("7"),
     lastActiveAt: "2026-06-18T07:40:00+05:30",
     invitedAt: "2024-11-02T10:00:00+05:30",
   },
@@ -92,16 +98,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("2").flatNumber,
     occupancyType: residentById("2").occupancyType,
     occupation: "School Teacher",
-    vehicles: [
-      {
-        registrationNumber: "TS10 EF 9012",
-        type: "two_wheeler",
-        make: "TVS",
-        model: "Jupiter",
-        color: "Red",
-      },
-    ],
-    parkingSlot: "B-04",
+    vehicles: vehiclesForResident("2"),
+    parkingSlot: parkingSlotForResident("2"),
     lastActiveAt: "2026-06-17T19:20:00+05:30",
     invitedAt: "2025-02-20T10:00:00+05:30",
   },
@@ -116,8 +114,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("9").flatNumber,
     occupancyType: residentById("9").occupancyType,
     occupation: "Chartered Accountant",
-    vehicles: [],
-    parkingSlot: "C-09",
+    vehicles: vehiclesForResident("9"),
+    parkingSlot: parkingSlotForResident("9"),
     lastActiveAt: "2026-06-17T19:20:00+05:30",
     invitedAt: "2025-02-20T10:00:00+05:30",
   },
@@ -148,16 +146,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("1").flatNumber,
     occupancyType: residentById("1").occupancyType,
     occupation: "Software Engineer",
-    vehicles: [
-      {
-        registrationNumber: "TS09 AB 1234",
-        type: "car",
-        make: "Hyundai",
-        model: "Creta",
-        color: "White",
-      },
-    ],
-    parkingSlot: "B-12",
+    vehicles: vehiclesForResident("1"),
+    parkingSlot: parkingSlotForResident("1"),
     lastActiveAt: "2026-06-18T08:10:00+05:30",
     invitedAt: "2025-01-12T10:00:00+05:30",
   },
@@ -172,8 +162,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("3").flatNumber,
     occupancyType: residentById("3").occupancyType,
     occupation: "Marketing Manager",
-    vehicles: [],
-    parkingSlot: null,
+    vehicles: vehiclesForResident("3"),
+    parkingSlot: parkingSlotForResident("3"),
     lastActiveAt: "2026-06-16T12:15:00+05:30",
     invitedAt: "2025-04-18T10:00:00+05:30",
   },
@@ -188,16 +178,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("5").flatNumber,
     occupancyType: residentById("5").occupancyType,
     occupation: "Business Owner",
-    vehicles: [
-      {
-        registrationNumber: "TS08 IJ 7890",
-        type: "car",
-        make: "Maruti Suzuki",
-        model: "Baleno",
-        color: "Blue",
-      },
-    ],
-    parkingSlot: "B-15",
+    vehicles: vehiclesForResident("5"),
+    parkingSlot: parkingSlotForResident("5"),
     lastActiveAt: "2026-04-02T10:30:00+05:30",
     invitedAt: "2024-09-22T10:00:00+05:30",
   },
@@ -212,8 +194,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("8").flatNumber,
     occupancyType: residentById("8").occupancyType,
     occupation: "Architect",
-    vehicles: [],
-    parkingSlot: null,
+    vehicles: vehiclesForResident("8"),
+    parkingSlot: parkingSlotForResident("8"),
     lastActiveAt: "2026-06-17T10:00:00+05:30",
     invitedAt: "2026-06-17T10:00:00+05:30",
   },
@@ -228,16 +210,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("12").flatNumber,
     occupancyType: residentById("12").occupancyType,
     occupation: "Data Analyst",
-    vehicles: [
-      {
-        registrationNumber: "TS09 KL 2345",
-        type: "two_wheeler",
-        make: "Bajaj",
-        model: "Pulsar",
-        color: "Black",
-      },
-    ],
-    parkingSlot: "A-07",
+    vehicles: vehiclesForResident("12"),
+    parkingSlot: parkingSlotForResident("12"),
     lastActiveAt: "2026-06-18T09:00:00+05:30",
     invitedAt: "2025-08-30T10:00:00+05:30",
   },
@@ -252,16 +226,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("4").flatNumber,
     occupancyType: residentById("4").occupancyType,
     occupation: "Doctor",
-    vehicles: [
-      {
-        registrationNumber: "TS07 GH 3456",
-        type: "car",
-        make: "Toyota",
-        model: "Innova",
-        color: "Grey",
-      },
-    ],
-    parkingSlot: "C-09",
+    vehicles: vehiclesForResident("4"),
+    parkingSlot: parkingSlotForResident("4"),
     lastActiveAt: null,
     invitedAt: "2026-06-14T10:00:00+05:30",
   },
@@ -276,8 +242,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("10").flatNumber,
     occupancyType: residentById("10").occupancyType,
     occupation: "Homemaker",
-    vehicles: [],
-    parkingSlot: null,
+    vehicles: vehiclesForResident("10"),
+    parkingSlot: parkingSlotForResident("10"),
     lastActiveAt: null,
     invitedAt: "2024-12-15T10:00:00+05:30",
   },
@@ -308,8 +274,8 @@ export const users: UserRecord[] = [
     flatNumber: residentById("6").flatNumber,
     occupancyType: residentById("6").occupancyType,
     occupation: "Non-resident Owner",
-    vehicles: [],
-    parkingSlot: null,
+    vehicles: vehiclesForResident("6"),
+    parkingSlot: parkingSlotForResident("6"),
     lastActiveAt: "2026-06-15T11:00:00+05:30",
     invitedAt: "2025-09-10T10:00:00+05:30",
   },
@@ -324,9 +290,25 @@ export const users: UserRecord[] = [
     flatNumber: residentById("11").flatNumber,
     occupancyType: residentById("11").occupancyType,
     occupation: "Non-resident Owner",
-    vehicles: [],
-    parkingSlot: null,
+    vehicles: vehiclesForResident("11"),
+    parkingSlot: parkingSlotForResident("11"),
     lastActiveAt: "2026-06-14T10:00:00+05:30",
     invitedAt: "2025-09-12T10:00:00+05:30",
+  },
+  {
+    id: "user-b304",
+    residentId: "14",
+    name: residentById("14").name,
+    email: residentById("14").email,
+    phone: residentById("14").phone,
+    role: "Resident Owner",
+    status: "active",
+    flatNumber: residentById("14").flatNumber,
+    occupancyType: residentById("14").occupancyType,
+    occupation: null,
+    vehicles: vehiclesForResident("14"),
+    parkingSlot: parkingSlotForResident("14"),
+    lastActiveAt: "2026-06-18T09:00:00+05:30",
+    invitedAt: "2025-07-01T10:00:00+05:30",
   },
 ];

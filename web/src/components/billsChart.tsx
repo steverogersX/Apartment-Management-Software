@@ -16,7 +16,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { billHistory, type BillMonth } from "@/lib/mockData";
+import { getBillHistory, type BillMonth } from "@/lib/mockData";
 
 const chartConfig: ChartConfig = {
   paid: { label: "Paid", color: "#10b981" },
@@ -38,11 +38,11 @@ function rupees(value: number) {
   return `₹${value.toLocaleString("en-IN")}`;
 }
 
-function filterByRange(range: DateRange): BillMonth[] {
+function filterByRange(history: BillMonth[], range: DateRange): BillMonth[] {
   if (!range.from) return [];
   const from = startOfMonth(range.from);
   const to = endOfMonth(range.to ?? range.from);
-  return billHistory.filter((m) => {
+  return history.filter((m) => {
     const d = new Date(m.date);
     return d >= from && d <= to;
   });
@@ -51,11 +51,12 @@ function filterByRange(range: DateRange): BillMonth[] {
 export function BillsChart() {
   const [selection, setSelection] = React.useState<Selection>({ mode: "preset", months: 6 });
   const [open, setOpen] = React.useState(false);
+  const history = React.useMemo(() => getBillHistory(), []);
 
   const data =
     selection.mode === "preset"
-      ? billHistory.slice(-selection.months)
-      : filterByRange(selection.range);
+      ? history.slice(-selection.months)
+      : filterByRange(history, selection.range);
 
   const label =
     selection.mode === "preset"

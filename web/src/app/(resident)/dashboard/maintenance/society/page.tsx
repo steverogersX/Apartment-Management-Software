@@ -15,23 +15,35 @@ import {
 
 import { MaintenanceTable, type MaintenanceRow } from "@/components/maintenanceTable";
 import { AddMaintenanceLogForm } from "@/components/maintenance/addMaintenanceLogForm";
+import { MaintenanceEntrySheet } from "@/components/maintenance/maintenanceEntrySheet";
 import {
   maintenanceLog as maintenanceLogSource,
   type AddMaintenanceLogInput,
   type MaintenanceLogEntry,
+  assetServiceAsMaintenanceLog,
 } from "@/lib/maintenanceMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { formatCurrency } from "@/lib/utils";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
+import { CountUp } from "@/components/countUp";
+import { recordAudit } from "@/lib/auditLog";
 
 export default function SocietyMaintenancePage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const [log, setLog] = React.useState<MaintenanceLogEntry[]>(() => [...maintenanceLogSource]);
   const [addOpen, setAddOpen] = React.useState(false);
+  const [selected, setSelected] = React.useState<MaintenanceLogEntry | null>(null);
 
   const canManage = has("MaintenanceManage");
 
-  const societyEntries = React.useMemo(() => log.filter((e) => e.scope === "society"), [log]);
+  const societyEntries = React.useMemo(
+    () => [...log.filter((e) => e.scope === "society"), ...assetServiceAsMaintenanceLog()],
+    [log],
+  );
   const flatEntries = React.useMemo(() => log.filter((e) => e.scope === "flat"), [log]);
   const totalSocietyCost = React.useMemo(
     () => societyEntries.reduce((sum, e) => sum + (e.cost ?? 0), 0),
@@ -57,6 +69,16 @@ export default function SocietyMaintenancePage() {
     maintenanceLogSource.unshift(entry);
     setLog((prev) => [entry, ...prev]);
     setAddOpen(false);
+    recordAudit({
+      module: "Maintenance",
+      entityType: "Maintenance Log",
+      entityId: entry.id,
+      entityLabel: entry.description,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: entry.category,
+    });
+    toast({ title: "Maintenance entry logged" });
   }
 
   if (!has("MaintenanceViewAll")) {
@@ -67,11 +89,13 @@ export default function SocietyMaintenancePage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
             Society Maintenance
           </h1>
           <p className="text-sm text-muted-foreground">
-            Common-area maintenance work, plus the full activity log across every flat.
+            Common-area maintenance work — including servicing logged against assets — plus the full
+            activity log across every flat.
           </p>
         </div>
         {canManage && (
@@ -90,7 +114,7 @@ export default function SocietyMaintenancePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {societyEntries.length}
+              <CountUp value={societyEntries.length} />
             </p>
           </CardContent>
         </Card>
@@ -101,7 +125,7 @@ export default function SocietyMaintenancePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {formatCurrency(totalSocietyCost)}
+              <CountUp value={totalSocietyCost} format={formatCurrency} />
             </p>
           </CardContent>
         </Card>
@@ -112,13 +136,25 @@ export default function SocietyMaintenancePage() {
           </CardHeader>
           <CardContent className="pt-0">
             <p className="text-2xl font-semibold tabular-nums text-foreground">
-              {flatEntries.length}
+              <CountUp value={flatEntries.length} />
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <MaintenanceTable data={log as MaintenanceRow[]} title="Full activity log" enableGrouping />
+      <MaintenanceTable
+        data={log as MaintenanceRow[]}
+        title="Full activity log"
+        enableGrouping
+        onRowClick={setSelected}
+      />
+
+      <MaintenanceEntrySheet
+        entry={selected}
+        entries={log}
+        onOpenChange={(open) => !open && setSelected(null)}
+        onSelect={setSelected}
+      />
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-lg">

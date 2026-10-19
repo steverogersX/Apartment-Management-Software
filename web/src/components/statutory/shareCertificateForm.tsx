@@ -12,7 +12,7 @@ import {
   addShareCertificateSchema,
   type AddShareCertificateInput,
 } from "@/lib/shareRegisterMockData";
-import { fieldError } from "@/components/assets/assetFormFields";
+import { fieldError } from "@/lib/fieldError";
 
 export function ShareCertificateForm({
   onSave,

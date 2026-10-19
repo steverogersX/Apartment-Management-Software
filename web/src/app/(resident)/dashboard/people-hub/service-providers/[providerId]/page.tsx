@@ -29,6 +29,7 @@ import {
   providerEntryLogs,
   providerFlatLinks,
   serviceProviders,
+  type ServiceProvider,
   type EditProviderInput,
   type ProviderActivityLog,
   type ProviderEntryLog,
@@ -38,6 +39,9 @@ import { EditProviderForm } from "@/components/providers/editProviderForm";
 import { ProviderActivityTimeline } from "@/components/providerActivityTimeline";
 import { useAuth } from "@/hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
+import { recordAudit } from "@/lib/auditLog";
 
 function isWithinDays(iso: string, days: number) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -64,56 +68,9 @@ function elapsedSince(iso: string) {
 
 export default function ProviderDetailPage() {
   const params = useParams<{ providerId: string }>();
-  const initialProvider = React.useMemo(
-    () => serviceProviders.find((p) => p.id === params.providerId) ?? null,
-    [params.providerId],
-  );
-  const [provider, setProvider] = React.useState(initialProvider);
-  const { user } = useAuth();
-  const actorName = user?.displayName ?? user?.email ?? "Admin";
+  const initial = serviceProviders.find((p) => p.id === params.providerId);
 
-  React.useEffect(() => {
-    setProvider(initialProvider);
-  }, [initialProvider]);
-
-  useBreadcrumbTitle(provider?.name ?? null);
-
-  const initialLinks = React.useMemo(
-    () =>
-      providerFlatLinks.filter((l) => l.providerId === params.providerId && l.status === "active"),
-    [params.providerId],
-  );
-  const [links, setLinks] = React.useState<ProviderFlatLink[]>(initialLinks);
-
-  React.useEffect(() => {
-    setLinks(initialLinks);
-  }, [initialLinks]);
-
-  const initialActivity = React.useMemo(
-    () => providerActivityLogs.filter((l) => l.providerId === params.providerId),
-    [params.providerId],
-  );
-  const [activity, setActivity] = React.useState<ProviderActivityLog[]>(initialActivity);
-
-  React.useEffect(() => {
-    setActivity(initialActivity);
-  }, [initialActivity]);
-
-  const logs = React.useMemo(
-    () => providerEntryLogs.filter((l) => l.providerId === params.providerId),
-    [params.providerId],
-  );
-
-  const [assignOpen, setAssignOpen] = React.useState(false);
-  const [selectedFlat, setSelectedFlat] = React.useState<string>("");
-  const [editOpen, setEditOpen] = React.useState(false);
-
-  const availableFlats = React.useMemo(() => {
-    const linked = new Set(links.map((l) => l.flatNumber));
-    return flats.filter((f) => !linked.has(`${f.tower}-${f.flatNumber}`));
-  }, [links]);
-
-  if (!provider) {
+  if (!initial) {
     return (
       <div className="flex flex-col items-center gap-2 py-16 text-center">
         <p className="text-sm text-muted-foreground">Provider not found.</p>
@@ -126,6 +83,39 @@ export default function ProviderDetailPage() {
       </div>
     );
   }
+
+  return <ProviderDetail key={initial.id} initial={initial} />;
+}
+
+function ProviderDetail({ initial }: { initial: ServiceProvider }) {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
+  const [provider, setProvider] = React.useState(initial);
+  const { user } = useAuth();
+  const actorName = user?.displayName ?? user?.email ?? "Admin";
+
+  useBreadcrumbTitle(provider.name);
+
+  const [links, setLinks] = React.useState<ProviderFlatLink[]>(() =>
+    providerFlatLinks.filter((l) => l.providerId === initial.id && l.status === "active"),
+  );
+  const [activity, setActivity] = React.useState<ProviderActivityLog[]>(() =>
+    providerActivityLogs.filter((l) => l.providerId === initial.id),
+  );
+
+  const logs = React.useMemo(
+    () => providerEntryLogs.filter((l) => l.providerId === initial.id),
+    [initial.id],
+  );
+
+  const [assignOpen, setAssignOpen] = React.useState(false);
+  const [selectedFlat, setSelectedFlat] = React.useState<string>("");
+  const [editOpen, setEditOpen] = React.useState(false);
+
+  const availableFlats = React.useMemo(() => {
+    const linked = new Set(links.map((l) => l.flatNumber));
+    return flats.filter((f) => !linked.has(`${f.tower}-${f.flatNumber}`));
+  }, [links]);
 
   const [from, to] = gradientForName(provider.name);
 
@@ -145,6 +135,16 @@ export default function ProviderDetailPage() {
       },
       ...prev,
     ]);
+    recordAudit({
+      module: "Service Providers",
+      entityType: "Service Provider",
+      entityId: provider.id,
+      entityLabel: provider.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Flat unlinked",
+    });
+    toast({ title: "Flat unlinked", variant: "info" });
   }
 
   function handleAssign() {
@@ -171,6 +171,16 @@ export default function ProviderDetailPage() {
     ]);
     setSelectedFlat("");
     setAssignOpen(false);
+    recordAudit({
+      module: "Service Providers",
+      entityType: "Service Provider",
+      entityId: provider.id,
+      entityLabel: provider.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Flat assigned",
+    });
+    toast({ title: "Flat assigned" });
   }
 
   function handleEditSave(values: EditProviderInput) {
@@ -191,6 +201,15 @@ export default function ProviderDetailPage() {
       ]);
     }
     setEditOpen(false);
+    recordAudit({
+      module: "Service Providers",
+      entityType: "Service Provider",
+      entityId: provider.id,
+      entityLabel: provider.name,
+      action: "Update",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
+    toast({ title: "Provider updated" });
   }
 
   const flatOptions = React.useMemo(() => {
@@ -366,9 +385,7 @@ export default function ProviderDetailPage() {
               </h1>
               <Badge variant="outline">{provider.category}</Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span
-                  className={`size-1.5 shrink-0 rounded-full ${provider.status === "active" ? "bg-emerald-500" : "bg-red-500"}`}
-                />
+                <StatusIcon status={provider.status} />
                 {provider.status === "active" ? "Active" : "Blocked"}
               </span>
               <Button

@@ -25,6 +25,7 @@ import { boardNotices, getNoticeById } from "@/lib/noticesMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import { avatarUrlForName, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("en-IN", {
@@ -50,17 +51,9 @@ function formatRelativeTime(iso: string) {
 export default function NoticeDetailPage() {
   const params = useParams<{ noticeId: string }>();
   const router = useRouter();
-  const { has } = useAuth();
   const notice = getNoticeById(params.noticeId);
-  const [localNotice, setLocalNotice] = React.useState(notice);
-  const [query, setQuery] = React.useState("");
-  const [activeTab, setActiveTab] = React.useState("viewed");
 
-  React.useEffect(() => {
-    setLocalNotice(getNoticeById(params.noticeId) ?? null);
-  }, [params.noticeId]);
-
-  if (!localNotice) {
+  if (!notice) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
         <p className="text-sm text-muted-foreground">Notice not found.</p>
@@ -70,6 +63,16 @@ export default function NoticeDetailPage() {
       </div>
     );
   }
+
+  return <NoticeDetail key={params.noticeId} initial={notice} />;
+}
+
+function NoticeDetail({ initial }: { initial: NonNullable<ReturnType<typeof getNoticeById>> }) {
+  const { toast } = useToast();
+  const { has } = useAuth();
+  const [localNotice, setLocalNotice] = React.useState(initial);
+  const [query, setQuery] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState("viewed");
 
   const n = localNotice;
   const canEdit = has("NoticesPost");
@@ -133,6 +136,7 @@ export default function NoticeDetailPage() {
       if (!boardNotices[idx].readBy.some((r) => r.name === currentUser))
         boardNotices[idx].readBy.push(receipt);
     }
+    toast({ title: "Notice acknowledged" });
   }
 
   const audienceLabel =

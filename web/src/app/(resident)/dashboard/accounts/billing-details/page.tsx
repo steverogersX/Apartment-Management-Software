@@ -32,15 +32,12 @@ import type {
   PaymentDetails,
 } from "@/lib/billingSettingsMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { PageIcon } from "@/components/pageIcon";
 
 export default function BillingDetailsPage() {
   const { has, user } = useAuth();
   const actor = user?.displayName ?? "Unknown";
   const canManage = has("BillingSettingsManage");
-
-  if (!has("BillingSettingsView")) {
-    return <PermissionDenied message="You do not have permission to manage billing settings." />;
-  }
 
   const [rate, setRate] = React.useState<BillingRateSettings>({ ...initialRate });
   const [savedRate, setSavedRate] = React.useState<BillingRateSettings>({ ...initialRate });
@@ -217,10 +214,17 @@ export default function BillingDetailsPage() {
     setTimeout(() => setSavedPaymentFlag(false), 2000);
   }
 
+  if (!has("BillingSettingsView")) {
+    return <PermissionDenied message="You do not have permission to manage billing settings." />;
+  }
+
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Billing Details</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Billing Details
+        </h1>
         <p className="text-sm text-muted-foreground">
           Configure billing method, GST, late fees and payment details.
         </p>

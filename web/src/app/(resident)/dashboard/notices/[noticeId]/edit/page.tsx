@@ -10,8 +10,10 @@ import { boardNotices, getNoticeById } from "@/lib/noticesMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { NoticeFormInput } from "@/lib/noticesMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function EditNoticePage() {
+  const { toast } = useToast();
   const params = useParams<{ noticeId: string }>();
   const router = useRouter();
   const { has } = useAuth();
@@ -66,6 +68,7 @@ export default function EditNoticePage() {
       requiresAcknowledge: values.requiresAcknowledge,
     };
     router.push(`/dashboard/notices/${notice!.id}`);
+    toast({ title: "Notice updated" });
   }
 
   return (

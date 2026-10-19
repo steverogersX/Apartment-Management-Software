@@ -16,13 +16,35 @@ function actionVariant(action: AuditAction) {
   return "outline";
 }
 
-const MODULES = ["Assets", "Inventory", "Invoicing", "Purchasing", "Accounts", "Dues and Receipts"];
+const MODULES = [
+  "Assets",
+  "Inventory",
+  "Invoicing",
+  "Purchasing",
+  "Accounts",
+  "Budget",
+  "Dues and Receipts",
+  "Vouchers",
+  "Events",
+  "Flats",
+  "Vehicles",
+  "Parking",
+  "Visitors",
+  "Service Providers",
+  "Committee",
+  "Staff",
+  "Maintenance",
+  "Help Desk",
+  "Communication",
+  "Roles",
+];
 const ACTIONS: AuditAction[] = [
   "Create",
   "Update",
   "Approve",
   "Reject",
   "Cancel",
+  "Delete",
   "Status Change",
   "Payment Recorded",
   "Goods Received",
@@ -148,6 +170,31 @@ export function ActivityLogTable() {
         type: "select",
         options: ACTIONS.map((a) => ({ label: a, value: a })),
         predicate: (row, value) => row.action === value,
+      },
+      {
+        id: "performedBy",
+        label: "Performed by",
+        type: "select",
+        options: [...new Set(auditLog.map((e) => e.performedBy))]
+          .sort()
+          .map((name) => ({ label: name, value: name })),
+        predicate: (row, value) => row.performedBy === value,
+      },
+      {
+        id: "when",
+        label: "When",
+        type: "select",
+        options: [
+          { label: "Today", value: "1" },
+          { label: "Last 7 days", value: "7" },
+          { label: "Last 30 days", value: "30" },
+        ],
+        predicate: (row, value) => {
+          const since = new Date();
+          since.setHours(0, 0, 0, 0);
+          since.setDate(since.getDate() - (Number(value) - 1));
+          return new Date(row.performedAt).getTime() >= since.getTime();
+        },
       },
     ],
     [],

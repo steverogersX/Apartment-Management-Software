@@ -26,8 +26,10 @@ import {
 import { AddInventoryItemForm } from "./inventory/addInventoryItemForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
+import { useToast } from "@/components/ui/toast";
 
 export function InventoryTable() {
+  const { toast } = useToast();
   const router = useRouter();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
@@ -56,6 +58,7 @@ export function InventoryTable() {
       performedBy: actor,
     });
     setAddOpen(false);
+    toast({ title: "Item added" });
   }
 
   const columns = React.useMemo<ColumnDef<InventoryItem>[]>(
@@ -168,6 +171,25 @@ export function InventoryTable() {
           value: c,
         })),
         predicate: (row, value) => row.category === value,
+      },
+      {
+        id: "stockStatus",
+        label: "Stock",
+        type: "select",
+        options: [
+          { label: "Low stock", value: "low" },
+          { label: "In stock", value: "ok" },
+        ],
+        predicate: (row, value) => (row.currentStock <= row.reorderLevel ? "low" : "ok") === value,
+      },
+      {
+        id: "store",
+        label: "Store",
+        type: "select",
+        options: Array.from(new Set(inventoryItems.map((i) => i.store)))
+          .sort()
+          .map((s) => ({ label: s, value: s })),
+        predicate: (row, value) => row.store === value,
       },
       {
         id: "groupBy",

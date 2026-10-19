@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -9,16 +8,11 @@ import { RolePermissionForm } from "@/components/roles/rolePermissionForm";
 import { useBreadcrumbTitle } from "@/components/breadcrumbs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn, getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { roles } from "@/lib/rolesMockData";
 import { users } from "@/lib/usersMockData";
 import type { UserAccountStatus } from "@/lib/usersMockData";
-
-const STATUS_DOT: Record<UserAccountStatus, string> = {
-  active: "bg-emerald-500",
-  invited: "bg-amber-500",
-  suspended: "bg-red-500",
-};
+import { StatusIcon } from "@/components/statusIcon";
 
 const STATUS_LABEL: Record<UserAccountStatus, string> = {
   active: "Active",
@@ -88,10 +82,7 @@ export default function EditRolePage() {
                   return (
                     <div key={user.id} className="flex items-center gap-3">
                       <Avatar size="sm">
-                        <AvatarImage
-                          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(user.id)}`}
-                          alt={user.name}
-                        />
+                        <AvatarImage src={avatarUrlForName(user.id)} alt={user.name} />
                         <AvatarFallback
                           className="text-[10px] font-semibold text-white"
                           style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
@@ -106,9 +97,7 @@ export default function EditRolePage() {
                         <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                       </div>
                       <span className="inline-flex shrink-0 items-center gap-1.5">
-                        <span
-                          className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[user.status])}
-                        />
+                        <StatusIcon status={user.status} />
                         <span className="whitespace-nowrap text-xs font-medium text-foreground">
                           {STATUS_LABEL[user.status]}
                         </span>

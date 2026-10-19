@@ -10,13 +10,16 @@ import { Button } from "@/components/ui/button";
 import { DataTable, type DataTableFilterConfig } from "@/components/dataTable";
 import { DataTableColumnHeader } from "@/components/dataTableColumnHeader";
 import {
-  getVisitsByPhone,
   societyVisitors as initialVisitors,
   type SocietyVisitor,
   type SocietyVisitorCategory,
   type VisitorProfile,
 } from "@/lib/visitorsMockData";
 import { cn, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { StatusIcon } from "@/components/statusIcon";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
 function todayStr(offset = 0) {
   const d = new Date();
@@ -51,11 +54,6 @@ const CATEGORY_LABEL: Record<SocietyVisitorCategory, string> = {
   cab: "Cab",
   service: "Service",
   other: "Other",
-};
-
-const STATUS_DOT: Record<VisitorProfile["status"], string> = {
-  active: "bg-emerald-500",
-  blocked: "bg-red-500",
 };
 
 const STATUS_LABEL: Record<VisitorProfile["status"], string> = {
@@ -125,6 +123,8 @@ function deriveProfiles(
 }
 
 export function SocietyVisitorsTable() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   const [visitors, setVisitors] = React.useState<SocietyVisitor[]>(() => [...initialVisitors]);
   const [blockedByPhone, setBlockedByPhone] = React.useState<Record<string, BlockRecord>>(() => ({
@@ -185,34 +185,46 @@ export function SocietyVisitorsTable() {
     return profiles;
   }, [profiles, visitors, statFilter]);
 
-  function handleApprove(profile: VisitorProfile) {
-    const pending = visitors.find(
-      (v) => v.phone === profile.phone && v.status === "pending_approval",
-    );
-    if (!pending) return;
-    const now = new Date().toISOString();
-    setVisitors((prev) =>
-      prev.map((v) =>
-        v.id === pending.id
-          ? {
-              ...v,
-              status: "entered" as const,
-              checkIn: now,
-              verifiedBy: "Admin",
-              arrivedAt: v.arrivedAt,
-            }
-          : v,
-      ),
-    );
-    const idx = initialVisitors.findIndex((v) => v.id === pending.id);
-    if (idx !== -1)
-      initialVisitors[idx] = {
-        ...initialVisitors[idx],
-        status: "entered",
-        checkIn: now,
-        verifiedBy: "Admin",
-      };
-  }
+  const handleApprove = React.useCallback(
+    (profile: VisitorProfile) => {
+      const pending = visitors.find(
+        (v) => v.phone === profile.phone && v.status === "pending_approval",
+      );
+      if (!pending) return;
+      const now = new Date().toISOString();
+      setVisitors((prev) =>
+        prev.map((v) =>
+          v.id === pending.id
+            ? {
+                ...v,
+                status: "entered" as const,
+                checkIn: now,
+                verifiedBy: "Admin",
+                arrivedAt: v.arrivedAt,
+              }
+            : v,
+        ),
+      );
+      const idx = initialVisitors.findIndex((v) => v.id === pending.id);
+      if (idx !== -1)
+        initialVisitors[idx] = {
+          ...initialVisitors[idx],
+          status: "entered",
+          checkIn: now,
+          verifiedBy: "Admin",
+        };
+      recordAudit({
+        module: "Visitors",
+        entityType: "Visitor",
+        entityId: profile.phone,
+        entityLabel: profile.name,
+        action: "Approve",
+        performedBy: auditUser?.displayName ?? "Unknown",
+      });
+      toast({ title: "Visitor approved" });
+    },
+    [visitors, auditUser, toast],
+  );
 
   function handleDeny(profile: VisitorProfile) {
     if (!denyTarget || !denyReason.trim()) return;
@@ -271,6 +283,15 @@ export function SocietyVisitorsTable() {
     }
     setDenyTarget(null);
     setDenyReason("");
+    recordAudit({
+      module: "Visitors",
+      entityType: "Visitor",
+      entityId: profile.phone,
+      entityLabel: profile.name,
+      action: "Reject",
+      performedBy: auditUser?.displayName ?? "Unknown",
+    });
+    toast({ title: "Visitor denied", variant: "info" });
   }
 
   function handleBlock(profile: VisitorProfile) {
@@ -281,15 +302,38 @@ export function SocietyVisitorsTable() {
     }));
     setBlockTarget(null);
     setBlockReason("");
+    recordAudit({
+      module: "Visitors",
+      entityType: "Visitor",
+      entityId: profile.phone,
+      entityLabel: profile.name,
+      action: "Status Change",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: "Blocked",
+    });
+    toast({ title: "Visitor blocked", variant: "info" });
   }
 
-  function handleUnblock(profile: VisitorProfile) {
-    setBlockedByPhone((prev) => {
-      const next = { ...prev };
-      delete next[profile.phone];
-      return next;
-    });
-  }
+  const handleUnblock = React.useCallback(
+    (profile: VisitorProfile) => {
+      setBlockedByPhone((prev) => {
+        const next = { ...prev };
+        delete next[profile.phone];
+        return next;
+      });
+      recordAudit({
+        module: "Visitors",
+        entityType: "Visitor",
+        entityId: profile.phone,
+        entityLabel: profile.name,
+        action: "Status Change",
+        performedBy: auditUser?.displayName ?? "Unknown",
+        details: "Unblocked",
+      });
+      toast({ title: "Visitor unblocked" });
+    },
+    [auditUser, toast],
+  );
 
   const columns = React.useMemo<ColumnDef<VisitorProfile>[]>(
     () => [
@@ -392,7 +436,7 @@ export function SocietyVisitorsTable() {
           const s = row.original.status;
           return (
             <span className="inline-flex items-center gap-1.5">
-              <span className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[s])} />
+              <StatusIcon status={s} />
               <Badge variant={s === "active" ? "secondary" : "destructive"}>
                 {STATUS_LABEL[s]}
               </Badge>
@@ -472,7 +516,7 @@ export function SocietyVisitorsTable() {
         },
       },
     ],
-    [visitors],
+    [visitors, handleApprove, handleUnblock],
   );
 
   const filters = React.useMemo<DataTableFilterConfig<VisitorProfile>[]>(

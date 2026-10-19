@@ -35,14 +35,16 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  myParkingSlots,
-  myVehicles,
+  addMyVehicle,
+  getMyParkingSlots,
+  getMyVehicles,
   parkingRequests,
   parkingRules,
   type MyVehicle,
   type MyVehicleType,
 } from "@/lib/vehiclesMockData";
 import { cn } from "@/lib/utils";
+import { PageIcon } from "@/components/pageIcon";
 
 function StickerBadge({ status }: { status: MyVehicle["stickerStatus"] }) {
   if (status === "active") {
@@ -225,7 +227,7 @@ function RequestSlotDialog() {
                     <SelectValue placeholder="Select vehicle" />
                   </SelectTrigger>
                   <SelectContent>
-                    {myVehicles
+                    {getMyVehicles()
                       .filter((v) => !v.parkingSlot)
                       .map((v) => (
                         <SelectItem key={v.id} value={v.registrationNumber}>
@@ -275,14 +277,16 @@ function RequestSlotDialog() {
 }
 
 export default function VehiclesPage() {
-  const [vehicles, setVehicles] = React.useState<MyVehicle[]>(myVehicles);
+  const [vehicles, setVehicles] = React.useState<MyVehicle[]>(getMyVehicles);
+  const myParkingSlots = getMyParkingSlots();
   const allotted = myParkingSlots.filter((s) => s.status === "allotted").length;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+            <PageIcon />
             Vehicles & Parking
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -291,7 +295,12 @@ export default function VehiclesPage() {
         </div>
         <div className="flex items-center gap-2">
           <RequestSlotDialog />
-          <AddVehicleDialog onAdd={(v) => setVehicles((prev) => [...prev, v])} />
+          <AddVehicleDialog
+            onAdd={(v) => {
+              addMyVehicle(v);
+              setVehicles(getMyVehicles());
+            }}
+          />
         </div>
       </div>
 

@@ -13,17 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { flats, flatVehicleHistory } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
-import { formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
+import { StatusIcon } from "@/components/statusIcon";
 
 const OCCUPANCY_LABEL: Record<string, string> = {
   owner: "Owner",
   tenant: "Tenant",
-};
-
-const STATUS_DOT: Record<string, string> = {
-  active: "bg-emerald-500",
-  moved_out: "bg-zinc-400",
-  pending: "bg-amber-500",
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -74,10 +69,7 @@ export default function ResidentDetailPage() {
       <Card>
         <CardContent className="flex gap-5 p-6">
           <Avatar className="size-20 shrink-0 text-lg">
-            <AvatarImage
-              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(resident.id)}`}
-              alt={resident.name}
-            />
+            <AvatarImage src={avatarUrlForName(resident.id)} alt={resident.name} />
             <AvatarFallback
               className="text-lg font-semibold text-white"
               style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
@@ -94,9 +86,7 @@ export default function ResidentDetailPage() {
                 {OCCUPANCY_LABEL[resident.occupancyType]}
               </Badge>
               <span className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs font-medium">
-                <span
-                  className={`size-1.5 shrink-0 rounded-full ${STATUS_DOT[resident.status] ?? "bg-zinc-400"}`}
-                />
+                <StatusIcon status={resident.status} />
                 {STATUS_LABEL[resident.status] ?? resident.status}
               </span>
             </div>

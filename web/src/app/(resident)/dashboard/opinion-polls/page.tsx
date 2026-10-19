@@ -18,6 +18,8 @@ import {
 import { Card } from "@/components/ui/card";
 import { isPollClosed, opinionPolls } from "@/lib/pollsMockData";
 import { useAuth } from "@/hooks/useAuth";
+import { PageIcon } from "@/components/pageIcon";
+import { PollsSwitcher } from "@/components/polls/pollsSwitcher";
 
 function formatRelativeTime(iso: string) {
   const diffMs = new Date(iso).getTime() - Date.now();
@@ -64,8 +66,12 @@ export default function OpinionPollsPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-5">
+      <PollsSwitcher />
       <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Opinion Polls</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Opinion Polls
+        </h1>
         <p className="text-sm text-muted-foreground">
           Casual questions for the community — vote and see results.
         </p>

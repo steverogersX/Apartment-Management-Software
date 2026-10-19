@@ -4,11 +4,11 @@ import * as React from "react";
 import { useForm } from "@tanstack/react-form";
 
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { editProviderSchema, type EditProviderInput } from "@/lib/providersMockData";
 import { flats } from "@/lib/flatsMockData";
 import { ProviderFormFields } from "./providerFormFields";
+import { FlatCheckboxGrid } from "@/components/flats/flatCheckboxGrid";
 
 export function AddProviderForm({
   onSave,
@@ -53,26 +53,11 @@ export function AddProviderForm({
 
       <div className="flex flex-col gap-2">
         <Label>Assign flats (optional)</Label>
-        <div className="max-h-36 overflow-y-auto rounded-md border border-border p-2">
-          <div className="grid grid-cols-2 gap-2">
-            {flats.map((f) => {
-              const flatLabel = `${f.tower}-${f.flatNumber}`;
-              const checked = selectedFlats.includes(flatLabel);
-              return (
-                <label
-                  key={f.id}
-                  className="flex items-center gap-2 rounded-md px-1.5 py-1 text-sm hover:bg-muted"
-                >
-                  <Checkbox
-                    checked={checked}
-                    onCheckedChange={(v) => toggleFlat(flatLabel, v === true)}
-                  />
-                  <span className="truncate">{flatLabel}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
+        <FlatCheckboxGrid
+          flats={flats}
+          isChecked={(f) => selectedFlats.includes(`${f.tower}-${f.flatNumber}`)}
+          onToggle={(f, checked) => toggleFlat(`${f.tower}-${f.flatNumber}`, checked)}
+        />
         {selectedFlats.length > 0 && (
           <p className="text-xs text-muted-foreground">
             {selectedFlats.length} flat{selectedFlats.length === 1 ? "" : "s"} selected

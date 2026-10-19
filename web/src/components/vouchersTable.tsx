@@ -32,6 +32,7 @@ import { AddVoucherForm } from "./vouchers/addVoucherForm";
 import { useAuth } from "@/hooks/useAuth";
 import { recordAudit } from "@/lib/auditLog";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function statusVariant(status: VoucherStatus) {
   if (status === "Posted") return "secondary";
@@ -40,6 +41,7 @@ function statusVariant(status: VoucherStatus) {
 }
 
 export function VouchersTable() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
   const canManage = has("VouchersManage");
@@ -78,6 +80,7 @@ export function VouchersTable() {
       details: values.narration,
     });
     setAddOpen(false);
+    toast({ title: "Voucher created" });
   }
 
   function handlePost(voucher: Voucher) {
@@ -93,6 +96,7 @@ export function VouchersTable() {
       performedBy: actor,
       details: "Draft → Posted",
     });
+    toast({ title: "Voucher posted" });
   }
 
   function handleCancel(voucher: Voucher) {
@@ -113,6 +117,7 @@ export function VouchersTable() {
     });
     setCancelOpen(false);
     setCancelReason("");
+    toast({ title: "Voucher cancelled", variant: "info" });
   }
 
   const columns = React.useMemo<ColumnDef<Voucher>[]>(
@@ -268,8 +273,33 @@ export function VouchersTable() {
         })),
         predicate: (row, value) => row.status === value,
       },
+      {
+        id: "month",
+        label: "Month",
+        type: "select",
+        options: [...new Set(rows.map((r) => r.date.slice(0, 7)))]
+          .sort()
+          .reverse()
+          .map((m) => ({
+            label: new Date(`${m}-01T00:00:00`).toLocaleDateString("en-IN", {
+              month: "long",
+              year: "numeric",
+            }),
+            value: m,
+          })),
+        predicate: (row, value) => row.date.slice(0, 7) === value,
+      },
+      {
+        id: "source",
+        label: "Source",
+        type: "select",
+        options: [...new Set(rows.map((r) => r.sourceModule ?? "Manual"))]
+          .sort()
+          .map((s) => ({ label: s, value: s })),
+        predicate: (row, value) => (row.sourceModule ?? "Manual") === value,
+      },
     ],
-    [],
+    [rows],
   );
 
   return (

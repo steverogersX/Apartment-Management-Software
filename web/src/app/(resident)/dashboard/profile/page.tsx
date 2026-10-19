@@ -24,9 +24,11 @@ import { Label } from "@/components/ui/label";
 import { SocietyLogo } from "@/components/societyLogo";
 import { useAuth } from "@/hooks/useAuth";
 import { useNow } from "@/hooks/useNow";
-import { getInitials, gradientForName } from "@/lib/utils";
+import { getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { currentFlat } from "@/lib/mockData";
 import { sessions as initialSessions } from "@/lib/sessionsMockData";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 const flatFields: {
   label: string;
@@ -54,6 +56,7 @@ function relativeTime(iso: string, now: number) {
 }
 
 export default function ProfilePage() {
+  const { toast } = useToast();
   const { user, societies, activeSocietyId, switchSociety } = useAuth();
   const now = useNow();
 
@@ -78,6 +81,7 @@ export default function ProfilePage() {
     setSavingDetails(true);
     await new Promise((resolve) => setTimeout(resolve, 400));
     setSavingDetails(false);
+    toast({ title: "Profile saved" });
   }
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -97,6 +101,7 @@ export default function ProfilePage() {
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
+    toast({ title: "Password changed" });
   }
 
   function revokeSession(id: string) {
@@ -106,7 +111,10 @@ export default function ProfilePage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Profile</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Profile
+        </h1>
         <p className="text-sm text-muted-foreground">
           Your account, security, and the roles you hold.
         </p>
@@ -115,10 +123,7 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="flex items-center gap-4 pt-6">
           <Avatar size="lg">
-            <AvatarImage
-              src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(user?.id ?? name)}`}
-              alt={name}
-            />
+            <AvatarImage src={avatarUrlForName(user?.id ?? name)} alt={name} />
             <AvatarFallback
               className="text-base font-semibold text-white"
               style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}

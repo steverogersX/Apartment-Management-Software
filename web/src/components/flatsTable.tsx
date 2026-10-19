@@ -6,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { Bike, Car, ChevronRight, Home, Plus, UserPlus } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-import { cn, formatDate, getInitials, gradientForName } from "@/lib/utils";
+import { formatDate, getInitials, gradientForName, avatarUrlForName } from "@/lib/utils";
 import { useStaggeredReveal } from "@/lib/stagger";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -30,24 +30,21 @@ import {
   type FlatOccupancyStatus,
   type FlatRecord,
   type FlatVehicleEntry,
+  getTowers,
 } from "@/lib/flatsMockData";
-import { duesForFlat, maintenanceStatusForFlat } from "@/lib/maintenanceMockData";
+import {
+  flatDuesKey,
+  getDuesByFlat,
+  maintenanceStatusFromDues,
+  type FlatMaintenanceDue,
+} from "@/lib/maintenanceMockData";
 import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
-
-const OCCUPANCY_DOT: Record<FlatOccupancyStatus, string> = {
-  occupied: "bg-emerald-500",
-  vacant: "bg-zinc-400",
-};
+import { StatusIcon } from "@/components/statusIcon";
 
 const OCCUPANCY_LABEL: Record<FlatOccupancyStatus, string> = {
   occupied: "Occupied",
   vacant: "Vacant",
-};
-
-const MAINTENANCE_DOT: Record<FlatMaintenanceStatus, string> = {
-  paid: "bg-emerald-500",
-  due: "bg-red-500",
 };
 
 const MAINTENANCE_LABEL: Record<FlatMaintenanceStatus, string> = {
@@ -64,16 +61,16 @@ for (const v of flatVehicleHistory) {
   vehiclesByFlat.set(v.flatId, [...(vehiclesByFlat.get(v.flatId) ?? []), v]);
 }
 
-function FlatMaintenanceCell({ flat }: { flat: FlatRecord }) {
+function FlatMaintenanceCell({ flat, dues }: { flat: FlatRecord; dues: FlatMaintenanceDue[] }) {
   const { has } = useAuth();
-  const status = maintenanceStatusForFlat(flat.tower, flat.flatNumber);
+  const status = maintenanceStatusFromDues(dues);
   const content = (
     <>
-      <span className={cn("size-1.5 shrink-0 rounded-full", MAINTENANCE_DOT[status])} />
+      <StatusIcon status={status} />
       <span className="whitespace-nowrap text-foreground">{MAINTENANCE_LABEL[status]}</span>
     </>
   );
-  if (!has("MaintenanceViewAll") || duesForFlat(flat.tower, flat.flatNumber).length === 0) {
+  if (!has("MaintenanceViewAll") || dues.length === 0) {
     return <div className="flex items-center gap-2">{content}</div>;
   }
   return (
@@ -147,7 +144,7 @@ function FlatVehiclesCell({ vehicles }: { vehicles: FlatVehicleEntry[] }) {
   );
 }
 
-const towerOptions = Array.from(new Set(flats.map((f) => f.tower))).sort();
+const towerOptions = getTowers();
 
 function FlatSubRow({ flat }: { flat: FlatRecord }) {
   const router = useRouter();
@@ -162,10 +159,7 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
   const selectedCount = currentResidents.filter((r) => selected[r.id]).length;
   const allSelected = currentResidents.length > 0 && selectedCount === currentResidents.length;
   const someSelected = selectedCount > 0 && !allSelected;
-  const revealCount = useStaggeredReveal(
-    currentResidents.map((r) => r.id).join(" "),
-    currentResidents.length,
-  );
+  const revealCount = useStaggeredReveal(currentResidents.length);
 
   if (currentResidents.length === 0) {
     return (
@@ -275,10 +269,7 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
                   <TableCell className="px-4 py-2">
                     <div className="flex items-center gap-2.5">
                       <Avatar size="sm">
-                        <AvatarImage
-                          src={`https://api.dicebear.com/9.x/notionists/svg?seed=${encodeURIComponent(r.id)}`}
-                          alt={r.name}
-                        />
+                        <AvatarImage src={avatarUrlForName(r.id)} alt={r.name} />
                         <AvatarFallback
                           className="text-[10px] font-semibold text-white"
                           style={{ backgroundImage: `linear-gradient(135deg, ${from}, ${to})` }}
@@ -301,9 +292,7 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
                   </TableCell>
                   <TableCell className="px-4 py-2">
                     <span className="inline-flex items-center gap-1.5">
-                      <span
-                        className={cn("size-1.5 shrink-0 rounded-full", STATUS_DOT[r.status])}
-                      />
+                      <StatusIcon status={r.status} />
                       <span className="whitespace-nowrap text-sm text-foreground">
                         {STATUS_LABEL[r.status]}
                       </span>
@@ -327,12 +316,6 @@ function FlatSubRow({ flat }: { flat: FlatRecord }) {
   );
 }
 
-const STATUS_DOT: Record<string, string> = {
-  active: "bg-emerald-500",
-  pending: "bg-amber-500",
-  moved_out: "bg-zinc-400",
-};
-
 const STATUS_LABEL: Record<string, string> = {
   active: "Active",
   pending: "Pending",
@@ -340,6 +323,12 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export function FlatsTable() {
+  const duesByFlat = React.useMemo(() => getDuesByFlat(), []);
+  const duesFor = React.useCallback(
+    (flat: FlatRecord) => duesByFlat.get(flatDuesKey(flat.tower, flat.flatNumber)) ?? [],
+    [duesByFlat],
+  );
+
   const columns = React.useMemo<ColumnDef<FlatRecord>[]>(
     () => [
       {
@@ -391,10 +380,10 @@ export function FlatsTable() {
       },
       {
         id: "maintenanceStatus",
-        accessorFn: (row) => maintenanceStatusForFlat(row.tower, row.flatNumber),
+        accessorFn: (row) => maintenanceStatusFromDues(duesFor(row)),
         meta: { label: "Maintenance" },
         header: () => <DataTableColumnHeader label="Maintenance" />,
-        cell: ({ row }) => <FlatMaintenanceCell flat={row.original} />,
+        cell: ({ row }) => <FlatMaintenanceCell flat={row.original} dues={duesFor(row.original)} />,
       },
       {
         id: "occupancyStatus",
@@ -405,7 +394,7 @@ export function FlatsTable() {
           const status = row.original.occupancyStatus;
           return (
             <div className="flex items-center gap-2">
-              <span className={cn("size-1.5 shrink-0 rounded-full", OCCUPANCY_DOT[status])} />
+              <StatusIcon status={status} />
               <span className="whitespace-nowrap text-foreground">{OCCUPANCY_LABEL[status]}</span>
             </div>
           );
@@ -461,7 +450,7 @@ export function FlatsTable() {
           ) : null,
       },
     ],
-    [],
+    [duesFor],
   );
 
   const filters = React.useMemo<DataTableFilterConfig<FlatRecord>[]>(
@@ -504,6 +493,39 @@ export function FlatsTable() {
         predicate: (row, value) => row.occupancyStatus === value,
       },
       {
+        id: "type",
+        label: "Type",
+        type: "select",
+        options: [...new Set(flats.map((f) => f.type))].sort().map((t) => ({ label: t, value: t })),
+        predicate: (row, value) => row.type === value,
+      },
+      {
+        id: "maintenanceStatus",
+        label: "Maintenance",
+        type: "select",
+        options: [
+          { label: "Paid", value: "paid" },
+          { label: "Due", value: "due" },
+        ],
+        predicate: (row, value) => maintenanceStatusFromDues(duesFor(row)) === value,
+      },
+      {
+        id: "occupancy",
+        label: "Occupancy",
+        type: "select",
+        options: [
+          { label: "Owner-occupied", value: "owner" },
+          { label: "Tenant-occupied", value: "tenant" },
+        ],
+        predicate: (row, value) => {
+          if (row.currentResidentIds.length === 0) return false;
+          const hasOwner = row.currentResidentIds.some(
+            (id) => residentMap.get(id)?.occupancyType === "owner",
+          );
+          return value === "owner" ? hasOwner : !hasOwner;
+        },
+      },
+      {
         id: "groupBy",
         label: "Group by",
         type: "groupBy",
@@ -523,7 +545,7 @@ export function FlatsTable() {
         },
       },
     ],
-    [],
+    [duesFor],
   );
 
   const renderSubRow = React.useCallback((row: FlatRecord) => <FlatSubRow flat={row} />, []);

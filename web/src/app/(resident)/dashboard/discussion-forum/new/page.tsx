@@ -10,8 +10,10 @@ import { residents } from "@/lib/residentsMockData";
 import { useAuth } from "@/hooks/useAuth";
 import type { ForumThreadFormInput } from "@/lib/forumMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
+import { useToast } from "@/components/ui/toast";
 
 export default function NewThreadPage() {
+  const { toast } = useToast();
   const router = useRouter();
   const { has } = useAuth();
   const canCreate = has("ForumPost");
@@ -49,6 +51,7 @@ export default function NewThreadPage() {
     };
     forumThreads.unshift(newThread);
     router.push("/dashboard/discussion-forum");
+    toast({ title: "Thread posted" });
   }
 
   return (

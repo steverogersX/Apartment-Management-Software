@@ -34,6 +34,7 @@ import {
   purchaseRequests as initialPRs,
   vendors as initialVendors,
   type PurchaseOrder,
+  type PurchaseOrderStatus,
   type PurchaseRequest,
   type Vendor,
 } from "@/lib/purchasingMockData";
@@ -47,20 +48,20 @@ import { recordAudit } from "@/lib/auditLog";
 import { createVoucher } from "@/lib/vouchersMockData";
 import { PermissionDenied } from "@/components/permissionDenied";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
 
 function prTotal(pr: PurchaseRequest) {
   return pr.items.reduce((s, it) => s + it.quantity * it.estimatedUnitPrice, 0);
 }
 
 export default function PurchasingPage() {
+  const { toast } = useToast();
   const { user, has } = useAuth();
   const actor = user?.displayName ?? "Unknown";
   const canApprove = has("PurchasingApprove");
   const canManage = has("PurchasingManage");
 
-  if (!has("PurchasingView")) {
-    return <PermissionDenied message="You do not have permission to view purchasing." />;
-  }
   const [prs, setPrs] = React.useState<PurchaseRequest[]>(() => [...initialPRs]);
   const [pos, setPos] = React.useState<PurchaseOrder[]>(() => [...initialPOs]);
   const [vendors, setVendors] = React.useState<Vendor[]>(() => [...initialVendors]);
@@ -99,6 +100,7 @@ export default function PurchasingPage() {
       details: `${pr.items.length} items · ${formatCurrency(prTotal(pr))}`,
     });
     setPrDialogOpen(false);
+    toast({ title: "Purchase request created" });
   }
 
   function handleApprove(pr: PurchaseRequest) {
@@ -129,6 +131,7 @@ export default function PurchasingPage() {
       action: "Approve",
       performedBy: actor,
     });
+    toast({ title: "Purchase request approved" });
   }
 
   function handleReject(pr: PurchaseRequest) {
@@ -176,6 +179,7 @@ export default function PurchasingPage() {
     });
     setRejectOpen(false);
     setRejectReason("");
+    toast({ title: "Purchase request rejected", variant: "info" });
   }
 
   function handleCreatePO(values: {
@@ -215,6 +219,7 @@ export default function PurchasingPage() {
       details: `From ${pr.requestNumber} · ${formatCurrency(total)}`,
     });
     setPoDialogOpen(false);
+    toast({ title: "Purchase order created" });
   }
 
   function handleReceive(
@@ -286,6 +291,7 @@ export default function PurchasingPage() {
         details: `${it.receivedQuantity} ${it.unit} via ${order.poNumber}`,
       });
     });
+    toast({ title: "Goods received" });
   }
 
   function handleVendorPayment(order: PurchaseOrder) {
@@ -332,6 +338,7 @@ export default function PurchasingPage() {
       performedBy: actor,
       details: `Auto-generated from ${order.poNumber}`,
     });
+    toast({ title: "Vendor payment recorded" });
   }
 
   function handleAddVendor(values: AddVendorInput) {
@@ -354,6 +361,7 @@ export default function PurchasingPage() {
       performedBy: actor,
     });
     setVendorDialogOpen(false);
+    toast({ title: "Vendor added" });
   }
 
   const prColumns = React.useMemo<ColumnDef<PurchaseRequest>[]>(
@@ -476,6 +484,64 @@ export default function PurchasingPage() {
       },
     ],
     [],
+  );
+
+  const poFilters = React.useMemo<DataTableFilterConfig<PurchaseOrder>[]>(
+    () => [
+      {
+        id: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Search PO # or vendor",
+        predicate: (row, q) => {
+          const query = q.toLowerCase();
+          const vendorName = vendors.find((v) => v.id === row.vendorId)?.name ?? "";
+          return (
+            row.poNumber.toLowerCase().includes(query) || vendorName.toLowerCase().includes(query)
+          );
+        },
+      },
+      {
+        id: "status",
+        label: "Status",
+        type: "select",
+        options: (["Draft", "Sent", "Received", "Cancelled"] as PurchaseOrderStatus[]).map((s) => ({
+          label: s,
+          value: s,
+        })),
+        predicate: (row, v) => row.status === v,
+      },
+    ],
+    [vendors],
+  );
+
+  const vendorFilters = React.useMemo<DataTableFilterConfig<Vendor>[]>(
+    () => [
+      {
+        id: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Search vendor or contact",
+        predicate: (row, q) => {
+          const query = q.toLowerCase();
+          return (
+            row.name.toLowerCase().includes(query) ||
+            row.contactPerson.toLowerCase().includes(query) ||
+            row.phone.includes(query)
+          );
+        },
+      },
+      {
+        id: "category",
+        label: "Category",
+        type: "select",
+        options: [...new Set(vendors.map((v) => v.category))]
+          .sort()
+          .map((c) => ({ label: c, value: c })),
+        predicate: (row, v) => row.category === v,
+      },
+    ],
+    [vendors],
   );
 
   const poColumns = React.useMemo<ColumnDef<PurchaseOrder>[]>(
@@ -613,10 +679,17 @@ export default function PurchasingPage() {
     [],
   );
 
+  if (!has("PurchasingView")) {
+    return <PermissionDenied message="You do not have permission to view purchasing." />;
+  }
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Purchasing</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Purchasing
+        </h1>
         <p className="text-sm text-muted-foreground">
           Purchase requests, orders and vendor management.
         </p>
@@ -660,6 +733,7 @@ export default function PurchasingPage() {
             columns={poColumns}
             getRowId={(r) => r.id}
             title="Orders"
+            filters={poFilters}
             showPageSize
             pageSize={8}
             itemLabel="order"
@@ -682,6 +756,7 @@ export default function PurchasingPage() {
             columns={vendorColumns}
             getRowId={(r) => r.id}
             title="Vendors"
+            filters={vendorFilters}
             showPageSize
             pageSize={8}
             itemLabel="vendor"

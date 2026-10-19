@@ -6,6 +6,7 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { fieldError } from "@/lib/fieldError";
 
 const vendorSchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -16,15 +17,6 @@ const vendorSchema = z.object({
 });
 
 export type AddVendorInput = z.infer<typeof vendorSchema>;
-
-function fieldError(errors: unknown[]): string | undefined {
-  if (errors.length === 0) return undefined;
-  const issue = errors[0];
-  if (typeof issue === "string") return issue;
-  if (issue && typeof issue === "object" && "message" in issue)
-    return String((issue as { message: unknown }).message);
-  return String(issue);
-}
 
 export function AddVendorForm({
   onSave,

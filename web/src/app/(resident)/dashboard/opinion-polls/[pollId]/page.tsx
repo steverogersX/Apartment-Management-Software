@@ -14,6 +14,7 @@ import { SetBreadcrumbTitle } from "@/components/breadcrumbs";
 import { getPollById, isPollClosed, opinionPolls } from "@/lib/pollsMockData";
 import { residents } from "@/lib/residentsMockData";
 import { avatarUrlForName, cn, getInitials, gradientForName } from "@/lib/utils";
+import { useToast } from "@/components/ui/toast";
 
 function PropertyRow({
   icon: Icon,
@@ -64,16 +65,8 @@ export default function PollDetailPage() {
   const params = useParams<{ pollId: string }>();
   const router = useRouter();
   const poll = getPollById(params.pollId);
-  const [localPoll, setLocalPoll] = React.useState(poll);
-  const [selected, setSelected] = React.useState<string[]>([]);
-  const [selectedOptionId, setSelectedOptionId] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    setLocalPoll(getPollById(params.pollId) ?? null);
-    setSelectedOptionId(null);
-  }, [params.pollId]);
-
-  if (!localPoll) {
+  if (!poll) {
     return (
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 py-16 text-center">
         <p className="text-sm text-muted-foreground">Poll not found.</p>
@@ -83,6 +76,15 @@ export default function PollDetailPage() {
       </div>
     );
   }
+
+  return <PollDetail key={params.pollId} initial={poll} />;
+}
+
+function PollDetail({ initial }: { initial: NonNullable<ReturnType<typeof getPollById>> }) {
+  const { toast } = useToast();
+  const [localPoll, setLocalPoll] = React.useState(initial);
+  const [selected, setSelected] = React.useState<string[]>([]);
+  const [selectedOptionId, setSelectedOptionId] = React.useState<string | null>(null);
 
   const p = localPoll;
   const currentUser = "Arvind Deshmukh";
@@ -120,6 +122,7 @@ export default function PollDetailPage() {
     const idx = opinionPolls.findIndex((x) => x.id === p.id);
     if (idx !== -1) opinionPolls[idx] = updatedPoll;
     setSelected([]);
+    toast({ title: "Vote recorded" });
   }
 
   const sortedOptions = React.useMemo(() => {
@@ -281,7 +284,7 @@ export default function PollDetailPage() {
                       </div>
                       <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-foreground transition-all"
+                          className="h-full origin-left animate-grow-x bg-foreground transition-all"
                           style={{ width: `${percent}%` }}
                         />
                       </div>

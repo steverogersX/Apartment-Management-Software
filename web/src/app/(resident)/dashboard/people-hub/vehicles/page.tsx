@@ -24,6 +24,10 @@ import {
   type FlatVehicleEntry,
 } from "@/lib/flatsMockData";
 import { residents } from "@/lib/residentsMockData";
+import { useToast } from "@/components/ui/toast";
+import { PageIcon } from "@/components/pageIcon";
+import { useAuth } from "@/hooks/useAuth";
+import { recordAudit } from "@/lib/auditLog";
 
 type HubVehicleRow = {
   id: string;
@@ -143,6 +147,8 @@ const columns: ColumnDef<HubVehicleRow>[] = [
 ];
 
 export default function PeopleHubVehiclesPage() {
+  const { user: auditUser } = useAuth();
+  const { toast } = useToast();
   const [version, setVersion] = React.useState(0);
   const [createOpen, setCreateOpen] = React.useState(false);
 
@@ -154,12 +160,13 @@ export default function PeopleHubVehiclesPage() {
         id: "search",
         label: "Search",
         type: "search",
-        placeholder: "Search reg, owner, model…",
+        placeholder: "Search reg, owner, flat, model…",
         predicate: (row, query) => {
           const q = query.trim().toLowerCase();
           return (
             row.registrationNumber.toLowerCase().includes(q) ||
             row.ownerName.toLowerCase().includes(q) ||
+            row.flatLabel.toLowerCase().includes(q) ||
             `${row.make} ${row.model}`.toLowerCase().includes(q)
           );
         },
@@ -185,6 +192,25 @@ export default function PeopleHubVehiclesPage() {
         ],
         predicate: (row, value) => row.type === value,
       },
+      {
+        id: "tower",
+        label: "Tower",
+        type: "select",
+        options: [...new Set(flats.map((f) => f.tower))]
+          .sort()
+          .map((t) => ({ label: `Tower ${t}`, value: `Tower ${t}` })),
+        predicate: (row, value) => row.tower === value,
+      },
+      {
+        id: "parking",
+        label: "Parking",
+        type: "select",
+        options: [
+          { label: "Has a slot", value: "assigned" },
+          { label: "No slot", value: "none" },
+        ],
+        predicate: (row, value) => (row.parkingSlot ? "assigned" : "none") === value,
+      },
     ],
     [],
   );
@@ -206,12 +232,25 @@ export default function PeopleHubVehiclesPage() {
     flatVehicleHistory.push(newEntry);
     setVersion((v) => v + 1);
     setCreateOpen(false);
+    recordAudit({
+      module: "Vehicles",
+      entityType: "Vehicle",
+      entityId: newEntry.registrationNumber,
+      entityLabel: newEntry.registrationNumber,
+      action: "Create",
+      performedBy: auditUser?.displayName ?? "Unknown",
+      details: `${newEntry.make} ${newEntry.model}`,
+    });
+    toast({ title: "Vehicle added" });
   }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">Vehicles</h1>
+        <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
+          <PageIcon />
+          Vehicles
+        </h1>
         <p className="text-sm text-muted-foreground">
           Every registered vehicle in the society — flat, owner, and slot.
         </p>
